@@ -1,1 +1,0 @@
-{"key": "DH5d71_OzzCsML7QmbzHZPJfmtCd1KNdFmMSzk8_H00", "sessionName": "ubuntu18.04 - \u526f\u672c", "hostname": "192.168.40.131", "port": 22, "username": "ljs", "password": "ljs", "privatekey": "", "passphrase": "", "totp": "", "login_script": [{"id": "t_jfWmDzO-LpKZQAoDfAKPt5mFTikmnNDewGIyAjavo", "expect": "ljs", "command": "pwd"}]}
