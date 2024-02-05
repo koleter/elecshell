@@ -1,0 +1,1 @@
+{"key": "GffRXbo3d-Mxd2tqynwnyo48b5dd8lOYnN28K6ofu2w", "sessionName": "ubuntu18.04", "hostname": "192.168.40.131", "port": 22, "username": "ljs", "password": "ljs", "privatekey": "D:\\study\\Front-endDevelopment\\myProject\\dialog\\.gitignore", "passphrase": "", "totp": "", "login_script": [{"id": "82bd51a0-84eb-47f9-9eb7-6b8c1811ff71", "expect": "ljs", "command": "pwd"}]}
