@@ -185,28 +185,6 @@ class Worker(object):
             elif update_handler:
                 self.update_handler(IOLoop.READ)
 
-    def prompts(self, msgs, callback, args):
-        '''
-        Pop-up window to get multy user inputs
-        msgs: prompt informations, a list
-        args: The extra parameters of callback
-        callback: a callback function, the result of user inputs will be a parameter of callback, it has two args, callback(worker, args)
-        '''
-        if not msgs:
-            logging.error("msgs is None, do nothing")
-            return
-        if not isinstance(msgs, list):
-            logging.error("msgs should be a list")
-            return
-        message = {
-            'args': msgs,
-            'type': 'execMethod',
-            'method': 'prompts'
-        }
-        if callback:
-            self.set_callback_message(callback, message, args)
-        self.handler.write_message(message)
-
     def prompt(self, msg, callback, args):
         '''
         Pop-up window to get user input
@@ -216,7 +194,7 @@ class Worker(object):
         '''
         message = {
             'args': msg,
-            'type': 'eval',
+            'type': 'execMethod',
             'method': 'prompt'
         }
         if callback:
