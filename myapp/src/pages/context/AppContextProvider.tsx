@@ -1,4 +1,4 @@
-import {createContext, useEffect, useState} from 'react';
+import {createContext, useEffect, useState, useRef} from 'react';
 import {request} from "@@/plugin-request/request";
 import util from "@/util";
 import {message} from "antd";
@@ -10,6 +10,19 @@ export const AppContext = createContext(null);
 export function AppContextProvider(props: { children: React.ReactNode | React.ReactNode[] }) {
 
   const [xshListWindowWidth, setXshListWindowWidth] = useState(250);
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [promptTitle, setPromptTitle] = useState("");
+  const [promptOKCallback, setPromptOKCallback] = useState("");
+  const [promptUserInput, setPromptUserInput] = useState("");
+  const promptInputRef = useRef(null);
+
+  const prompt = function (title, callback, defaultUserInput = "") {
+    setPromptTitle(title);
+    setPromptOKCallback(() => callback);
+    setPromptUserInput(defaultUserInput);
+    setShowPrompt(true);
+    promptInputRef.current.focus();
+  }
 
   useEffect(() => {
     request(util.baseUrl + 'conf', {
@@ -29,8 +42,9 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
   }, []);
   return (
     <AppContext.Provider value={{
-      xshListWindowWidth,
-      setXshListWindowWidth
+      xshListWindowWidth, setXshListWindowWidth,
+      // use for prompt
+      promptInputRef, showPrompt, setShowPrompt, promptTitle, setPromptTitle, promptOKCallback, setPromptOKCallback, promptUserInput, setPromptUserInput, prompt
     }}>{/** value就是可在<AppContextProvider>组件的子组件中使用useContext() hook函数所获取的对象 */}
       {props.children}
     </AppContext.Provider>

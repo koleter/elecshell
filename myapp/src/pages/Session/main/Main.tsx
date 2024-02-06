@@ -1,6 +1,6 @@
-import {Dropdown, Layout, Tabs} from 'antd';
+import {Dropdown, Layout, Tabs, Modal, Input} from 'antd';
 import type {DataNode} from 'antd/es/tree';
-import React, {useState} from 'react';
+import React, {useState, useRef, useContext, useEffect} from 'react';
 import "./Main.less"
 import "xterm/css/xterm.css"
 import SessionWindow from "@/pages/Session/Xterminal/sessionWindow";
@@ -15,7 +15,6 @@ let {ipcRenderer} = window.require('electron');
 
 const {Content, Sider} = Layout;
 type TargetKey = React.MouseEvent | React.KeyboardEvent | string;
-let startX;
 
 // 记录sessionId对应的文件名,这个用来过滤session可用的脚本
 export const sessionIdMapFileName = {};
@@ -86,9 +85,45 @@ const SessionMain: React.FC = () => {
     removeTabByKey(targetKey);
   };
 
+  const context = useContext(AppContext);
+
+  const {setShowPrompt, promptOKCallback, promptUserInput} = context;
+
+  const promptOk = () => {
+    setShowPrompt(false);
+    promptOKCallback && promptOKCallback(promptUserInput);
+  }
+
   return <AppContext.Consumer>
-    {({xshListWindowWidth, setXshListWindowWidth}) => {
+    {({
+        xshListWindowWidth,
+        setXshListWindowWidth,
+        showPrompt,
+        promptTitle,
+        setPromptUserInput,
+        promptInputRef
+      }) => {
       return <div style={{height: '100%'}}>
+        <Modal width={800}
+               title={promptTitle}
+               open={showPrompt}
+               maskClosable={false}
+               closable={false}
+               onOk={promptOk}
+               onCancel={() => {
+                 setShowPrompt(false);
+               }}>
+          <Input ref={promptInputRef}
+                 allowClear={true}
+                 onKeyDown={(e) => {
+                   if (e.key == "Enter") {
+                     promptOk();
+                   }
+                 }}
+                 onChange={(e) => {
+                   setPromptUserInput(e.target.value);
+                 }} value={promptUserInput}/>
+        </Modal>
         <div style={{
           position: 'absolute',
           right: '0',
@@ -97,11 +132,8 @@ const SessionMain: React.FC = () => {
           height: '95%',
           zIndex: 999
         }} onMouseEnter={() => {
-          if (process.env.NODE_ENV === 'development') {
-            setDrawerOpen(true);
-          } else {
-            sessions.length && setDrawerOpen(true);
-          }
+          // setDrawerOpen(true);
+          sessions.length && setDrawerOpen(true);
         }}/>
         <Layout style={{display: 'flex', height: '100%', width: '100%'}}>
           <div id={"header"}
@@ -164,11 +196,12 @@ const SessionMain: React.FC = () => {
             }
             }/>
 
-            <Content style={{width: '100%', overflow: 'hidden'}}>
+            <Content style={{width: '100%', overflow: 'hidden', display: "flex", flexDirection: 'column'}}>
               <Tabs
                 id={"sessionTabs"}
                 type="editable-card"
                 activeKey={activeKey}
+                style={{height: '100px'}}
                 hideAdd
                 items={sessions.map(item => {
                   function closeSessions(sessions) {

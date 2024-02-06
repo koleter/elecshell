@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useRef, useContext} from "react";
 import React from "react";
 import {Terminal} from "xterm"
 import "xterm/css/xterm.css"
@@ -10,6 +10,7 @@ import { WebLinksAddon } from 'xterm-addon-web-links';
 import {request} from 'umi';
 import "./SessionWindow.less"
 import {sessionConfInfo} from "@/pages/Session/SessionList/SessionList";
+import {AppContext} from "@/pages/context/AppContextProvider"
 
 const termOptions = {
   rendererType: "canvas",
@@ -28,6 +29,7 @@ const style = {};
 const SessionWindow: React.FC = (props) => {
   const terminalRef = useRef<null | HTMLDivElement>(null);
   const {id, sessions, setSessions} = props;
+  const context = useContext(AppContext);
 
   useEffect(() => {
     const ws_url = util.baseUrl.split(/\?|#/, 1)[0].replace('http', 'ws'),
@@ -94,7 +96,7 @@ const SessionWindow: React.FC = (props) => {
         get_cell_size(term);
       }
 
-      const terminal_container = document.querySelector('#root > div > section > div > main > section > main');
+      const terminal_container = document.querySelector('main.ant-layout-content');
 
       const cols = parseInt(parseInt(getComputedStyle(terminal_container).width) / style.width, 10) - 2;
       const rows = parseInt(parseInt(parseFloat(getComputedStyle(terminal_container).height) * 0.96) / style.height, 10);
@@ -144,6 +146,9 @@ const SessionWindow: React.FC = (props) => {
   }, []);
 
   const methodMap = {
+    prompt: (msg, callback) => {
+      context.prompt(msg, callback);
+    },
     createNewSession: (sessionConfs, callback) => {
       const arr = [];
       sessionConfs.forEach(sessionConf => {
@@ -331,14 +336,8 @@ const SessionWindow: React.FC = (props) => {
     }
   }, [sessions])
 
-  const renderElement = () => {
-    return (
-      <div ref={terminalRef}></div>
-    )
-  }
-
   return (
-    renderElement()
+    <div ref={terminalRef}></div>
   )
 }
 

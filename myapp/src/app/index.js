@@ -11,11 +11,11 @@ if (require('electron-squirrel-startup')) {
 Menu.setApplicationMenu(null);
 
 const createWindow = () => {
-  // const {width, height} = screen.getPrimaryDisplay().workAreaSize;//获取到屏幕的宽度和高度
+  const {width, height} = screen.getPrimaryDisplay().workAreaSize;//获取到屏幕的宽度和高度
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 600,
+    width: width * 0.9,
+    height: height * 0.9,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'), // 下面两行配置使得浏览器可以使用nodejs的模块
       nodeIntegration: true, contextIsolation: false, webSecurity: false, // 禁用安全策略
