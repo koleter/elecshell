@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import platform
 
 from handler.pojo.BaseConfig import BaseConfig
 
@@ -10,7 +11,8 @@ class GlobalAutoConfig(BaseConfig):
         super().__init__(path)
         self.path = os.path.join(self.path, "autoConf.json")
         self.conf_cache = dict({
-            "xshListWindowWidth": 250
+            "xshListWindowWidth": 250,
+            "platform": platform.system()
         })
         try:
             with open(self.path, 'r') as f:

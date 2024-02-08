@@ -10,7 +10,10 @@ import { WebLinksAddon } from 'xterm-addon-web-links';
 import {request} from 'umi';
 import "./SessionWindow.less"
 import {sessionConfInfo} from "@/pages/Session/SessionList/SessionList";
-import {AppContext} from "@/pages/context/AppContextProvider"
+import {AppContext} from "@/pages/context/AppContextProvider";
+const {ipcRenderer} = window.require('electron');
+
+// const platform = ipcRenderer.sendSync("getSystemPlatform");
 
 const termOptions = {
   rendererType: "canvas",
@@ -30,6 +33,7 @@ const SessionWindow: React.FC = (props) => {
   const terminalRef = useRef<null | HTMLDivElement>(null);
   const {id, sessions, setSessions} = props;
   const context = useContext(AppContext);
+  const {xtermShortKeys} = context;
 
   useEffect(() => {
     const ws_url = util.baseUrl.split(/\?|#/, 1)[0].replace('http', 'ws'),
@@ -87,8 +91,9 @@ const SessionWindow: React.FC = (props) => {
     };
 
     function get_cell_size(term) {
-      style.width = term._core._renderService._renderer.dimensions.css.cell.width;
-      style.height = term._core._renderService._renderer.dimensions.css.cell.height;
+      console.log(term)
+      style.width = term._core?._renderService?._renderer?.dimensions?.css?.cell?.width || term._core?._renderService?._renderer?._value?.dimensions?.css?.cell?.width;
+      style.height = term._core?._renderService?._renderer?.dimensions?.css?.cell?.height || term._core?._renderService?._renderer?._value?.dimensions?.css?.cell?.height;
     }
 
     function current_geometry(term) {
@@ -128,8 +133,21 @@ const SessionWindow: React.FC = (props) => {
     //   }
     // }());
 
+    // terminalRef.current.onkeydown = function (e) {
+    //   console.log(e);
+    //   if (platform === 'darwin') {
+    //     if (e.metaKey) {
+    //       if (e.code == 67) {
+    //         if (term.hasSelection()) {
+    //           navigator.clipboard.writeText(term.getSelection());
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
+
     term.onData(function (data) {
-      // console.log(`onData: ${id}, data: ${data}`);
+      console.log(`onData: ${id}, data: ${data}`);
       sock.send(JSON.stringify({'data': data, 'type': 'data'}));
     });
 
@@ -243,14 +261,6 @@ const SessionWindow: React.FC = (props) => {
           return data;
         });
       })
-    },
-    prompts: (msgs, callback) => {
-      const res = [];
-      for (const msg of msgs) {
-        const userInput = prompt(msg);
-        res.push(userInput);
-      }
-      callback && callback(res);
     }
   };
 

@@ -1,14 +1,14 @@
-const {app, BrowserWindow, screen, ipcMain, Menu} = require('electron');
+const {app, BrowserWindow, screen, ipcMain, Menu, globalShortcut} = require('electron');
 const path = require('path');
+const {platform} = require("os");
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
-
 // 禁止ctrl + w 关闭窗口
-Menu.setApplicationMenu(null);
+// Menu.setApplicationMenu(null);
 
 const createWindow = () => {
   const {width, height} = screen.getPrimaryDisplay().workAreaSize;//获取到屏幕的宽度和高度
@@ -34,6 +34,10 @@ const createWindow = () => {
     allowRunningInsecureContent: true, // 允许一个 https 页面运行 http url 里的资源
   });
 
+  globalShortcut.register("CommandOrControl+W", () => {
+    //stuff here
+  });
+
   //登录窗口最小化
   ipcMain.on('window-min', function () {
     mainWindow.minimize();
@@ -49,6 +53,12 @@ const createWindow = () => {
   //登录窗口关闭
   ipcMain.on('window-close', function () {
     mainWindow.close();
+  })
+
+  // 获取操作系统类型
+  ipcMain.on('getSystemPlatform', function (e) {
+    e.returnValue = platform();
+    // e.sender.send("replayGetSystemPlatform", platform())
   })
 
   // and load the index.html of the app.

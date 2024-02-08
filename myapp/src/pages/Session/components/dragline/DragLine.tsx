@@ -1,7 +1,7 @@
 const DragLine = ({moveFunc = null, moveEndFunc = null, direction = "Vertical"}) => {
   let style;
   if (direction == "Vertical") {
-    style = {width: '5px', height: '100%', cursor: 'col-resize'}
+    style = {width: '5px', height: '100vh', cursor: 'col-resize'}
   } else if ("horizontal" == direction) {
     style = {height: '5px', width: '100%', cursor: 'row-resize'}
   } else {

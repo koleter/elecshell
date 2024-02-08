@@ -6,6 +6,7 @@ import {FormattedMessage} from "@@/plugin-locale/localeExports";
 import {request} from "@@/plugin-request/request";
 import util, {showMessage} from "@/util";
 import {sessionIdMapFileName, sessionIdRef} from "@/pages/Session/main/Main";
+import Spliter from "@/pages/Session/components/spliter/Spliter";
 
 const ScriptDrawer: React.FC = (props) => {
   // @ts-ignore
@@ -68,6 +69,10 @@ const ScriptDrawer: React.FC = (props) => {
       open={drawerOpen}
       size={'large'}
     >
+      <Spliter>
+        <span>111</span>
+        <span>333</span>
+      </Spliter>
       <ProList
         rowKey="name"
         dataSource={scriptData.filter(item => (!item.scriptOwner || item.scriptOwner == sessionIdMapFileName[activeKey]) && item.title.name.indexOf(scriptSearchValue) > -1)}

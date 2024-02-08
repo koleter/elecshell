@@ -175,20 +175,20 @@ class IndexHandler(MixinHandler, tornado.web.RequestHandler):
             session_name = data.get('sessionName')
             with open(session_conf_file_path, 'r') as f:
                 session_conf = json.loads(f.read())
-                hostname = session_conf['hostname']
-                port = session_conf['port']
-                username = session_conf['username']
-                password = session_conf['password']
-                filename = session_conf['privatekey']
+                hostname = session_conf.get('hostname')
+                port = session_conf.get('port')
+                username = session_conf.get('username')
+                password = session_conf.get('password')
+                filename = session_conf.get('privatekey')
                 privatekey = ''
-                if filename.strip() != '':
+                if filename and filename.strip() != '':
                     try:
                         with open(filename, 'r') as f:
                             privatekey = f.read()
                     except FileNotFoundError as e:
                         raise tornado.web.HTTPError(400, 'No such privatekey file: {}'.format(filename))
-                passphrase = session_conf['passphrase']
-                totp = session_conf['totp']
+                passphrase = session_conf.get('passphrase')
+                totp = session_conf.get('totp')
 
             if isinstance(self.policy, paramiko.RejectPolicy):
                 self.lookup_hostname(hostname, port)
