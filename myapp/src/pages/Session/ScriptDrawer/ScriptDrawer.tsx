@@ -6,7 +6,6 @@ import {FormattedMessage} from "@@/plugin-locale/localeExports";
 import {request} from "@@/plugin-request/request";
 import util, {showMessage} from "@/util";
 import {sessionIdMapFileName, sessionIdRef} from "@/pages/Session/main/Main";
-import Spliter from "@/pages/Session/components/spliter/Spliter";
 
 const ScriptDrawer: React.FC = (props) => {
   // @ts-ignore

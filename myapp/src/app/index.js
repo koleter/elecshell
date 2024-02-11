@@ -26,11 +26,13 @@ const createWindow = () => {
     fullscreenable: true, autoHideMenuBar: true, // 隐藏菜单栏
     minimizable: true, // 可否最小化
     maximizable: true, // 可否最大化
+    resizable: true,  //
     closable: true, // 展示关闭按钮
     fullscreen: false, // MAC下是否可以全屏
     skipTaskbar: false, // 在任务栏中显示窗口
     acceptFirstMouse: true, // 是否允许单击页面来激活窗口
-    transparent: false, movable: true, // 可否移动
+    transparent: false,
+    movable: true, // 可否移动
     allowRunningInsecureContent: true, // 允许一个 https 页面运行 http url 里的资源
   });
 
@@ -45,7 +47,7 @@ const createWindow = () => {
   //登录窗口最大化
   ipcMain.on('window-max', function () {
     if (mainWindow.isMaximized()) {
-      mainWindow.restore();
+      mainWindow.unmaximize();
     } else {
       mainWindow.maximize();
     }
@@ -53,6 +55,7 @@ const createWindow = () => {
   //登录窗口关闭
   ipcMain.on('window-close', function () {
     mainWindow.close();
+    process.exit();
   })
 
   // 获取操作系统类型
