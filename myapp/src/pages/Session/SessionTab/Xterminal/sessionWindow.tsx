@@ -2,15 +2,16 @@ import {useEffect, useRef, useContext} from "react";
 import React from "react";
 import {Terminal} from "xterm"
 import "xterm/css/xterm.css"
-import util, {sleep, msgMap, sessionStatusMap, showMessage, getUUid} from "../../../util"
-import {DISCONNECTED, CONNECTING, CONNECTED} from "../../../const"
-import {sessionIdRef, sessionIdMapFileName} from "../main/Main"
-import { SearchAddon } from 'xterm-addon-search'
-import { WebLinksAddon } from 'xterm-addon-web-links';
+import util, {sleep, msgMap, sessionStatusMap, showMessage, getUUid} from "../../../../util"
+import {DISCONNECTED, CONNECTING, CONNECTED} from "../../../../const"
+import {sessionIdRef, sessionIdMapFileName} from "../../main/Main"
+import {SearchAddon} from 'xterm-addon-search'
+import {WebLinksAddon} from 'xterm-addon-web-links';
 import {request} from 'umi';
 import "./SessionWindow.less"
 import {sessionConfInfo} from "@/pages/Session/SessionList/SessionList";
 import {AppContext} from "@/pages/context/AppContextProvider";
+
 const {ipcRenderer} = window.require('electron');
 
 // const platform = ipcRenderer.sendSync("getSystemPlatform");
@@ -175,9 +176,9 @@ const SessionWindow: React.FC = (props) => {
           case "[object String]":
             if (!(sessionConf in sessionConfInfo)) {
               showMessage({
-                    status: 'error',
-                    content: `invalid sessionConfId: ${sessionConf}`
-                  });
+                status: 'error',
+                content: `invalid sessionConfId: ${sessionConf}`
+              });
               return;
             }
             body = {
@@ -188,9 +189,9 @@ const SessionWindow: React.FC = (props) => {
           case '[object Object]':
             if (!(sessionConf.conf_id in sessionConfInfo)) {
               showMessage({
-                    status: 'error',
-                    content: `invalid sessionConfId: ${sessionConf.conf_id}`
-                  });
+                status: 'error',
+                content: `invalid sessionConfId: ${sessionConf.conf_id}`
+              });
               return;
             }
             body = {

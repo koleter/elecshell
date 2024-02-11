@@ -1,11 +1,9 @@
-const DragLine = ({moveFunc = null, moveEndFunc = null, direction = "Vertical"}) => {
+const DragLine = ({moveFunc = null, moveEndFunc = null, direction = "row"}) => {
   let style;
-  if (direction == "Vertical") {
-    style = {width: '5px', height: '100vh', cursor: 'col-resize'}
-  } else if ("horizontal" == direction) {
-    style = {height: '5px', width: '100%', cursor: 'row-resize'}
+  if ("column" == direction) {
+    style = {height: '6px', width: '100%', cursor: 'row-resize'}
   } else {
-    throw Error("unexpected direction: " + direction)
+    style = {width: '6px', height: '100vh', cursor: 'col-resize'}
   }
   return <div
     style={style}

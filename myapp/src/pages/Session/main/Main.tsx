@@ -3,7 +3,7 @@ import type {DataNode} from 'antd/es/tree';
 import React, {useState, useRef, useContext, useEffect} from 'react';
 import "./Main.less"
 import "xterm/css/xterm.css"
-import SessionWindow from "@/pages/Session/Xterminal/sessionWindow";
+import SessionWindow from "@/pages/Session/SessionTab/Xterminal/sessionWindow";
 import ScriptDrawer from "@/pages/Session/ScriptDrawer/ScriptDrawer";
 import SessionList from "@/pages/Session/SessionList/SessionList";
 import util, {showMessage} from "@/util";
@@ -196,7 +196,7 @@ const SessionMain: React.FC = () => {
             }
             }/>
 
-            <Content style={{width: '100%', overflow: 'hidden', display: "flex", flexDirection: 'column'}}>
+            <Content style={{width: '100%', overflow: 'hidden'}}>
               <Tabs
                 id={"sessionTabs"}
                 type="editable-card"

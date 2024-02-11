@@ -69,10 +69,7 @@ const ScriptDrawer: React.FC = (props) => {
       open={drawerOpen}
       size={'large'}
     >
-      <Spliter>
-        <span>111</span>
-        <span>333</span>
-      </Spliter>
+
       <ProList
         rowKey="name"
         dataSource={scriptData.filter(item => (!item.scriptOwner || item.scriptOwner == sessionIdMapFileName[activeKey]) && item.title.name.indexOf(scriptSearchValue) > -1)}
