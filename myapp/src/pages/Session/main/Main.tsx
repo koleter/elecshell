@@ -84,7 +84,7 @@ const SessionMain: React.FC = () => {
 
   const context = useContext(AppContext);
 
-  const {setShowPrompt, promptOKCallback, promptUserInput} = context;
+  const {setShowPrompt, promptOKCallback, promptUserInput, prompt, promptInputRef} = context;
 
   const promptOk = () => {
     setShowPrompt(false);
@@ -98,7 +98,7 @@ const SessionMain: React.FC = () => {
         showPrompt,
         promptTitle,
         setPromptUserInput,
-        promptInputRef
+
       }) => {
       return <div style={{height: '100%'}}>
         <Modal width={800}
@@ -184,24 +184,26 @@ const SessionMain: React.FC = () => {
                             {
                               label: (
                                 <span onClick={() => {
-                                  var name = prompt("重命名");
-                                  if (!name.trim()) {
-                                    showMessage({
-                                      status: "error",
-                                      content: "name can not be empty"
-                                    });
-                                    return;
-                                  }
-                                  setSessions((sessions) => {
-                                    const data = [...sessions];
-                                    for (const session of data) {
-                                      if (session.key === item.key) {
-                                        session.label = name;
-                                        break;
-                                      }
+                                  prompt("重命名", (name) => {
+                                    if (!name.trim()) {
+                                      showMessage({
+                                        status: "error",
+                                        content: "name can not be empty"
+                                      });
+                                      return;
                                     }
-                                    return data;
+                                    setSessions((sessions) => {
+                                      const data = [...sessions];
+                                      for (const session of data) {
+                                        if (session.key === item.key) {
+                                          session.label = name;
+                                          break;
+                                        }
+                                      }
+                                      return data;
+                                    });
                                   });
+
                                 }}>重命名</span>
                               ),
                               key: 'rename'

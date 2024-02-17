@@ -22,7 +22,7 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
     setPromptOKCallback(() => callback);
     setPromptUserInput(defaultUserInput);
     setShowPrompt(true);
-    promptInputRef.current.focus();
+    promptInputRef?.current?.focus();
   }
 
   const [xtermShortKeys, setXtermShortKeys] = useState({});
