@@ -7,6 +7,7 @@ from tornado.options import options
 from handler.WsockHandler import WsockHandler
 from handler.NotFoundHandler import NotFoundHandler
 from handler.ConfigHandler import ConfigHandler
+from handler.ExitHandler import ExitHandler
 from handler.IndexHandler import IndexHandler
 from handler import const
 import webbrowser
@@ -26,7 +27,7 @@ def make_handlers(loop, options):
                                                 host_keys_settings=host_keys_settings)),
         (r'/ws', WsockHandler, dict(loop=loop)),
         (r'/conf', ConfigHandler, dict(loop=loop)),
-
+        (r'/exit', ExitHandler, dict(loop=loop)),
     ]
     return handlers
 

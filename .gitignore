@@ -65,4 +65,6 @@ target/
 known_hosts
 /.idea/
 /config/
-/.idea/
+/myapp/pyBuild/
+/myapp/antdBuild/
+/myapp/out/
