@@ -10,7 +10,6 @@ __pycache__/
 env/
 build/
 develop-eggs/
-dist/
 eggs/
 lib/
 lib64/
@@ -64,7 +63,12 @@ target/
 # known_hosts file
 known_hosts
 /.idea/
-/config/
+/myapp/server/config/
 /myapp/pyBuild/
 /myapp/antdBuild/
 /myapp/out/
+/server/config/
+/antdBuild/
+/src/.umi/
+/out/
+/out/
