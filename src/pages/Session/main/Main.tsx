@@ -259,7 +259,6 @@ const SessionMain: React.FC = () => {
 
         <ScriptDrawer
           activeKey={activeKey}
-          sessions={sessions}
           drawerOpen={drawerOpen}
           setDrawerOpen={setDrawerOpen}
         />

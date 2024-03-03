@@ -32,7 +32,7 @@ const style = {};
 
 const SessionWindow: React.FC = (props) => {
   const terminalRef = useRef<null | HTMLDivElement>(null);
-  const {id, sessions, setSessions} = props;
+  const {id, sessionConfId, sessions, setSessions} = props;
   const context = useContext(AppContext);
   const {xtermShortKeys} = context;
 
@@ -65,6 +65,7 @@ const SessionWindow: React.FC = (props) => {
       id: id,
       sock: sock,
       term: term,
+      sessionConfId,
       send: function (msg: object) {
         sock.send(JSON.stringify(msg));
       },

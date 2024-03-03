@@ -9,7 +9,7 @@ import {sessionIdMapFileName, sessionIdRef} from "@/pages/Session/main/Main";
 
 const ScriptDrawer: React.FC = (props) => {
   // @ts-ignore
-  const {activeKey, sessions, drawerOpen, setDrawerOpen} = props;
+  const {activeKey, drawerOpen, setDrawerOpen} = props;
   const [editScriptForm] = Form.useForm();
 
   const [scriptData, setScriptData] = useState([]);
@@ -76,9 +76,8 @@ const ScriptDrawer: React.FC = (props) => {
           title: {
             render: (text, row) => {
               return <Button onClick={() => {
-                // 确保当前存在活跃的session
-                const sessionList = sessions.filter(session => session.key == activeKey);
-                if (sessionList.length != 1 || !sessionList[0].isConnected) {
+
+                if (!sessionIdRef[activeKey]) {
                   showMessage({
                     status: 'error',
                     content: 'scripts cannot be executed in a closed session'
@@ -90,7 +89,7 @@ const ScriptDrawer: React.FC = (props) => {
                   type: 'exec',
                   path: row.scriptPath,
                   sessionId: activeKey,
-                  xshConfId: sessionList[0].sessionConfId
+                  xshConfId: sessionIdRef[activeKey].sessionConfId
                 })
               }
               }>{text.name}</Button>
