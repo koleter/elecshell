@@ -4,16 +4,11 @@ const path = require('path')
 const { say } = require('cfonts')
 const { spawn } = require('child_process')
 const webpack = require('webpack')
-const HtmlWebpackPlugin = require('html-webpack-plugin')
-const WebpackDevServer = require('webpack-dev-server')
-const webpackHotMiddleware = require('webpack-hot-middleware')
 
 const mainConfig = require('./webpack.main.config')
-const rendererConfig = require('./webpack.renderer.config')
 
 let electronProcess = null
 let manualRestart = false
-let hotMiddleware
 
 function logStats (proc, data) {
   let log = ''
@@ -37,65 +32,13 @@ function logStats (proc, data) {
   console.log(log)
 }
 
-function startRenderer () {
-  return new Promise((resolve, reject) => {
-    rendererConfig.entry.renderer = [path.join(__dirname, 'dev-client')].concat(rendererConfig.entry.renderer)
-
-    const compiler = webpack(rendererConfig)
-    hotMiddleware = webpackHotMiddleware(compiler, {
-      log: false,
-      heartbeat: 2500
-    })
-
-    compiler.hooks.compilation.tap('HtmlWebpackPluginAfterEmit', compilation => {
-      HtmlWebpackPlugin.getHooks(compilation).afterEmit.tapAsync(
-        'AfterPlugin',
-        (data, cb) => {
-          hotMiddleware.publish({ action: 'reload' })
-          // Tell webpack to move on
-          cb(null, data)
-        }
-      )
-    })
-
-    compiler.hooks.done.tap('AfterCompiler', stats => {
-      logStats('Renderer', stats)
-    })
-
-    const server = new WebpackDevServer({
-      host: '127.0.0.1',
-      port: 9091,
-      hot: true,
-      liveReload: true,
-      compress: true,
-      static: [
-        {
-          directory: path.join(__dirname, '../node_modules/codemirror/mode'),
-          publicPath: '/codemirror/mode',
-          watch: false
-        }
-      ],
-      onBeforeSetupMiddleware ({ app, middleware }) {
-        app.use(hotMiddleware)
-        middleware.waitUntilValid(() => {
-          resolve()
-        })
-      }
-    }, compiler)
-
-    server.start()
-  })
-}
-
 function startMain () {
   return new Promise((resolve, reject) => {
-    mainConfig.entry.main = [path.join(__dirname, '../src/main/index.dev.js')].concat(mainConfig.entry.main)
 
     const compiler = webpack(mainConfig)
 
     compiler.hooks.watchRun.tapAsync('Compiling', (_, done) => {
       logStats('Main', chalk.white.bold('compiling...'))
-      hotMiddleware.publish({ action: 'compiling' })
       done()
     })
 
@@ -128,7 +71,7 @@ function startElectron () {
     '--inspect=5858',
     '--remote-debugging-port=8315',
     '--nolazy',
-    path.join(__dirname, '../dist/electron/main.js')
+    path.join(__dirname, '../out/electron/main.js')
   ])
 
   electronProcess.stdout.on('data', data => {
@@ -164,8 +107,8 @@ function greeting () {
   const cols = process.stdout.columns
   let text = ''
 
-  if (cols > 155) text = 'building marktext'
-  else if (cols > 76) text = 'building|marktext'
+  if (cols > 155) text = 'building elecshell'
+  else if (cols > 76) text = 'building|elecshell'
   else text = false
 
   if (text) {
@@ -175,7 +118,7 @@ function greeting () {
       space: false
     })
   } else {
-    console.log(chalk.yellow.bold('\n  building marktext'))
+    console.log(chalk.yellow.bold('\n  building elecshell'))
   }
   console.log(chalk.blue('  getting ready...') + '\n')
 }
@@ -183,7 +126,7 @@ function greeting () {
 function init () {
   greeting()
 
-  Promise.all([startRenderer(), startMain()])
+  Promise.all([startMain()])
     .then(() => {
       startElectron()
     })

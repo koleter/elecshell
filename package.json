@@ -60,6 +60,7 @@
     "prettier": "prettier -c --write \"src/**/*\"",
     "serve": "umi-serve",
     "app": "cross-env NODE_ENV=development electron-forge start",
+    "app:dev": "cross-env NODE_ENV=development node scripts/dev-runner.js",
     "app:pro": "cross-env NODE_ENV=production electron-forge start",
     "app:make": "electron-forge make",
     "app:package": "electron-forge package",

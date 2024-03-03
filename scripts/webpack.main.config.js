@@ -4,7 +4,6 @@ const path = require('path')
 const webpack = require('webpack')
 const ESLintPlugin = require('eslint-webpack-plugin')
 
-const { getEnvironmentDefinitions } = require('./marktextEnvironment')
 const { dependencies } = require('../package.json')
 
 const isProduction = process.env.NODE_ENV === 'production'
@@ -66,8 +65,6 @@ const mainConfig = {
       context: path.resolve(__dirname, '../'),
       overrideConfigFile: '.eslintrc.js'
     }),
-    // Add global environment definitions.
-    new webpack.DefinePlugin(getEnvironmentDefinitions())
   ],
   resolve: {
     alias: {
