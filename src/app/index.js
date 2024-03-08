@@ -115,7 +115,7 @@ const createWindow = () => {
     mainWindow.webContents.openDevTools();
   } else {
     // mainWindow.loadURL("http://localhost:8888/session")
-    mainWindow.loadFile("./antdBuild/index.html");
+    mainWindow.loadFile(process.cwd() + "/antdBuild/index.html");
   }
 
 };
