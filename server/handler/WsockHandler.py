@@ -1,7 +1,9 @@
+import asyncio
 import imp
 import json
 import logging
 import struct
+import time
 import traceback
 
 import paramiko
@@ -29,7 +31,7 @@ class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
         super(WsockHandler, self).initialize(loop)
         self.worker_ref = None
 
-    def open(self):
+    async def open(self):
         if not workers:
             self.close(reason='Websocket authentication failed.')
             return
@@ -45,6 +47,8 @@ class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
                 self.set_nodelay(True)
                 worker.set_handler(self)
                 self.worker_ref = worker
+                # 有些机器的banner信息可能会分多次传输，导致读取时报错，这里等待所有数据一次性全部读出
+                await asyncio.sleep(1.5)
                 self.loop.add_handler(worker.fd, worker, IOLoop.READ)
             else:
                 self.close(reason='Websocket authentication failed.')
