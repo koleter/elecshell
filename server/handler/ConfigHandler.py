@@ -6,11 +6,13 @@ from handler.MixinHandler import MixinHandler
 from handler.pojo.conf.GlobalAutoConfig import GlobalAutoConfig
 from handler.pojo.conf.ScriptConfig import ScriptConfig
 from handler.pojo.conf.SessionConfig import SessionConfig
+
+
 from settings import base_dir
 
 # import appdirs
-#
-# user_data_dir = appdirs.user_data_dir(appname="elecshell", appauthor=None)
+
+# base_dir = appdirs.user_config_dir(appname="elecshell", appauthor="lijinsong")
 
 conf_dir_path = os.path.join(base_dir, 'config')
 xsh_dir_path = os.path.join(conf_dir_path, 'xsh')
