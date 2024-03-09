@@ -71,3 +71,5 @@ known_hosts
 /antdBuild/
 /src/.umi/
 /out/
+/node_modules/
+/dist/

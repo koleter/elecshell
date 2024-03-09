@@ -60,7 +60,7 @@ class BaseConfig:
             return status_success(OPERATION_SUCCESS)
         elif type == 'moveFileOrDir':
             src = self._get_real_path(args['src'])
-            name = src[src.rfind("\\") + 1:]
+            name = src[src.rfind(os.path.sep) + 1:]
             dst = self._get_real_path(args['dst'])
             if os.path.isfile(dst):
                 dst = os.path.dirname(dst)

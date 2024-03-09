@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useContext, useEffect, useState} from "react";
 import {Dropdown, Form, Input, message, Modal, Tabs, Tree, Button} from "antd";
 import {
   EditableProTable
@@ -8,6 +8,8 @@ import {DataNode, TreeProps} from "antd/es/tree";
 import {request} from "@@/plugin-request/request";
 import util, {defineValidatorWithErrMessage, getUUid} from "@/util";
 import {sessionIdMapFileName} from "@/pages/Session/main/Main";
+import {AppContext} from "@/pages/context/AppContextProvider";
+const path = require('path');
 
 const {DirectoryTree} = Tree;
 let sessionRootKey = "";
@@ -28,6 +30,8 @@ const SessionList: React.FC = (props) => {
   const [editSessionModalVisiable, setEditSessionModalVisiable] = useState(false);
   const [dataSource, setDataSource] = useState([]);
   const [sessionPropertyActiveKey, setSessionPropertyActiveKey] = useState(defaultSessionPropertyActiveKey);
+
+  const {prompt} = useContext(AppContext);
 
   useEffect(() => {
     request(util.baseUrl + 'conf', {
@@ -267,25 +271,26 @@ const SessionList: React.FC = (props) => {
       items.push({
         label: (
           <span onClick={() => {
-            const dirName = prompt("请输入文件夹名");
-            if (!dirName) {
-              return;
-            }
-            request(util.baseUrl + 'conf', {
-              method: 'POST',
-              body: JSON.stringify({
-                type: 'SessionConfig',
-                args: {
-                  type: 'createDir',
-                  path: node.path ? node.path + '/' + dirName : dirName
-                }
-              }),
-            }).then(res => {
-              message[res.status](res.msg);
-              if (res.status == 'success') {
-                setRefreshTreeData(e => e + 1)
+            prompt("请输入文件夹名", function(dirName) {
+              if (!dirName) {
+                return;
               }
-            })
+              request(util.baseUrl + 'conf', {
+                method: 'POST',
+                body: JSON.stringify({
+                  type: 'SessionConfig',
+                  args: {
+                    type: 'createDir',
+                    path: node.path ? node.path + '/' + dirName : dirName
+                  }
+                }),
+              }).then(res => {
+                message[res.status](res.msg);
+                if (res.status == 'success') {
+                  setRefreshTreeData(e => e + 1)
+                }
+              })
+            });
           }}>新增文件夹</span>
         ),
         key: 'addFolder',
@@ -401,16 +406,18 @@ const SessionList: React.FC = (props) => {
   }
 
   const onDrop: TreeProps['onDrop'] = (info) => {
+
     const dropKey = info.node.path;
     const dragKey = info.dragNode.path;
     let srcDir = dragKey;
     if (info.dragNode.isLeaf) {
-      srcDir = dragKey.substr(0, dragKey.lastIndexOf("\\"));
+      srcDir = dragKey.substr(0, dragKey.lastIndexOf(path.sep));
     }
     let dstDir = dropKey;
     if (info.node.isLeaf) {
-      dstDir = dropKey.substr(0, dropKey.lastIndexOf("\\"));
+      dstDir = dropKey.substr(0, dropKey.lastIndexOf(path.sep));
     }
+    console.log(info.node, info.dragNode)
     if (srcDir == dstDir) {
       return true;
     }
