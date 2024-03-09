@@ -67,39 +67,37 @@ const createWindow = () => {
     //stuff here
   });
 
-  //登录窗口最小化
-  ipcMain.on('window-min', function () {
-    mainWindow.minimize();
-  });
-  //登录窗口最大化
-  ipcMain.on('window-max', function () {
-    if (mainWindow.isMaximized()) {
-      mainWindow.unmaximize();
-    } else {
-      mainWindow.maximize();
-    }
-  });
-  //登录窗口关闭
-  ipcMain.on('window-close', function () {
-    mainWindow.close();
-    if (process.env.NODE_ENV !== 'development') {
-      request({
-        url: 'http://localhost:8888/exit',
-        method: "POST",
-        json: true,
-        headers: {
-          "content-type": "application/json",
-        }
-      }, function(error, response, body) {
-        if (!error) {
-          console.log(body); // 请求成功的处理逻辑
-        }
-      });
-    }
-
-    process.exit();
-
-  });
+  // //登录窗口最小化
+  // ipcMain.on('window-min', function () {
+  //   mainWindow.minimize();
+  // });
+  // //登录窗口最大化
+  // ipcMain.on('window-max', function () {
+  //   if (mainWindow.isMaximized()) {
+  //     mainWindow.unmaximize();
+  //   } else {
+  //     mainWindow.maximize();
+  //   }
+  // });
+  // //登录窗口关闭
+  // ipcMain.on('window-close', function () {
+  //   mainWindow.close();
+  //   if (process.env.NODE_ENV !== 'development') {
+  //     request({
+  //       url: 'http://localhost:8888/exit',
+  //       method: "POST",
+  //       json: true,
+  //       headers: {
+  //         "content-type": "application/json",
+  //       }
+  //     }, function(error, response, body) {
+  //       if (!error) {
+  //         console.log(body); // 请求成功的处理逻辑
+  //       }
+  //     });
+  //   }
+  //   process.exit();
+  // });
 
   // 获取操作系统类型
   ipcMain.on('getSystemPlatform', function (e) {
