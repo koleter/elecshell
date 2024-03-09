@@ -452,6 +452,7 @@ const SessionList: React.FC = (props) => {
       titleRender={titleRender}
       onDrop={onDrop}
       treeData={treeData}
+      style={{height: '100vh', overflow: 'auto'}}
     />
 
     <Modal

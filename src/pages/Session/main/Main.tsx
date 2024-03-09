@@ -121,6 +121,7 @@ const SessionMain: React.FC = () => {
                    setPromptUserInput(e.target.value);
                  }} value={promptUserInput}/>
         </Modal>
+
         <div style={{
           position: 'absolute',
           right: '0',
@@ -133,17 +134,17 @@ const SessionMain: React.FC = () => {
           sessions.length && setDrawerOpen(true);
         }}/>
         <Layout style={{display: 'flex', height: '100%', width: '100%'}}>
-          <Header></Header>
+          {/*<Header></Header>*/}
           <Layout hasSider style={{display: 'flex'}}>
-            <Sider
+            <div
               width={xshListWindowWidth}
-              style={{height: "100vh", backgroundColor: 'white'}}>
+              style={{width: xshListWindowWidth, height: "100vh", backgroundColor: 'white'}}>
               <SessionList
                 sessions={sessions}
                 setSessions={setSessions}
                 setActiveKey={setActiveKey}
               />
-            </Sider>
+            </div>
             <DragLine moveFunc={setXshListWindowWidth} moveEndFunc={(startX) => {
               request(util.baseUrl + 'conf', {
                 method: 'POST',
