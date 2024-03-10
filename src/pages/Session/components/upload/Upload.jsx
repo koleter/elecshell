@@ -22,7 +22,7 @@ const MyUpload = (props) => {
 
   return <Upload maxCount={1}
                  onChange={(e) => {
-                   console.log(e);
+                   // console.log(e);
                    var path = e?.file?.originFileObj?.path || "";
                    if (path) {
                      setFileList([{

@@ -6,6 +6,8 @@ from handler.pojo.BaseConfig import BaseConfig
 from handler.pojo.status import status_success, status_error
 from utils import gen_id
 
+TYPE_RUN_SCRIPT = 1;
+TYPE_SEND_STRING = 2;
 
 class ScriptConfig(BaseConfig):
 
@@ -14,15 +16,23 @@ class ScriptConfig(BaseConfig):
         for file in os.listdir(self.path):
             file_path = os.path.join(self.path, file)
             with open(file_path, 'r') as f:
-                data = json.loads(f.read())
-                script_data.append({
-                    'title': {
-                        'name': data['name']
-                    },
-                    'file': file,
-                    'scriptOwner': data['scriptOwner'],
-                    'scriptPath': data['scriptPath']
-                })
+                try:
+                    data = json.loads(f.read())
+                    script_item = {
+                        'title': {
+                            'name': data['name']
+                        },
+                        'file': file,
+                        'scriptOwner': data['scriptOwner'],
+                        'scriptType': data.get('scriptType')
+                    }
+                    if data.get('scriptType') == TYPE_RUN_SCRIPT:
+                        script_item['scriptPath'] = data['scriptPath']
+                    else:
+                        script_item['strings'] = data.get('strings')
+                    script_data.append(script_item)
+                except:
+                    os.remove(file_path)
         return {
             'status': 'success',
             'scriptData': script_data
@@ -35,13 +45,8 @@ class ScriptConfig(BaseConfig):
             absolute_path = os.path.join(self.path, file_name)
             if os.path.exists(absolute_path):
                 return status_error("script {} already exists".format(file_name))
-            content = json.dumps({
-                'scriptOwner': args['scriptOwner'],
-                'scriptPath': args['scriptPath'],
-                'name': args['name']
-            })
             with open(absolute_path, 'w') as f:
-                f.write(content)
+                f.write(args['content'])
             return status_success(OPERATION_SUCCESS)
         elif type == 'editScript':
             fake_file_path = args['file']
@@ -50,6 +55,7 @@ class ScriptConfig(BaseConfig):
                 data = json.loads(f.read())
                 data['scriptPath'] = args['scriptPath']
                 data['name'] = args['name']
+                data['scriptType'] = args['scriptType']
                 f.seek(0)
                 f.truncate()
                 f.write(json.dumps(data))
