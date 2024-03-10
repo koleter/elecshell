@@ -70,7 +70,7 @@ const SessionWindow: React.FC = (props) => {
         sock.send(JSON.stringify(msg));
       },
       sendData: function (data: string) {
-        sock.send(JSON.stringify({'data': data + '\r', 'type': 'data'}));
+        sock.send(JSON.stringify({'data': data, 'type': 'data'}));
       },
       sendRecv: async function (data: string, maxRetryCount = 10, retryTime = 1000) {
         const uid = getUUid();

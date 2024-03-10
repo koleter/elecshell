@@ -44,14 +44,13 @@ define('encoding', default='',
        help='''The default character encoding of ssh servers.
 Example: --encoding='utf-8' to solve the problem with some switches&routers''')
 
-
-base_dir = os.path.dirname(os.path.abspath(__file__))
+import appdirs
+base_dir = appdirs.user_config_dir(appname="elecshell", appauthor="")
 font_dirs = ['webssh', 'static', 'css', 'fonts']
 max_body_size = 1 * 1024 * 1024
 
 
 class Font(object):
-
     def __init__(self, filename, dirs):
         self.family = self.get_family(filename)
         self.url = self.get_url(filename, dirs)
@@ -65,8 +64,6 @@ class Font(object):
 
 def get_app_settings(options):
     settings = dict(
-        template_path=os.path.join(base_dir, 'webssh', 'static'),
-        static_path=os.path.join(base_dir, 'webssh', 'static'),
         websocket_ping_interval=options.wpintvl,
         debug=options.debug,
         xsrf_cookies=options.xsrf,

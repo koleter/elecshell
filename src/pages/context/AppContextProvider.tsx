@@ -2,7 +2,6 @@ import {createContext, useEffect, useState, useRef} from 'react';
 import {request} from "@@/plugin-request/request";
 import util from "@/util";
 import {message} from "antd";
-import platform from "@/pages/Session/platform/platform"
 
 //根据定义创建Context
 export const AppContext = createContext(null);

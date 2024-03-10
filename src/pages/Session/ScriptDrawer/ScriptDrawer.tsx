@@ -58,7 +58,7 @@ const ScriptDrawer: React.FC = (props) => {
                 <Radio.Group onChange={(e) => {
                     setScriptType(e.target.value);
                 }}>
-                    <Radio value={TYPE_RUN_SCRIPT}>运行脚本</Radio>
+                    <Radio value={TYPE_RUN_SCRIPT}>运行python脚本</Radio>
                     <Radio value={TYPE_SEND_STRING}>发送字符串</Radio>
                 </Radio.Group>
             </Form.Item>
@@ -105,7 +105,6 @@ const ScriptDrawer: React.FC = (props) => {
                     title: {
                         render: (text, row) => {
                             let icon;
-                            console.log(row.scriptType)
                             if (row.scriptType == TYPE_RUN_SCRIPT) {
                                 icon = <PythonOutlined/>;
                             } else {
