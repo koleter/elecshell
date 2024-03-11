@@ -11,8 +11,7 @@ class GlobalAutoConfig(BaseConfig):
         super().__init__(path)
         self.path = os.path.join(self.path, "autoConf.json")
         self.conf_cache = dict({
-            "xshListWindowWidth": 250,
-            "platform": platform.system()
+            "xshListWindowWidth": 250
         })
         try:
             with open(self.path, 'r') as f:
