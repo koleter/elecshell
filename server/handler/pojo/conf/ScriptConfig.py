@@ -9,6 +9,8 @@ from utils import gen_id
 TYPE_RUN_SCRIPT = 1
 TYPE_SEND_STRING = 2
 
+script_properties = ['scriptOwner', 'scriptType', 'scriptPath', 'strings']
+
 class ScriptConfig(BaseConfig):
 
     def get(self):
@@ -23,13 +25,9 @@ class ScriptConfig(BaseConfig):
                             'name': data['name']
                         },
                         'file': file,
-                        'scriptOwner': data['scriptOwner'],
-                        'scriptType': data.get('scriptType')
                     }
-                    if data.get('scriptType') == TYPE_RUN_SCRIPT:
-                        script_item['scriptPath'] = data['scriptPath']
-                    else:
-                        script_item['strings'] = data.get('strings')
+                    for key in script_properties:
+                        script_item.update(key, data.get(key))
                     script_data.append(script_item)
                 except:
                     os.remove(file_path)
@@ -57,6 +55,8 @@ class ScriptConfig(BaseConfig):
                 data['name'] = args['name']
                 data['scriptType'] = args['scriptType']
                 data['strings'] = args.get('strings')
+                for key in script_properties:
+                    data[key] = args.get(key)
                 f.seek(0)
                 f.truncate()
                 f.write(json.dumps(data))
