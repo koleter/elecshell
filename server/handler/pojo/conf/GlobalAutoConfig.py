@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import platform
 
 from handler.pojo.BaseConfig import BaseConfig
 
