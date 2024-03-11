@@ -28,9 +28,6 @@ const termOptions = {
     }
 };
 
-
-const style = {};
-
 const SessionWindow: React.FC = (props) => {
     const terminalRef = useRef<null | HTMLDivElement>(null);
     const {id, sessionConfId, sessions, setSessions} = props;
@@ -96,29 +93,6 @@ const SessionWindow: React.FC = (props) => {
             }
         };
 
-        function get_cell_size(term) {
-            console.log(term)
-            style.width = term._core?._renderService?._renderer?.dimensions?.css?.cell?.width || term._core?._renderService?._renderer?._value?.dimensions?.css?.cell?.width;
-            style.height = term._core?._renderService?._renderer?.dimensions?.css?.cell?.height || term._core?._renderService?._renderer?._value?.dimensions?.css?.cell?.height;
-        }
-
-        function current_geometry(term) {
-            if (!style.width || !style.height) {
-                get_cell_size(term);
-            }
-
-            const terminal_container = document.querySelector('main.ant-layout-content');
-
-            const cols = parseInt(parseInt(getComputedStyle(terminal_container).width) / style.width, 10) - 2;
-            const rows = parseInt(parseInt(parseFloat(getComputedStyle(terminal_container).height) * 0.96) / style.height, 10);
-            return {'cols': cols, 'rows': rows};
-        }
-
-        function resize_terminal(term) {
-            const geometry = current_geometry(term);
-            term.on_resize(geometry.cols, geometry.rows);
-        }
-
         sock.onerror = function (e) {
             console.error(e);
         };
@@ -128,17 +102,21 @@ const SessionWindow: React.FC = (props) => {
             sock.send(JSON.stringify({'data': data, 'type': 'data'}));
         });
 
-        window.onresize = function () {
+        window.addEventListener("resize", () => {
             fitAddon.fit();
-            // resize_terminal(term);
+        })
+
+        function sendTermResizeMessage(cols, rows) {
+            sock.send(JSON.stringify({'type': 'resize', 'resize': [cols, rows]}));
         }
 
-        term.on_resize = function (cols, rows) {
-            if (cols !== this.cols || rows !== this.rows) {
-                this.resize(cols, rows);
-                sock.send(JSON.stringify({'type': 'resize', 'resize': [cols, rows]}));
-            }
-        };
+        function termResize(size) {
+            fitAddon.fit();
+            const {cols, rows} = size;
+            sendTermResizeMessage(cols, rows);
+        }
+
+        term.onResize(termResize);
     }, []);
 
     const methodMap = {
