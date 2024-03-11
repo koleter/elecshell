@@ -59,6 +59,7 @@ class Worker(object):
         self.debug = debug
         self.xsh_conf_id = None
         self.login_script = login_script
+        self.bufferRead = b''
 
     def __call__(self, fd, events):
         if events & IOLoop.READ:
@@ -100,7 +101,7 @@ class Worker(object):
             try:
                 val = str(self.bufferRead + data, 'utf-8')
             except:
-                self.bufferRead = data
+                self.bufferRead += data
                 return
             self.bufferRead = b''
             try:
