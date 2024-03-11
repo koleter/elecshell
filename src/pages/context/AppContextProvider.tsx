@@ -24,8 +24,6 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
     promptInputRef?.current?.focus();
   }
 
-  const [xtermShortKeys, setXtermShortKeys] = useState({});
-
   useEffect(() => {
     request(util.baseUrl + 'conf', {
       method: 'GET',
@@ -47,8 +45,6 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
       xshListWindowWidth, setXshListWindowWidth,
       // use for prompt
       promptInputRef, showPrompt, setShowPrompt, promptTitle, setPromptTitle, promptOKCallback, setPromptOKCallback, promptUserInput, setPromptUserInput, prompt,
-      // use for xterm short keys
-      xtermShortKeys, setXtermShortKeys
     }}>{/** value就是可在<AppContextProvider>组件的子组件中使用useContext() hook函数所获取的对象 */}
       {props.children}
     </AppContext.Provider>
