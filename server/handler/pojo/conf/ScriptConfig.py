@@ -53,7 +53,7 @@ class ScriptConfig(BaseConfig):
             real_file_path = self._get_real_path(fake_file_path)
             with open(real_file_path, 'r+') as f:
                 data = json.loads(f.read())
-                data['scriptPath'] = args['scriptPath']
+                data['scriptPath'] = args.get('scriptPath')
                 data['name'] = args['name']
                 data['scriptType'] = args['scriptType']
                 f.seek(0)
