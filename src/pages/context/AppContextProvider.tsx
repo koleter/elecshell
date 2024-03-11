@@ -40,20 +40,6 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
       if (res.data.xshListWindowWidth) {
         setXshListWindowWidth(res.data.xshListWindowWidth);
       }
-
-      const termDefaultShortKey = platform?.default?.getTermDefaultShortKey();
-      // console.log(termDefaultShortKey)
-      if (termDefaultShortKey) {
-        if (!res.data.xtermShortKeys) {
-          res.data.xtermShortKeys = {};
-        }
-        for (let key in termDefaultShortKey) {
-          if (!(key in res.data.xtermShortKeys)) {
-            res.data.xtermShortKeys[key] = termDefaultShortKey[key];
-          }
-        }
-      }
-      setXtermShortKeys(res.data.xtermShortKeys);
     })
   }, []);
   return (
