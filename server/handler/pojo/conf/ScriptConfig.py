@@ -6,8 +6,8 @@ from handler.pojo.BaseConfig import BaseConfig
 from handler.pojo.status import status_success, status_error
 from utils import gen_id
 
-TYPE_RUN_SCRIPT = 1;
-TYPE_SEND_STRING = 2;
+TYPE_RUN_SCRIPT = 1
+TYPE_SEND_STRING = 2
 
 class ScriptConfig(BaseConfig):
 
@@ -56,6 +56,7 @@ class ScriptConfig(BaseConfig):
                 data['scriptPath'] = args.get('scriptPath')
                 data['name'] = args['name']
                 data['scriptType'] = args['scriptType']
+                data['strings'] = args.get('strings')
                 f.seek(0)
                 f.truncate()
                 f.write(json.dumps(data))

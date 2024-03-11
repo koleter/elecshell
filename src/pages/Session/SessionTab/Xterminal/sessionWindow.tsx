@@ -13,10 +13,6 @@ import "./SessionWindow.less"
 import {sessionConfInfo} from "@/pages/Session/SessionList/SessionList";
 import {AppContext} from "@/pages/context/AppContextProvider";
 
-const {ipcRenderer} = window.require('electron');
-
-// const platform = ipcRenderer.sendSync("getSystemPlatform");
-
 const termOptions = {
     rendererType: "canvas",
     fontSize: 12,
