@@ -14385,6 +14385,11 @@ pngjs@2.3.1:
   version "2.3.1"
   resolved "https://registry.npmmirror.com/pngjs/-/pngjs-2.3.1.tgz#11d1e12b9cb64d63e30c143a330f4c1f567da85f"
 
+popups@^1.1.3:
+  version "1.1.3"
+  resolved "https://registry.npmmirror.com/popups/-/popups-1.1.3.tgz#6bcce94dffd95b619a013a05a5c0940911510da9"
+  integrity sha512-2sQ2KuUHXx3L8CxLX3JDfVnenNKbcjXIhfy94mvs08VhnxTLSBNShaUEEeOJxf8Hz6rcv2EphMiycFipyNd2ig==
+
 posix-character-classes@^0.1.0:
   version "0.1.1"
   resolved "https://registry.npmmirror.com/posix-character-classes/-/posix-character-classes-0.1.1.tgz#01eac0fe3b5af71a2a6c02feabb8c1fef7e00eab"

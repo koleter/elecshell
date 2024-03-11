@@ -7,49 +7,56 @@ const {exec} = require('child_process');
 const {Platform} = require('./platform/platform');
 const fs = require('fs');
 
-var basePath = Platform.getUserBasePath();
+const basePath = Platform.getUserBasePath();
 
+function startServer() {
+    const extraArgs = '';
+    // const extraArgs = `--basedir=${basePath}`;
+    const args = {
+        cwd: `${path.join(__dirname, "../../../server")}`
+    };
+
+    // throw new Error(args.cwd);
+
+    exec(`python3 main.py ${extraArgs}`, args, (error, stdout, stderr) => {
+        if (!error) {
+            console.log(`stdout: ${stdout}`);
+            console.log(`stderr: ${stderr}`);
+            return;
+        }
+        console.error(`${error}`);
+        if (error.message.startsWith("Command failed: python3 main.py")) {
+            exec(`python main.py ${extraArgs}`, args, (error, stdout, stderr) => {
+                if (!error) {
+                    console.log(`stdout: ${stdout}`);
+                    console.log(`stderr: ${stderr}`);
+                    return;
+                }
+                if (error.message == 'Command failed: python main.py\n') {
+                    throw new Error("can not find python3 or python");
+                }
+                // else if (error.message.indexOf("sock.bind") >= 0) {
+                //
+                // }
+                console.error(`${error}`);
+                throw new Error(error.message);
+                process.exit();
+            });
+        }
+    });
+}
+
+function folderExists(path) {
+    try {
+        return fs.statSync(path).isDirectory();
+    } catch (err) {
+        return false;
+    }
+}
 
 // 开发模式自行启动main.py,生产模式创建子进程自动执行
 if (process.env.NODE_ENV !== 'development') {
-    // 复制目录
-    fs.cp('server', `${basePath}/server/`, { recursive: true }, (err) => {
-        if (err) {
-            console.error(err);
-            process.exit();
-        }
-        const extraArgs = '';
-        // const extraArgs = `--basedir=${basePath}`;
-        const args = {
-            cwd: `${basePath}/server`
-        };
-
-        exec(`python3 main.py ${extraArgs}`, args, (error, stdout, stderr) => {
-            if (!error) {
-                console.log(`stdout: ${stdout}`);
-                console.log(`stderr: ${stderr}`);
-                return;
-            }
-            console.error(`${error}`);
-            if (error.message.startsWith("Command failed: python3 main.py")) {
-                exec(`python main.py ${extraArgs}`, args, (error, stdout, stderr) => {
-                    if (!error) {
-                        console.log(`stdout: ${stdout}`);
-                        console.log(`stderr: ${stderr}`);
-                        return;
-                    }
-                    if (error.message == 'Command failed: python main.py\n') {
-                        throw new Error("can not find python3 or python");
-                    }
-                    // else if (error.message.indexOf("sock.bind") >= 0) {
-                    //
-                    // }
-                    console.error(`${error}`);
-                    process.exit();
-                });
-            }
-        });
-    });
+    startServer();
 }
 
 const createWindow = () => {
@@ -95,9 +102,8 @@ const createWindow = () => {
         mainWindow.webContents.openDevTools();
     } else {
         // mainWindow.loadURL("http://localhost:8888/session")
-        mainWindow.loadFile("../../antdBuild/index.html");
+        mainWindow.loadFile(path.join(__dirname, "../../antdBuild/index.html"));
     }
-
 };
 
 // This method will be called when Electron has finished
