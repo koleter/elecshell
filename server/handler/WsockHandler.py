@@ -47,8 +47,6 @@ class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
                 self.set_nodelay(True)
                 worker.set_handler(self)
                 self.worker_ref = worker
-                # 有些机器的banner信息可能会分多次传输，导致读取时报错，这里等待所有数据一次性全部读出
-                await asyncio.sleep(1.5)
                 self.loop.add_handler(worker.fd, worker, IOLoop.READ)
             else:
                 self.close(reason='Websocket authentication failed.')

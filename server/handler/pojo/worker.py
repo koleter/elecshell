@@ -97,7 +97,12 @@ class Worker(object):
                 self.close(reason='chan closed')
                 return
 
-            val = str(data, 'utf-8')
+            try:
+                val = str(self.bufferRead + data, 'utf-8')
+            except:
+                self.bufferRead = data
+                return
+            self.bufferRead = b''
             try:
                 res = {
                     'val': val,
