@@ -100,7 +100,7 @@ class Worker(object):
 
             try:
                 val = str(self.bufferRead + data, 'utf-8')
-            except:
+            except UnicodeDecodeError:
                 self.bufferRead += data
                 return
             self.bufferRead = b''
