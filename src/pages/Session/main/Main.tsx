@@ -10,7 +10,6 @@ import util, {showMessage} from "@/util";
 import {AppContext, AppContextProvider} from "@/pages/context/AppContextProvider";
 import {request} from "@@/plugin-request/request";
 import DragLine from "@/pages/Session/components/dragline/DragLine";
-import Header from "@/pages/Session/frame/header";
 
 const {Content, Sider} = Layout;
 type TargetKey = React.MouseEvent | React.KeyboardEvent | string;
@@ -133,7 +132,6 @@ const SessionMain: React.FC = () => {
                     // setDrawerOpen(true);
                 }}/>
                 <Layout style={{display: 'flex', height: '100%', width: '100%'}}>
-                    {/*<Header></Header>*/}
                     <Layout hasSider style={{display: 'flex'}}>
                         <div
                             width={xshListWindowWidth}
