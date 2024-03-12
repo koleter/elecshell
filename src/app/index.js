@@ -91,6 +91,7 @@ function startServer() {
                     throw new Error(error.message);
                 });
             }
+            throw new Error(error.message);
         });
     });
 }
@@ -100,18 +101,9 @@ async function start() {
     if (process.env.NODE_ENV !== 'development') {
         await startServer();
     }
-
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-    app.on('ready', createWindow);
-
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-    app.on('window-all-closed', () => {
+    app.on('quit', async () => {
         if (process.env.NODE_ENV !== 'development') {
-            request({
+            await request({
                 url: 'http://localhost:8888/exit',
                 method: "POST",
                 json: true,
@@ -124,10 +116,20 @@ async function start() {
                 }
             });
         }
+    });
+
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+    app.on('ready', createWindow);
+
+// Quit when all windows are closed, except on macOS. There, it's common
+// for applications and their menu bar to stay active until the user quits
+// explicitly with Cmd + Q.
+    app.on('window-all-closed', () => {
         if (process.platform !== 'darwin') {
             app.quit();
         }
-        process.exit();
     });
 
     app.on('activate', () => {
