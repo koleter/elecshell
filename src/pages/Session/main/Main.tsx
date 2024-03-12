@@ -98,7 +98,6 @@ const SessionMain: React.FC = () => {
               showPrompt,
               promptTitle,
               setPromptUserInput,
-
           }) => {
             return <div style={{height: '100%'}}>
                 <Modal width={800}
@@ -130,8 +129,8 @@ const SessionMain: React.FC = () => {
                     height: '95%',
                     zIndex: 999
                 }} onMouseEnter={() => {
+                    sessions.length && setDrawerOpen(true);
                     // setDrawerOpen(true);
-                    setDrawerOpen(true);
                 }}/>
                 <Layout style={{display: 'flex', height: '100%', width: '100%'}}>
                     {/*<Header></Header>*/}
@@ -185,6 +184,7 @@ const SessionMain: React.FC = () => {
                                         })
                                     }
 
+                                    // @ts-ignore
                                     return {
                                         label: (
                                             <Dropdown
