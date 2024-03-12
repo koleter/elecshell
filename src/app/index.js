@@ -58,7 +58,7 @@ const createWindow = () => {
 };
 
 function startServer() {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         const extraArgs = '';
         // const extraArgs = `--basedir=${basePath}`;
         const args = {
@@ -91,16 +91,12 @@ function startServer() {
                     throw new Error(error.message);
                 });
             }
-            throw new Error(error.message);
+            reject("maybe the port 8888 is used");
         });
     });
 }
 
 async function start() {
-    // 开发模式自行启动main.py,生产模式创建子进程自动执行
-    if (process.env.NODE_ENV !== 'development') {
-        await startServer();
-    }
     app.on('quit', async () => {
         if (process.env.NODE_ENV !== 'development') {
             await request({
@@ -118,14 +114,9 @@ async function start() {
         }
     });
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-    app.on('ready', createWindow);
-
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+    // Quit when all windows are closed, except on macOS. There, it's common
+    // for applications and their menu bar to stay active until the user quits
+    // explicitly with Cmd + Q.
     app.on('window-all-closed', () => {
         if (process.platform !== 'darwin') {
             app.quit();
@@ -142,7 +133,18 @@ async function start() {
 
     // In this file you can include the rest of your app's specific main process
     // code. You can also put them in separate files and import them here.
-
+    // 开发模式自行启动main.py,生产模式创建子进程自动执行
+    if (process.env.NODE_ENV !== 'development') {
+        startServer().then(() => {
+            // This method will be called when Electron has finished
+            // initialization and is ready to create browser windows.
+            // Some APIs can only be used after this event occurs.
+            app.on('ready', createWindow);
+        }).catch(res => {
+            app.on('ready', createWindow);
+            throw new Error(res);
+        });
+    }
 }
 
 start();
