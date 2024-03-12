@@ -3,8 +3,10 @@ const path = require('path');
 const request = require('request');
 const {exec} = require('child_process');
 const {Platform} = require('./platform/platform');
+const {template} = require('./lib/menu');
 
-Menu.setApplicationMenu(null);
+const menu = Menu.buildFromTemplate(template);
+Menu.setApplicationMenu(menu);
 
 const basePath = Platform.getUserBasePath();
 
