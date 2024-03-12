@@ -30,91 +30,6 @@ const SessionWindow: React.FC = (props) => {
     const context = useContext(AppContext);
     const {} = context;
 
-    useEffect(() => {
-        const ws_url = util.baseUrl.split(/\?|#/, 1)[0].replace('http', 'ws'),
-            join = (ws_url[ws_url.length - 1] === '/' ? '' : '/'),
-            url = ws_url + join + 'ws?id=' + id,
-            encoding = 'utf-8',
-            decoder = window.TextDecoder ? new window.TextDecoder(encoding) : encoding;
-
-        const term = new Terminal(termOptions);
-        const searchAddon = new SearchAddon();
-
-        term.loadAddon(searchAddon);
-        // Load WebLinksAddon on terminal, this is all that's needed to get web links
-        // working in the terminal.
-        term.loadAddon(new WebLinksAddon());
-
-        const fitAddon = new FitAddon();
-        term.loadAddon(fitAddon);
-        const sock = new window.WebSocket(url);
-        sessionStatusMap[id] = CONNECTING;
-
-        sock.onopen = function () {
-            term.open(terminalRef.current as HTMLDivElement);
-            term.focus();
-            // resize_terminal(term);
-            sessionStatusMap[id] = CONNECTED;
-            fitAddon.fit();
-        };
-
-        sessionIdRef[id] = {
-            id: id,
-            sock: sock,
-            term: term,
-            sessionConfId,
-            send: function (msg: object) {
-                sock.send(JSON.stringify(msg));
-            },
-            sendData: function (data: string) {
-                sock.send(JSON.stringify({'data': data, 'type': 'data'}));
-            },
-            sendRecv: async function (data: string, maxRetryCount = 10, retryTime = 1000) {
-                const uid = getUUid();
-                console.log(`uuid: ${uid}`)
-
-                sock.send(JSON.stringify({'data': data + '\r', requestId: uid, 'type': 'sendRecv'}));
-                for (let i = 0; i < maxRetryCount; i++) {
-                    console.log('msgMap:', msgMap)
-                    if (uid in msgMap) {
-                        const msg = msgMap[uid];
-                        delete msgMap[uid];
-                        return msg
-                    }
-                    await sleep(retryTime);
-                }
-                return {
-                    error: 'excced time'
-                }
-            }
-        };
-
-        sock.onerror = function (e) {
-            console.error(e);
-        };
-
-        term.onData(function (data) {
-            console.log(`onData: ${id}, data: ${data}`);
-            sock.send(JSON.stringify({'data': data, 'type': 'data'}));
-        });
-
-        window.addEventListener("resize", () => {
-            fitAddon.fit();
-        })
-
-        function sendTermResizeMessage(cols, rows) {
-            sock.send(JSON.stringify({'type': 'resize', 'resize': [cols, rows]}));
-        }
-
-        function termResize(size) {
-            fitAddon.fit();
-            const {cols, rows} = size;
-            sendTermResizeMessage(cols, rows);
-        }
-
-        term.onResize(termResize);
-    }, []);
-
     const methodMap = {
         prompt: (msg, callback) => {
             context.prompt(msg, callback);
@@ -222,6 +137,89 @@ const SessionWindow: React.FC = (props) => {
     };
 
     useEffect(() => {
+        const ws_url = util.baseUrl.split(/\?|#/, 1)[0].replace('http', 'ws'),
+            join = (ws_url[ws_url.length - 1] === '/' ? '' : '/'),
+            url = ws_url + join + 'ws?id=' + id,
+            encoding = 'utf-8',
+            decoder = window.TextDecoder ? new window.TextDecoder(encoding) : encoding;
+
+        const term = new Terminal(termOptions);
+        const searchAddon = new SearchAddon();
+
+        term.loadAddon(searchAddon);
+        // Load WebLinksAddon on terminal, this is all that's needed to get web links
+        // working in the terminal.
+        term.loadAddon(new WebLinksAddon());
+
+        const fitAddon = new FitAddon();
+        term.loadAddon(fitAddon);
+        const sock = new window.WebSocket(url);
+        sessionStatusMap[id] = CONNECTING;
+
+        sock.onopen = function () {
+            term.open(terminalRef.current as HTMLDivElement);
+            term.focus();
+            // resize_terminal(term);
+            sessionStatusMap[id] = CONNECTED;
+            fitAddon.fit();
+        };
+
+        sessionIdRef[id] = {
+            id: id,
+            sock: sock,
+            term: term,
+            sessionConfId,
+            send: function (msg: object) {
+                sock.send(JSON.stringify(msg));
+            },
+            sendData: function (data: string) {
+                sock.send(JSON.stringify({'data': data, 'type': 'data'}));
+            },
+            sendRecv: async function (data: string, maxRetryCount = 10, retryTime = 1000) {
+                const uid = getUUid();
+                console.log(`uuid: ${uid}`)
+
+                sock.send(JSON.stringify({'data': data + '\r', requestId: uid, 'type': 'sendRecv'}));
+                for (let i = 0; i < maxRetryCount; i++) {
+                    console.log('msgMap:', msgMap)
+                    if (uid in msgMap) {
+                        const msg = msgMap[uid];
+                        delete msgMap[uid];
+                        return msg
+                    }
+                    await sleep(retryTime);
+                }
+                return {
+                    error: 'excced time'
+                }
+            }
+        };
+
+        sock.onerror = function (e) {
+            console.error(e);
+        };
+
+        term.onData(function (data) {
+            console.log(`onData: ${id}, data: ${data}`);
+            sock.send(JSON.stringify({'data': data, 'type': 'data'}));
+        });
+
+        window.addEventListener("resize", () => {
+            fitAddon.fit();
+        })
+
+        function sendTermResizeMessage(cols, rows) {
+            sock.send(JSON.stringify({'type': 'resize', 'resize': [cols, rows]}));
+        }
+
+        function termResize(size) {
+            fitAddon.fit();
+            const {cols, rows} = size;
+            sendTermResizeMessage(cols, rows);
+        }
+
+        term.onResize(termResize);
+
         function term_write(text) {
             sessionIdRef[id].term.write(text);
         }
@@ -270,38 +268,37 @@ const SessionWindow: React.FC = (props) => {
             }
         }
 
-        if (sessionIdRef[id]) {
-            sessionIdRef[id].sock.onclose = function (e) {
-                console.log(`sock: ${id} closed`, e);
-                try {
-                    sessionIdRef[id].term.write("\nthis session is closed.....");
-                } catch (e) {
-                }
-                // removeTabByKey(id);
-                window.onresize = null;
-                delete sessionIdRef[id];
-                delete sessionIdMapFileName[id];
-                delete sessionStatusMap[id];
+        sessionIdRef[id].sock.onclose = function (e) {
+            console.log(`sock: ${id} closed`, e);
+            try {
+                sessionIdRef[id].term.write("\nthis session is closed.....");
+            } catch (e) {
+            }
+            // removeTabByKey(id);
+            window.onresize = null;
+            delete sessionIdRef[id];
+            delete sessionIdMapFileName[id];
+            delete sessionStatusMap[id];
 
-                setSessions(sessions => {
-                    const data = [...sessions];
-                    for (let i = 0; i < data.length; i++) {
-                        if (data[i].key == id) {
-                            data[i].isConnected = false;
-                            break;
-                        }
+            setSessions(sessions => {
+                const data = [...sessions];
+                for (let i = 0; i < data.length; i++) {
+                    if (data[i].key == id) {
+                        data[i].isConnected = false;
+                        break;
                     }
-                    return data;
-                })
-                // console.log(`sessionIdRef, sessionIdMapFileName, `, sessionIdRef, sessionIdMapFileName)
-            };
+                }
+                return data;
+            })
+            // console.log(`sessionIdRef, sessionIdMapFileName, `, sessionIdRef, sessionIdMapFileName)
+        };
 
-            sessionIdRef[id].sock.onmessage = function (msg) {
-                const res = JSON.parse(msg.data);
-                wsockCallback(res);
-            };
-        }
-    }, [sessions])
+        sessionIdRef[id].sock.onmessage = function (msg) {
+            const res = JSON.parse(msg.data);
+            wsockCallback(res);
+        };
+
+    }, []);
 
     return (
         <div style={{height: `calc(100vh - ${HEADER_HEIGHT}px - 40px)`}} ref={terminalRef}></div>

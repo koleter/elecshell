@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 from handler.const import OPERATION_SUCCESS
@@ -18,19 +19,17 @@ class ScriptConfig(BaseConfig):
         for file in os.listdir(self.path):
             file_path = os.path.join(self.path, file)
             with open(file_path, 'r') as f:
-                try:
-                    data = json.loads(f.read())
-                    script_item = {
-                        'title': {
-                            'name': data['name']
-                        },
-                        'file': file,
-                    }
-                    for key in script_properties:
-                        script_item.update(key, data.get(key))
-                    script_data.append(script_item)
-                except:
-                    os.remove(file_path)
+                data = json.loads(f.read())
+                script_item = {
+                    'title': {
+                        'name': data['name']
+                    },
+                    'file': file,
+                }
+                for key in script_properties:
+                    script_item.update({key: data.get(key)})
+                script_data.append(script_item)
+
         return {
             'status': 'success',
             'scriptData': script_data

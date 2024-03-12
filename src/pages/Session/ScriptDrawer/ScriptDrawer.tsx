@@ -8,7 +8,7 @@ import {request} from "@@/plugin-request/request";
 import util, {showMessage} from "@/util";
 import {sessionIdMapFileName, sessionIdRef} from "@/pages/Session/main/Main";
 
-const TYPE_RUN_SCRIPT = 1;
+const TYPE_RUN_PYTHON_SCRIPT = 1;
 const TYPE_SEND_STRING = 2;
 
 const ScriptDrawer: React.FC = (props) => {
@@ -23,7 +23,7 @@ const ScriptDrawer: React.FC = (props) => {
     const [addScriptModalVisiable, setAddScriptModalVisiable] = useState(false);
     const [addScriptForm] = Form.useForm();
 
-    const [scriptType, setScriptType] = useState(TYPE_RUN_SCRIPT);
+    const [scriptType, setScriptType] = useState(TYPE_RUN_PYTHON_SCRIPT);
 
     useEffect(() => {
         request(util.baseUrl + 'conf', {
@@ -51,19 +51,19 @@ const ScriptDrawer: React.FC = (props) => {
             </Form.Item>
 
             <Form.Item
-                initialValue={TYPE_RUN_SCRIPT}
+                initialValue={TYPE_RUN_PYTHON_SCRIPT}
                 name="scriptType"
                 rules={[{required: true, message: '请选择按钮类型!'}]}
                 label="类型">
                 <Radio.Group onChange={(e) => {
                     setScriptType(e.target.value);
                 }}>
-                    <Radio value={TYPE_RUN_SCRIPT}>运行python脚本</Radio>
+                    <Radio value={TYPE_RUN_PYTHON_SCRIPT}>运行python脚本</Radio>
                     <Radio value={TYPE_SEND_STRING}>发送字符串</Radio>
                 </Radio.Group>
             </Form.Item>
 
-            {scriptType === TYPE_RUN_SCRIPT ?
+            {scriptType === TYPE_RUN_PYTHON_SCRIPT ?
                 <Form.Item
                     label="python脚本文件路径"
                     name="scriptPath"
@@ -105,7 +105,7 @@ const ScriptDrawer: React.FC = (props) => {
                     title: {
                         render: (text, row) => {
                             let icon;
-                            if (row.scriptType == TYPE_RUN_SCRIPT) {
+                            if (row.scriptType == TYPE_RUN_PYTHON_SCRIPT) {
                                 icon = <PythonOutlined/>;
                             } else {
                                 icon = <FileTextOutlined />;
@@ -119,7 +119,7 @@ const ScriptDrawer: React.FC = (props) => {
                                     return;
                                 }
 
-                                if (row.scriptType == TYPE_RUN_SCRIPT) {
+                                if (row.scriptType == TYPE_RUN_PYTHON_SCRIPT) {
                                     sessionIdRef[activeKey].send({
                                         type: 'exec',
                                         path: row.scriptPath,
@@ -197,6 +197,7 @@ const ScriptDrawer: React.FC = (props) => {
                         ,
                         <Form.Item>
                             <Button key="add" type="primary" onClick={() => {
+                                setScriptType(TYPE_RUN_PYTHON_SCRIPT);
                                 addScriptForm.resetFields();
                                 setAddScriptModalVisiable(true);
                             }}>

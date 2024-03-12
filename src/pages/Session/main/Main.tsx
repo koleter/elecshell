@@ -129,8 +129,8 @@ const SessionMain: React.FC = () => {
                     height: '95%',
                     zIndex: 999
                 }} onMouseEnter={() => {
-                    sessions.length && setDrawerOpen(true);
-                    // setDrawerOpen(true);
+                    // sessions.length && setDrawerOpen(true);
+                    setDrawerOpen(true);
                 }}/>
                 <Layout style={{display: 'flex', height: '100%', width: '100%'}}>
                     {/*<Header></Header>*/}
