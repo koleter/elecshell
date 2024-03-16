@@ -144,6 +144,8 @@ async function start() {
             app.on('ready', createWindow);
             throw new Error(res);
         });
+    } else {
+        app.on('ready', createWindow);
     }
 }
 

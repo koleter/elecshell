@@ -448,7 +448,7 @@ const SessionList: React.FC = (props) => {
       className="draggable-tree"
       draggable
       blockNode
-      autoExpandParent={true}
+      autoExpandParent={false}
       titleRender={titleRender}
       onDrop={onDrop}
       treeData={treeData}
