@@ -1,4 +1,4 @@
-const DragLine = ({canMove = null, moveFunc = null, moveEndFunc = null, direction = "row"}) => {
+const DragLine = ({start, canMove = null, moveFunc = null, moveEndFunc = null, direction = "row"}) => {
     let style;
     if ("column" == direction) {
         style = {height: '6px', width: '100%', cursor: 'row-resize'}
@@ -8,16 +8,16 @@ const DragLine = ({canMove = null, moveFunc = null, moveEndFunc = null, directio
     return <div
         style={style}
         onMouseDown={(e) => {
-            let startX = e.clientX;
 
             // @ts-ignore
             function move(e) {
-                if (canMove && !canMove(e, startX)) {
+                if (canMove && !canMove(e, start)) {
                     return;
                 }
-                startX = startX + e.movementX;
+                start = start + e.movementX;
+
                 // @ts-ignore
-                moveFunc && moveFunc(startX);
+                moveFunc && moveFunc(start);
             }
 
             document.addEventListener('mousemove', move);
@@ -26,7 +26,7 @@ const DragLine = ({canMove = null, moveFunc = null, moveEndFunc = null, directio
                 document.removeEventListener('mousemove', move);
                 document.removeEventListener('mouseup', removeDocumentListener);
                 // @ts-ignore
-                moveEndFunc && moveEndFunc(startX);
+                moveEndFunc && moveEndFunc(start);
             }
 
             document.addEventListener('mouseup', removeDocumentListener);

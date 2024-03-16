@@ -134,7 +134,6 @@ const SessionMain: React.FC = () => {
                 <Layout style={{display: 'flex', height: '100%', width: '100%'}}>
                     <Layout hasSider style={{display: 'flex'}}>
                         <div
-                            width={xshListWindowWidth}
                             style={{width: xshListWindowWidth, height: "100vh", backgroundColor: 'white'}}>
                             <SessionList
                                 sessions={sessions}
@@ -143,6 +142,7 @@ const SessionMain: React.FC = () => {
                             />
                         </div>
                         <DragLine
+                            start={xshListWindowWidth}
                             moveFunc={setXshListWindowWidth}
                             moveEndFunc={(startX) => {
                                 request(util.baseUrl + 'conf', {
