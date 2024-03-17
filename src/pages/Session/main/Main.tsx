@@ -39,7 +39,6 @@ const loop = (
 
 const SessionMain: React.FC = () => {
     const [drawerOpen, setDrawerOpen] = useState(false);
-    const [activeKey, setActiveKey] = useState('');
     const [sessions, setSessions] = useState([]);
 
     const onChange = (newActiveKey: string) => {
@@ -83,7 +82,7 @@ const SessionMain: React.FC = () => {
 
     const context = useContext(AppContext);
 
-    const {setShowPrompt, promptOKCallback, promptUserInput, prompt, promptInputRef} = context;
+    const {setShowPrompt, promptOKCallback, promptUserInput, prompt, promptInputRef, activeKey, setActiveKey} = context;
 
     const promptOk = () => {
         setShowPrompt(false);

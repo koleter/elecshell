@@ -21,6 +21,8 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
     const [refreshTreeData, setRefreshTreeData] = useState(0);
     const [sessionRootKey, setSessionRootKey] = useState("");
 
+    const [activeKey, setActiveKey] = useState('');
+
 
     const prompt = function (title, callback, defaultUserInput = "") {
         setPromptTitle(title);
@@ -82,7 +84,9 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
             setTreeData,
             refreshTreeData,
             setRefreshTreeData,
-            sessionRootKey
+            sessionRootKey,
+            // session
+            activeKey, setActiveKey
         }}>{/** value就是可在<AppContextProvider>组件的子组件中使用useContext() hook函数所获取的对象 */}
             {props.children}
         </AppContext.Provider>
