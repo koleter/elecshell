@@ -84,6 +84,28 @@ const ScriptDrawer: React.FC = (props) => {
                     <Input.TextArea rows={4}/>
                 </Form.Item>
             }
+
+            <Form.Item
+                name="scriptOwner"
+                rules={[{required: true, message: '脚本归属不能为空!'}]}
+                label="脚本归属">
+                <Radio.Group>
+                    <Radio value="common">
+                        <FormattedMessage
+                            key="pages.session.common"
+                            id="pages.session.common"
+                            defaultMessage="公共"
+                        />
+                    </Radio>
+                    <Radio value={activeKey}>
+                        <FormattedMessage
+                            key="pages.session.currentSession"
+                            id="pages.session.currentSession"
+                            defaultMessage="当前会话"
+                        />
+                    </Radio>
+                </Radio.Group>
+            </Form.Item>
         </>
     }
 
@@ -252,25 +274,6 @@ const ScriptDrawer: React.FC = (props) => {
                 }}
             >
                 {genScriptFormProperties()}
-                <Form.Item
-                    name="scriptOwner"
-                    rules={[{required: true, message: '脚本归属不能为空!'}]}
-                    label="脚本归属">
-                    <Radio.Group>
-                        <Radio value="common">
-                            <FormattedMessage
-                                key="pages.session.common"
-                                id="pages.session.common"
-                                defaultMessage="公共"
-                            /> </Radio>
-                        <Radio value={activeKey}>
-                            <FormattedMessage
-                                key="pages.session.currentSession"
-                                id="pages.session.currentSession"
-                                defaultMessage="当前会话"
-                            /> </Radio>
-                    </Radio.Group>
-                </Form.Item>
             </Form>
         </Modal>
 

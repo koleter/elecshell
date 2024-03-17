@@ -12,7 +12,6 @@ import {AppContext} from "@/pages/context/AppContextProvider";
 const path = require('path');
 
 const {DirectoryTree} = Tree;
-let sessionRootKey = "";
 const defaultSessionPropertyActiveKey = 'baseInfo';
 
 // 记录session配置文件信息,conf_id -> conf_path
@@ -21,8 +20,6 @@ export let sessionConfInfo = {};
 const SessionList: React.FC = (props) => {
   const {sessions, setSessions, setActiveKey} = props;
 
-  const [treeData, setTreeData] = useState([]);
-  const [refreshTreeData, setRefreshTreeData] = useState(0);
   const [form] = Form.useForm();
   const [modalNode, setModalNode] = useState(null);
   const [addSessionModalVisiable, setAddSessionModalVisiable] = useState(false);
@@ -31,23 +28,7 @@ const SessionList: React.FC = (props) => {
   const [dataSource, setDataSource] = useState([]);
   const [sessionPropertyActiveKey, setSessionPropertyActiveKey] = useState(defaultSessionPropertyActiveKey);
 
-  const {prompt} = useContext(AppContext);
-
-  useEffect(() => {
-    request(util.baseUrl + 'conf', {
-      method: 'GET',
-      params: {
-        type: 'SessionConfig',
-      },
-    }).then(res => {
-      if (res.status !== 'success') {
-        message[res.status](res.msg);
-      }
-      Object.assign(sessionConfInfo, res.sessionConfInfo);
-      sessionRootKey = res.defaultTreeData[0].key;
-      setTreeData(res.defaultTreeData);
-    })
-  }, [refreshTreeData])
+  const {prompt, treeData, setRefreshTreeData, sessionRootKey} = useContext(AppContext);
 
   function genSessionBaseInfo(showType: string) {
     return <>

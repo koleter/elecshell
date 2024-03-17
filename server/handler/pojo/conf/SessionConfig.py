@@ -44,7 +44,7 @@ class SessionConfig(BaseConfig):
             'path': "",
             'isLeaf': False
         }
-        session_conf_info =dict()
+        session_conf_info = dict()
         if os.path.exists(self.path):
             self._file_listdir_dfs(default_root_dir, '', session_conf_info)
         return {
