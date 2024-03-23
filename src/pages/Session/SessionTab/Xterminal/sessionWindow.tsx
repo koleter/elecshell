@@ -148,7 +148,7 @@ const SessionWindow: React.FC = (props) => {
         window.addEventListener("resize", () => {
             fitAddon.fit();
         });
-
+        fitAddon.fit();
     }, []);
 
     // 等后端ssh连接建立后再建立websocket连接
@@ -165,6 +165,7 @@ const SessionWindow: React.FC = (props) => {
         sock.onopen = function () {
             // resize_terminal(term);
             sessionStatusMap[id] = CONNECTED;
+            term._fitAddon.fit();
         };
 
         sessionIdRef[id] = {
