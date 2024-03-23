@@ -6,7 +6,6 @@ import util, {sleep, msgMap, sessionStatusMap, showMessage, getUUid} from "../..
 import {DISCONNECTED, CONNECTING, CONNECTED, HEADER_HEIGHT} from "../../../../const"
 import {sessionIdRef, sessionIdMapFileName} from "../../main/Main"
 import {SearchAddon} from 'xterm-addon-search'
-import {WebLinksAddon} from 'xterm-addon-web-links';
 import {FitAddon} from 'xterm-addon-fit'
 import {request} from 'umi';
 import "./SessionWindow.less"
@@ -147,9 +146,6 @@ const SessionWindow: React.FC = (props) => {
         const searchAddon = new SearchAddon();
 
         term.loadAddon(searchAddon);
-        // Load WebLinksAddon on terminal, this is all that's needed to get web links
-        // working in the terminal.
-        term.loadAddon(new WebLinksAddon());
 
         const fitAddon = new FitAddon();
         term.loadAddon(fitAddon);
