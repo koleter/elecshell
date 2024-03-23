@@ -43,6 +43,9 @@ const SessionMain: React.FC = () => {
 
     const onChange = (newActiveKey: string) => {
         setActiveKey(newActiveKey);
+        setTimeout(() => {
+            sessionIdRef[newActiveKey]?.term?._fitAddon.fit();
+        }, 50);
     };
 
     const removeTabByKey = (targetKey: TargetKey) => {
