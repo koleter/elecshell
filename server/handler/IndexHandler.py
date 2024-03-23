@@ -31,7 +31,6 @@ except ImportError:
 
 class IndexHandler(MixinHandler, tornado.web.RequestHandler):
 
-    executor = ThreadPoolExecutor(max_workers=cpu_count()*5)
 
     def initialize(self, loop, policy, host_keys_settings):
         super(IndexHandler, self).initialize(loop)
@@ -41,6 +40,7 @@ class IndexHandler(MixinHandler, tornado.web.RequestHandler):
         self.debug = self.settings.get('debug', False)
         self.font = self.settings.get('font', '')
         self.result = dict(id=None, status=None, encoding=None, sessionName=None, filePath=None)
+        self.executor = ThreadPoolExecutor(max_workers=cpu_count()*5)
 
     def write_error(self, status_code, **kwargs):
         if swallow_http_errors and self.request.method == 'POST':
@@ -131,15 +131,13 @@ class IndexHandler(MixinHandler, tornado.web.RequestHandler):
         logging.warning('Could not detect the default encoding.')
         return 'utf-8'
 
-    def ssh_connect(self, args):
-        login_script = args[5]
-        args = args[:5]
+    def ssh_connect(self, id, ssh_args, login_script):
         ssh = self.ssh_client
-        dst_addr = args[:2]
+        dst_addr = ssh_args[:2]
         logging.info('Connecting to {}:{}'.format(*dst_addr))
 
         try:
-            ssh.connect(*args, timeout=options.timeout)
+            ssh.connect(*ssh_args, timeout=options.timeout)
         except socket.error:
             raise ValueError('Unable to connect to {}:{}'.format(*dst_addr))
         except paramiko.BadAuthenticationType:
@@ -152,7 +150,7 @@ class IndexHandler(MixinHandler, tornado.web.RequestHandler):
         chan = ssh.invoke_shell(term=TERM)
         # chan.setblocking(0)
         chan.settimeout(1)
-        worker = Worker(self.loop, ssh, chan, dst_addr, login_script, self.debug)
+        worker = Worker(id, self.loop, ssh, chan, dst_addr, login_script, self.debug)
         worker.encoding = options.encoding if options.encoding else \
             self.get_default_encoding(ssh)
         return worker
@@ -199,11 +197,10 @@ class IndexHandler(MixinHandler, tornado.web.RequestHandler):
                 pkey = None
 
             self.ssh_client.totp = totp
-            args = (hostname, port, username, password, pkey, session_conf.get('login_script'))
         except InvalidValueError as exc:
             raise tornado.web.HTTPError(400, str(exc))
 
-        future = self.executor.submit(self.ssh_connect, args)
+        future = self.executor.submit(self.ssh_connect, data.get("id"), (hostname, port, username, password, pkey), session_conf.get('login_script'))
 
         try:
             worker = yield future

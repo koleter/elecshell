@@ -140,7 +140,6 @@ const SessionMain: React.FC = () => {
                         <div
                             style={{width: xshListWindowWidth, height: "100vh", backgroundColor: 'white'}}>
                             <SessionList
-                                sessions={sessions}
                                 setSessions={setSessions}
                                 setActiveKey={setActiveKey}
                             />
@@ -257,8 +256,8 @@ const SessionMain: React.FC = () => {
                                         children: <SessionWindow
                                             key={item.key}
                                             id={item.key}
-                                            sessions={sessions}
                                             setSessions={setSessions}
+                                            isConnected={item.isConnected}
                                         />
                                     }
                                 })}

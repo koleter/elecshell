@@ -44,13 +44,15 @@ def recycle_worker(worker):
 
 
 class Worker(object):
-    def __init__(self, loop, ssh, chan: paramiko.Channel, dst_addr, login_script=[], debug=False):
+    def __init__(self, id, loop, ssh, chan: paramiko.Channel, dst_addr, login_script=[], debug=False):
         self.loop = loop
         self.ssh = ssh
         self.chan = chan
         self.dst_addr = dst_addr
         self.fd = chan.fileno()
-        self.id = gen_id()
+        if not id:
+            id = gen_id()
+        self.id = id
         self.data_to_dst = []
         self.handler = None
         self.mode = IOLoop.READ
