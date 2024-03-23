@@ -15,6 +15,10 @@ const {Content, Sider} = Layout;
 type TargetKey = React.MouseEvent | React.KeyboardEvent | string;
 
 // 记录sessionId对应的文件名,这个用来过滤session可用的脚本
+/*
+id: sessionConfId,
+filePath: sessionConfPath
+*/
 export const sessionIdMapFileName = {};
 
 // 记录sessionId对应的sock等信息
@@ -265,7 +269,8 @@ const SessionMain: React.FC = () => {
                                     }
                                 })}
                                 onEdit={onEdit}
-                                onChange={onChange}/>
+                                onChange={onChange}
+                            />
                         </Content>
                     </Layout>
                 </Layout>

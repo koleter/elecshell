@@ -85,28 +85,7 @@ const ScriptDrawer: React.FC = (props) => {
                     <Input.TextArea rows={4}/>
                 </Form.Item>
             }
-            <ScriptOwner></ScriptOwner>
-            {/*<Form.Item*/}
-            {/*    name="scriptOwner"*/}
-            {/*    rules={[{required: true, message: '脚本归属不能为空!'}]}*/}
-            {/*    label="脚本归属">*/}
-            {/*    <Radio.Group>*/}
-            {/*        <Radio value="common">*/}
-            {/*            <FormattedMessage*/}
-            {/*                key="pages.session.common"*/}
-            {/*                id="pages.session.common"*/}
-            {/*                defaultMessage="公共"*/}
-            {/*            />*/}
-            {/*        </Radio>*/}
-            {/*        <Radio value={activeKey}>*/}
-            {/*            <FormattedMessage*/}
-            {/*                key="pages.session.currentSession"*/}
-            {/*                id="pages.session.currentSession"*/}
-            {/*                defaultMessage="当前会话"*/}
-            {/*            />*/}
-            {/*        </Radio>*/}
-            {/*    </Radio.Group>*/}
-            {/*</Form.Item>*/}
+            <ScriptOwner/>
         </>
     }
 
@@ -123,7 +102,9 @@ const ScriptDrawer: React.FC = (props) => {
 
             <ProList
                 rowKey="name"
-                dataSource={scriptData.filter(item => (!item.scriptOwner || item.scriptOwner == sessionIdMapFileName[activeKey]) && item.title.name.indexOf(scriptSearchValue) > -1)}
+                dataSource={scriptData.filter(item => {
+                    return (item.scriptOwner.isCommon || item.scriptOwner.owners.includes(sessionIdMapFileName[activeKey])) && item.title.name.indexOf(scriptSearchValue) > -1;
+                })}
                 metas={{
                     title: {
                         render: (text, row) => {
@@ -162,7 +143,8 @@ const ScriptDrawer: React.FC = (props) => {
                             <a
                                 key="link"
                                 onClick={() => {
-                                    const fields = Object.assign(row, {name: row.title.name})
+                                    const fields = Object.assign(row, {name: row.title.name});
+                                    console.log(fields, row);
                                     setScriptType(row.scriptType);
                                     editScriptForm.setFieldsValue(fields);
                                     setEditScriptModalVisiable(true);
@@ -249,13 +231,14 @@ const ScriptDrawer: React.FC = (props) => {
         >
             <Form
                 form={addScriptForm}
+                initialValues={{
+                    scriptOwner: {
+                        isCommon: false,
+                        owners: [sessionIdMapFileName[activeKey]],
+                    },
+                }}
                 onFinish={(formInfo) => {
                     console.log(formInfo);
-                    if (formInfo.scriptOwner == 'common') {
-                        formInfo.scriptOwner = "";
-                    } else {
-                        formInfo.scriptOwner = sessionIdMapFileName[activeKey];
-                    }
                     request(util.baseUrl + 'conf', {
                         method: 'POST',
                         body: JSON.stringify({
