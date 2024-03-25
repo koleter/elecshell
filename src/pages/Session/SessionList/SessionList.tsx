@@ -234,7 +234,8 @@ const SessionList: React.FC = (props) => {
             return data;
         });
 
-        sessionIdMapFileName[id] = filePath.substr(filePath.lastIndexOf('\\') + 1);
+        sessionIdMapFileName[id] = filePath.substr(filePath.lastIndexOf(path.sep) + 1);
+        console.log(sessionIdMapFileName)
         setActiveKey(id);
         // xterm-256color
         request(util.baseUrl + "session", {
