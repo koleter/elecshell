@@ -5,7 +5,7 @@ import Header from "@/pages/Session/frame/header";
 
 const Session: React.FC = () => {
     return <AppContextProvider>
-        <Header></Header>
+        {window.electronAPI.platform == "darwin" && <Header></Header>}
         <SessionMain></SessionMain>
     </AppContextProvider>
 }
