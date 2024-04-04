@@ -13,7 +13,8 @@ const basePath = Platform.getUserBasePath();
 const createWindow = () => {
     const {width, height} = screen.getPrimaryDisplay().workAreaSize;//获取到屏幕的宽度和高度
     // Create the browser window.
-    const mainWindow = new BrowserWindow({
+
+    const option = {
         width: width * 0.9,
         height: height * 0.9,
         webPreferences: {
@@ -39,7 +40,11 @@ const createWindow = () => {
         transparent: false,
         movable: true, // 可否移动
         allowRunningInsecureContent: true, // 允许一个 https 页面运行 http url 里的资源
-    });
+    };
+    if (process.platform == "darwin") {
+        option.titleBarStyle = 'hidden';
+    }
+    const mainWindow = new BrowserWindow(option);
 
     globalShortcut.register("CommandOrControl+W", () => {
         //stuff here
