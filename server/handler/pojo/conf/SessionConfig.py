@@ -1,7 +1,7 @@
 import json
 import os
 
-from handler.pojo.BaseConfig import BaseConfig
+from handler.pojo.conf.BaseConfig import BaseConfig
 from handler.pojo.status import status_success
 from utils import gen_id
 

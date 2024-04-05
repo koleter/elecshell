@@ -16,6 +16,7 @@ from handler.MixinHandler import MixinHandler
 from handler.pojo.PrivateKey import PrivateKey
 from handler.pojo.SSHClient import SSHClient
 from handler.const import swallow_http_errors, DEFAULT_PORT, TERM
+from util.str_variable_util import getRealstr
 from utils import (
     is_valid_ip_address, is_valid_port, is_valid_hostname, to_str,
     to_int, is_valid_encoding
@@ -173,10 +174,10 @@ class IndexHandler(MixinHandler, tornado.web.RequestHandler):
             session_name = data.get('sessionName')
             with open(session_conf_file_path, 'r') as f:
                 session_conf = json.loads(f.read())
-                hostname = session_conf.get('hostname')
+                hostname = getRealstr(session_conf.get('hostname'))
                 port = session_conf.get('port')
-                username = session_conf.get('username')
-                password = session_conf.get('password')
+                username = getRealstr(session_conf.get('username'))
+                password = getRealstr(session_conf.get('password'))
                 filename = session_conf.get('privatekey')
                 privatekey = ''
                 if filename and filename.strip() != '':
@@ -185,8 +186,8 @@ class IndexHandler(MixinHandler, tornado.web.RequestHandler):
                             privatekey = f.read()
                     except FileNotFoundError as e:
                         raise tornado.web.HTTPError(400, 'No such privatekey file: {}'.format(filename))
-                passphrase = session_conf.get('passphrase')
-                totp = session_conf.get('totp')
+                passphrase = getRealstr(session_conf.get('passphrase'))
+                totp = getRealstr(session_conf.get('totp'))
 
             if isinstance(self.policy, paramiko.RejectPolicy):
                 self.lookup_hostname(hostname, port)

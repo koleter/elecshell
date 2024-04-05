@@ -33,6 +33,7 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
     }
 
     useEffect(() => {
+        document.title = 'elecshell';
         request(util.baseUrl + 'conf', {
             method: 'GET',
             params: {

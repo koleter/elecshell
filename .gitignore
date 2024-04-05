@@ -72,3 +72,4 @@ known_hosts
 /out/
 /node_modules/
 /dist/
+/server/.idea/

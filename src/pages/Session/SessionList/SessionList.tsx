@@ -356,7 +356,7 @@ const SessionList: React.FC = (props) => {
                                     message[res.status](res.msg);
                                 } else {
                                     const sessionInfo = JSON.parse(res.content);
-                                    console.log(sessionInfo)
+                                    // console.log(sessionInfo)
                                     setDataSource(sessionInfo.login_script || []);
                                     editForm.setFieldsValue(Object.assign({key: node.key}, sessionInfo));
                                     setEditSessionModalVisiable(true);

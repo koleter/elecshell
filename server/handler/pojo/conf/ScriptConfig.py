@@ -3,7 +3,7 @@ import logging
 import os
 
 from handler.const import OPERATION_SUCCESS
-from handler.pojo.BaseConfig import BaseConfig
+from handler.pojo.conf.BaseConfig import BaseConfig
 from handler.pojo.status import status_success, status_error
 from utils import gen_id
 

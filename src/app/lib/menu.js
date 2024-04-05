@@ -1,17 +1,27 @@
 const {app, BrowserWindow, Menu, dialog} = require('electron');
+// const { BrowserWindow } = require('electron').remote;
+const {createWindow} = require("./window");
 
 exports.template = [
     {
         label: '文件',
-        // submenu: [
-        //     {
-        //         label: '打开',
-        //         accelerator: 'Ctrl+O',
-        //         click() {
-        //             console.log("open");
-        //         }
-        //     }
-        // ]
+        submenu: [
+            {
+                label: '打开新窗口',
+                accelerator: 'Ctrl+O',
+                click() {
+                    createWindow();
+                }
+            },
+            {
+                label: '设置',
+                accelerator: 'Ctrl+Alt+S',
+                click() {
+                    var curWindow = BrowserWindow.getFocusedWindow();
+                    curWindow.webContents.send("openGlobalSetting");
+                }
+            }
+        ]
     },
     {
         label: '编辑',
