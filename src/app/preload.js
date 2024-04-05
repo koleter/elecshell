@@ -1,11 +1,12 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
-const {contextBridge, ipcRenderer} = require('electron');
+const {contextBridge, ipcRenderer, BrowserWindow} = require('electron');
 
 const electronAPI = {
     // 平台名称
     platform: process.platform,
     ipcRenderer: ipcRenderer,
+    BrowserWindow: BrowserWindow,
     getVersions() {
         return process.versions;
     }

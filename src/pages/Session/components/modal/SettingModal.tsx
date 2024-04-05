@@ -38,7 +38,6 @@ const SettingModal = () => {
                 type: 'ConfigableGlobalConfig',
             }
         }).then(res => {
-            console.log(res);
             if (res.status == 'success') {
                 setDataSource(res?.data?.strVariableSetting || []);
             } else {
@@ -49,6 +48,10 @@ const SettingModal = () => {
 
     electronAPI.ipcRenderer.on('openGlobalSetting', (event, arg) => {
         setModalVisit(true);
+    });
+
+    electronAPI.ipcRenderer.on('refreshConfigableGlobalConfig', (event, arg) => {
+        setRefresh(n => n + 1);
     });
 
     return <ModalForm
@@ -93,6 +96,11 @@ const SettingModal = () => {
                         strVariableSetting: dataSource
                     }
                 })
+            }).then(res => {
+                message[res.status](res.msg);
+                if (res.status === 'success') {
+                    electronAPI.ipcRenderer.send('sendAllWindowsIpcMessage', 'refreshConfigableGlobalConfig');
+                }
             })
             return true;
         }}

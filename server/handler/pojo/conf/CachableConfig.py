@@ -38,5 +38,6 @@ class CachableConfig(BaseConfig):
             with open(self.path, 'w') as f:
                 f.write(json.dumps(self.conf_cache))
         return {
-            'status': 'success'
+            'status': 'success',
+            'msg': 'success'
         }

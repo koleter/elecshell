@@ -11,7 +11,6 @@ Menu.setApplicationMenu(menu);
 
 const basePath = Platform.getUserBasePath();
 
-
 function startServer() {
     return new Promise((resolve, reject) => {
         const extraArgs = '';

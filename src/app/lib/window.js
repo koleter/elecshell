@@ -1,4 +1,4 @@
-const {BrowserWindow, screen, globalShortcut} = require('electron');
+const {BrowserWindow, screen, globalShortcut, ipcMain} = require('electron');
 const path = require('path');
 
 exports.createWindow = () => {
@@ -44,6 +44,13 @@ exports.createWindow = () => {
     console.log(process.env.NODE_ENV);
     console.log(process.cwd());
 
+    ipcMain.on("sendAllWindowsIpcMessage", (event, arg) => {
+        const allWindows = BrowserWindow.getAllWindows();
+        allWindows.forEach((win) => {
+            win.webContents.send(arg);
+        });
+    });
+
     // Open the DevTools.
     if (process.env.NODE_ENV === 'development') {
         win.loadURL("http://localhost:8000/session");
@@ -52,7 +59,4 @@ exports.createWindow = () => {
         // win.loadURL("http://localhost:8888/session")
         win.loadFile(path.join(__dirname, "../../antdBuild/index.html"));
     }
-
-    // 设置窗口标题
-    win.setTitle('elecshell');
 };
