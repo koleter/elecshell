@@ -9,14 +9,14 @@ exports.createWindow = () => {
         width: width * 0.9,
         height: height * 0.9,
         webPreferences: {
-            preload: path.join(__dirname, '..', 'preload.js'),
+            preload: path.join(__dirname, 'preload.js'),
             // 下面两行配置使得浏览器可以使用nodejs的模块
             nodeIntegration: true, contextIsolation: false, webSecurity: false, // 禁用安全策略
             allowDisplayingInsecureContent: true, // 允许一个使用 https的界面来展示由 http URLs 传过来的资源
             allowRunningInsecureContent: true, // 允许一个 https 页面运行 http url 里的资源
             enableRemoteModule: true // 打开remote模块
         },
-        frame: process.platform == "darwin" ? false : true,   // 去掉窗口边框 // 取消默认的头部；自定义头部
+        frame: process.platform != "darwin",   // 去掉窗口边框 // 取消默认的头部；自定义头部
         // titleBarStyle: 'hidden',  // 隐藏窗口title
         titleBarOverlay: true,  // 用于windows系统,使右上角出现最小化,最大化,关闭三个按钮
         fullscreenable: true,
