@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import traceback
 import types
@@ -121,19 +122,13 @@ class Worker(object):
             except tornado.websocket.WebSocketClosedError:
                 self.close(reason='websocket closed')
 
-
-    def on_recv(self, data, sleep=0.3):
+    def recv(self, data, callback, extra_args = [], sleep=0):
         logging.info('worker {} on read'.format(self.id))
-        newline = data[-1]
-        data = data[:-1]
 
         self.data_to_dst.append(data)
         self._on_write()
-        self._on_read()
-
-        self.data_to_dst.append(newline)
-        self._on_write()
-        time.sleep(sleep)
+        if sleep > 0:
+            time.sleep(sleep)
         while not self.chan.recv_ready():
             time.sleep(0.1)
 
@@ -156,13 +151,10 @@ class Worker(object):
                 'val': val,
                 'type': 'data'
             }
+            self.set_callback_message(callback, res, extra_args)
             self.handler.write_message(res, binary=False)
         except tornado.websocket.WebSocketClosedError:
             self.close(reason='websocket closed')
-
-        handler_str = reset_font(val)
-        return str(handler_str)
-
 
     def send(self, data, update_handler=True):
         self.data_to_dst.append(data)

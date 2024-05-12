@@ -51,7 +51,7 @@ class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
             else:
                 self.close(reason='Websocket authentication failed.')
 
-    def on_message(self, message):
+    async def on_message(self, message):
         worker = self.worker_ref
         if not worker:
             # The worker has likely been closed. Do not process.
@@ -128,7 +128,9 @@ class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
                     "content": 'server error'
                 })
             try:
-                t[0](SessionContext(worker), msg.get('args'), *t[1])
+                result = t[0](SessionContext(worker), msg.get('args'), *t[1])
+                if result is not None:
+                    await result
             except Exception as e:
                 traceback.print_exc()
                 pass

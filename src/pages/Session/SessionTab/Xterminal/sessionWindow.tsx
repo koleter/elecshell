@@ -28,6 +28,9 @@ const SessionWindow: React.FC = (props) => {
     const {id, sessionConfId, setSessions, isConnected} = props;
     const context = useContext(AppContext);
     const {} = context;
+    // 展示搜索框
+    const [showSearch, setShowSearch] = useState(false);
+
 
     const [term] = useState(new Terminal(termOptions));
 
@@ -148,6 +151,16 @@ const SessionWindow: React.FC = (props) => {
             term.open(terminalRef.current as HTMLDivElement);
             term.focus();
 
+            if (terminalRef.current) {
+                terminalRef.current.addEventListener('keydown', (e) => {
+                    if (e.shiftKey && e.ctrlKey && e.keyCode == 70) {
+                        setShowSearch((b) => {
+                            return !b;
+                        });
+                    }
+                })
+            }
+
             const ws_url = util.baseUrl.split(/\?|#/, 1)[0].replace('http', 'ws'),
                 join = (ws_url[ws_url.length - 1] === '/' ? '' : '/'),
                 url = ws_url + join + 'ws?id=' + id,
@@ -219,14 +232,19 @@ const SessionWindow: React.FC = (props) => {
                 sock.send(JSON.stringify({'data': data, 'type': 'data'}));
             });
 
-            function term_write(text) {
-                sessionIdRef[id].term.write(text);
-            }
-
             function wsockCallback(res) {
                 switch (res.type) {
                     case 'data':
-                        term_write(res.val);
+                        term.write(res.val, (raw) => {
+                            console.log(`从term接收到: ${raw}`);
+                            if (res.requestId) {
+                                sessionIdRef[id].send({
+                                    type: 'callback',
+                                    requestId: res.requestId,
+                                    args: raw
+                                })
+                            }
+                        });
                         break;
                     case 'message':
                         showMessage(res);
@@ -298,8 +316,27 @@ const SessionWindow: React.FC = (props) => {
         }
     }, [isConnected]);
 
+    function getTermHeight() {
+        console.log(window.electronAPI.platform)
+        if (window.electronAPI.platform != 'win32') {
+            return `calc(100vh - ${HEADER_HEIGHT}px  - 40px)`;
+        }
+        return `calc(100vh - 40px)`;
+    }
+
     return (
-        <div style={{height: `calc(100vh - ${HEADER_HEIGHT}px - 40px)`, backgroundColor: 'black'}} ref={terminalRef}></div>
+        <div>
+            {
+                showSearch && <div style={{position: 'absolute', top: 0, right: '18px', float: 'left', zIndex: 1}}>
+                    <input type="text"/>
+                    <div className={'searchOptions'}>Cc</div>
+                    <div className={'searchOptions'}>W</div>
+                    <div className={'searchOptions'}>*</div>
+                </div>
+            }
+            <div style={{height: getTermHeight(), backgroundColor: 'black'}} ref={terminalRef}></div>
+        </div>
+
     )
 }
 

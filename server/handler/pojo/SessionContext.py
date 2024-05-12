@@ -1,14 +1,17 @@
+import asyncio
+
+
 class SessionContext:
     def __init__(self, worker):
         self._worker = worker
 
-    def on_recv(self, data, sleep=0.2):
+    def recv(self, data, callback, sleep=0, *extra_args):
         '''
         send data and receive result
         data: The command which will be execute
         sleep: The waiting time from sending the command to reading the result, in seconds
         '''
-        return self._worker.on_recv(data, sleep)
+        self._worker.recv(data, callback, extra_args, sleep)
 
     def prompt(self, msg, callback, *args):
         '''

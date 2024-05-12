@@ -5,7 +5,7 @@ import {
 import { useState, useEffect } from 'react';
 import util, {getUUid, showMessage} from "@/util";
 import {request} from "@@/plugin-request/request";
-import {message} from 'antd';
+import {message, Input} from 'antd';
 
 const columns = [
     {
@@ -14,6 +14,12 @@ const columns = [
     },
     {
         title: '变量值',
+        renderFormItem: (_, { isEditable }) => {
+            return <Input.Password />;
+        },
+        render: (text, record, _, action) => [
+            <Input.Password placeholder="input password" defaultValue={text}/>
+        ],
         dataIndex: 'value'
     },
     {

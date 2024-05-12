@@ -149,8 +149,8 @@ class IndexHandler(MixinHandler, tornado.web.RequestHandler):
             raise ValueError('Bad host key.')
 
         chan = ssh.invoke_shell(term=TERM)
-        # chan.setblocking(0)
-        chan.settimeout(1)
+        chan.setblocking(0)
+        # chan.settimeout(1)
         worker = Worker(id, self.loop, ssh, chan, dst_addr, login_script, self.debug)
         worker.encoding = options.encoding if options.encoding else \
             self.get_default_encoding(ssh)
