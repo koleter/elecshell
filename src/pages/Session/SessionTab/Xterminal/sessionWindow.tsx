@@ -11,6 +11,25 @@ import {request} from 'umi';
 import "./SessionWindow.less"
 import {sessionConfInfo} from "@/pages/Session/SessionList/SessionList";
 import {AppContext} from "@/pages/context/AppContextProvider";
+import {Input, Button, Tooltip} from 'antd';
+import {
+    ArrowUpOutlined,
+    ArrowDownOutlined
+} from '@ant-design/icons';
+
+// 查询框中所有元素的高度
+const searchPanelHeight = '34px';
+
+const defaultSearchOption = {
+    decorations: {
+        matchBackground: "rgba(255,89,189,0.4)",
+        matchBorder: "rgba(255,89,189,0.4)",
+        matchOverviewRuler: "rgba(255,89,189,0.4)",
+        activeMatchBackground: "#A6D2FF",
+        activeMatchBorder: "#A6D2FF",
+        activeMatchColorOverviewRuler: "#A6D2FF",
+    }
+};
 
 const termOptions = {
     rendererType: "canvas",
@@ -20,19 +39,87 @@ const termOptions = {
         background: 'black',
         foreground: 'white',
         cursor: 'white'
-    }
+    },
+    allowProposedApi: true
 };
 
 const SessionWindow: React.FC = (props) => {
     const terminalRef = useRef<null | HTMLDivElement>(null);
     const {id, sessionConfId, setSessions, isConnected} = props;
     const context = useContext(AppContext);
+    const searchInputRef = useRef(null);
     const {} = context;
     // 展示搜索框
     const [showSearch, setShowSearch] = useState(false);
 
-
     const [term] = useState(new Terminal(termOptions));
+
+    const [matchCase, setMatchCase] = useState(false);
+    const [words, setWords] = useState(false);
+    const [regexp, setRegexp] = useState(false);
+
+    const [searchValue, setSearchValue] = useState("");
+
+    const matchButtons = [
+        {
+            render: "Cc",
+            title: "match case",
+            getType: function () {
+                return matchCase ? 'primary' : 'text';
+            },
+            onClick: function () {
+                term._searchAddon.clearDecorations();
+                const newMatchCase = !matchCase;
+                setMatchCase(m => {
+                    return !m;
+                });
+                term._searchAddon.findPrevious(searchValue, calcSearchOption(newMatchCase, words, regexp));
+            }
+        }, {
+            render: "W",
+            title: "words",
+            getType: function () {
+                return words ? 'primary' : 'text';
+            },
+            onClick: function () {
+                term._searchAddon.clearDecorations();
+                const newWords = !words;
+                setWords(m => {
+                    return !m;
+                });
+                term._searchAddon.findPrevious(searchValue, calcSearchOption(matchCase, newWords, regexp));
+            }
+        }, {
+            render: ".※",
+            title: "regexp",
+            getType: function () {
+                return regexp ? 'primary' : 'text';
+            },
+            onClick: function () {
+                term._searchAddon.clearDecorations();
+                const newReg = !regexp;
+                setRegexp(m => {
+                    return !m;
+                });
+                term._searchAddon.findPrevious(searchValue, calcSearchOption(matchCase, words, newReg));
+            }
+        }];
+
+    const findButtons = [
+        {
+            render: <ArrowUpOutlined/>,
+            title: "Previous Occurrence",
+            onClick: function () {
+                term._searchAddon.findPrevious(searchValue, calcSearchOption(matchCase, words, regexp));
+            }
+        }, {
+            render: <ArrowDownOutlined/>,
+            title: "Next Occurrence",
+            onClick: function () {
+                term._searchAddon.findNext(searchValue, calcSearchOption(matchCase, words, regexp));
+            }
+        }
+    ]
 
     const methodMap = {
         prompt: (msg, callback) => {
@@ -145,6 +232,7 @@ const SessionWindow: React.FC = (props) => {
         if (isConnected) {
             const searchAddon = new SearchAddon();
             term.loadAddon(searchAddon);
+            term._searchAddon = searchAddon;
             const fitAddon = new FitAddon();
             term.loadAddon(fitAddon);
             term._fitAddon = fitAddon;
@@ -155,6 +243,12 @@ const SessionWindow: React.FC = (props) => {
                 terminalRef.current.addEventListener('keydown', (e) => {
                     if (e.shiftKey && e.ctrlKey && e.keyCode == 70) {
                         setShowSearch((b) => {
+                            if (!b) {
+                                setSearchValue("");
+                                setTimeout(() => {
+                                    searchInputRef?.current?.focus();
+                                }, 100);
+                            }
                             return !b;
                         });
                     }
@@ -173,6 +267,7 @@ const SessionWindow: React.FC = (props) => {
             sock.onopen = function () {
                 // resize_terminal(term);
                 sessionStatusMap[id] = CONNECTED;
+
                 function sendTermResizeMessage(cols, rows) {
                     sock.send(JSON.stringify({'type': 'resize', 'resize': [cols, rows]}));
                 }
@@ -228,7 +323,6 @@ const SessionWindow: React.FC = (props) => {
             };
 
             term.onData(function (data) {
-                console.log(`onData: ${id}, data: ${data}`);
                 sock.send(JSON.stringify({'data': data, 'type': 'data'}));
             });
 
@@ -317,24 +411,65 @@ const SessionWindow: React.FC = (props) => {
     }, [isConnected]);
 
     function getTermHeight() {
-        console.log(window.electronAPI.platform)
         if (window.electronAPI.platform != 'win32') {
             return `calc(100vh - ${HEADER_HEIGHT}px  - 40px)`;
         }
         return `calc(100vh - 40px)`;
     }
 
+    function calcSearchOption(matchCase, words, regexp) {
+        const res = Object.assign({}, defaultSearchOption);
+        if (matchCase) {
+            res.caseSensitive = true;
+        }
+        if (words) {
+            res.wholeWord = true;
+        }
+        if (regexp) {
+            res.regex = true;
+        }
+        return res;
+    }
+
     return (
         <div>
-            {
-                showSearch && <div style={{position: 'absolute', top: 0, right: '18px', float: 'left', zIndex: 1}}>
-                    <input type="text"/>
-                    <div className={'searchOptions'}>Cc</div>
-                    <div className={'searchOptions'}>W</div>
-                    <div className={'searchOptions'}>*</div>
+            <div id={'searchPanel'} style={{
+                position: 'absolute',
+                display: showSearch ? 'flex' : 'none',
+                width: '720px',
+                alignContent: 'center',
+                top: 0,
+                left: 0,
+                zIndex: 10,
+                whiteSpace: 'nowrap'
+            }}>
+                <Input.TextArea ref={searchInputRef} allowClear={true} autoSize={true} value={searchValue} onChange={(newVal) => {
+                    term._searchAddon.findNext(newVal.target.value, calcSearchOption(matchCase, words, regexp));
+                    setSearchValue(newVal.target.value);
+                }}/>
+                <div style={{backgroundColor: 'white'}}>
+                    {
+                        matchButtons.map((item, index) => {
+                            return <Tooltip title={item.title} color={'white'} overlayInnerStyle={{color: 'black'}}>
+                                <Button className={'searchOptions'} type={item.getType()}
+                                        style={{height: searchPanelHeight}}
+                                        onClick={item.onClick}>{item.render}</Button>
+                            </Tooltip>
+                        })
+                    }
+
+                    {
+                        findButtons.map((item) => {
+                            return <Tooltip title={item.title} color={'white'} overlayInnerStyle={{color: 'black'}}>
+                                <Button className={'searchOptions'} style={{height: searchPanelHeight}}
+                                        onClick={item.onClick}>{item.render}</Button>
+                            </Tooltip>
+                        })
+                    }
                 </div>
-            }
-            <div style={{height: getTermHeight(), backgroundColor: 'black'}} ref={terminalRef}></div>
+            </div>
+
+            <div style={{height: getTermHeight(), backgroundColor: 'black'}} ref={terminalRef}/>
         </div>
 
     )
