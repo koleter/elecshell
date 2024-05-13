@@ -8,6 +8,5 @@ class ExitHandler(MixinHandler, tornado.web.RequestHandler):
         super(ExitHandler, self).initialize(loop)
 
     def post(self):
-        print("server should exit")
         exit(0)
 
