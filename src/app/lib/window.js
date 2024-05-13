@@ -54,7 +54,9 @@ exports.createWindow = () => {
     // Open the DevTools.
     if (process.env.NODE_ENV === 'development') {
         win.loadURL("http://localhost:8000/session");
-        win.webContents.openDevTools();
+        win.webContents.on('did-finish-load', () => {
+            win.webContents.openDevTools();
+        });
     } else {
         // win.loadURL("http://localhost:8888/session")
         win.loadFile(path.join(__dirname, "../../antdBuild/index.html"));
