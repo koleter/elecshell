@@ -227,6 +227,22 @@ const SessionWindow: React.FC = (props) => {
         }
     };
 
+    const closeSearchPanel = (e) => {
+        if (e.shiftKey && e.ctrlKey && e.keyCode == 70) {
+            setShowSearch((b) => {
+                if (!b) {
+                    setSearchValue("");
+                    setTimeout(() => {
+                        searchInputRef?.current?.focus();
+                    }, 100);
+                } else {
+                    term._searchAddon.clearDecorations();
+                }
+                return !b;
+            });
+        }
+    }
+
     // 等后端ssh连接建立后再建立websocket连接
     useEffect(() => {
         if (isConnected) {
@@ -240,19 +256,7 @@ const SessionWindow: React.FC = (props) => {
             term.focus();
 
             if (terminalRef.current) {
-                terminalRef.current.addEventListener('keydown', (e) => {
-                    if (e.shiftKey && e.ctrlKey && e.keyCode == 70) {
-                        setShowSearch((b) => {
-                            if (!b) {
-                                setSearchValue("");
-                                setTimeout(() => {
-                                    searchInputRef?.current?.focus();
-                                }, 100);
-                            }
-                            return !b;
-                        });
-                    }
-                })
+                terminalRef.current.addEventListener('keydown', closeSearchPanel);
             }
 
             const ws_url = util.baseUrl.split(/\?|#/, 1)[0].replace('http', 'ws'),
@@ -446,7 +450,7 @@ const SessionWindow: React.FC = (props) => {
                 <Input.TextArea ref={searchInputRef} allowClear={true} autoSize={true} value={searchValue} onChange={(newVal) => {
                     term._searchAddon.findNext(newVal.target.value, calcSearchOption(matchCase, words, regexp));
                     setSearchValue(newVal.target.value);
-                }}/>
+                }} onKeyDown={closeSearchPanel}/>
                 <div style={{backgroundColor: 'white'}}>
                     {
                         matchButtons.map((item, index) => {
