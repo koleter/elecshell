@@ -6,4 +6,4 @@ exports.folderExists = function (path) {
     } catch (err) {
         return false;
     }
-}
+};
