@@ -334,7 +334,6 @@ const SessionWindow: React.FC = (props) => {
                 switch (res.type) {
                     case 'data':
                         term.write(res.val, (raw) => {
-                            console.log(`从term接收到: ${raw}`);
                             if (res.requestId) {
                                 sessionIdRef[id].send({
                                     type: 'callback',
