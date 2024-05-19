@@ -152,7 +152,7 @@ const SessionMain: React.FC = () => {
                             />
                         </div>
                         <DragLine
-                            start={xshListWindowWidth}
+                            startPos={xshListWindowWidth}
                             moveFunc={setXshListWindowWidth}
                             moveEndFunc={(startX) => {
                                 request(util.baseUrl + 'conf', {
@@ -165,13 +165,15 @@ const SessionMain: React.FC = () => {
                                     })
                                 })
                             }}
-                            canMove={(e, startX) => {
-                                if (e.movementX < 0 && startX + e.movementX < 200) {
+                            canMove={(e, end) => {
+                                // 拖拽时，宽度不能减小到一定程度
+                                if (e.movementX < 0 && end < 200) {
                                     return false;
                                 }
                                 return true;
                             }}
                         />
+
 
                         <Content style={{width: '100%', overflow: 'hidden'}}>
                             <Tabs
