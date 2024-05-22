@@ -24,6 +24,8 @@ export const sessionIdMapFileName = {};
 // 记录sessionId对应的sock等信息
 export const sessionIdRef = {};
 
+let hoverTimeout;
+
 const loop = (
     data: DataNode[],
     key: React.Key,
@@ -130,17 +132,20 @@ const SessionMain: React.FC = () => {
                     position: 'absolute',
                     right: '0',
                     bottom: 0,
-                    width: '6px',
+                    width: '20px',
                     height: '95%',
                     zIndex: 999
                 }} onMouseEnter={() => {
-                    if (process.env.NODE_ENV === 'development') {
-                        setDrawerOpen(true);
-                    } else {
-                        sessions.length && setDrawerOpen(true);
-                        // setDrawerOpen(true);
-                    }
-
+                    hoverTimeout = setTimeout(() => {
+                        if (process.env.NODE_ENV === 'development') {
+                            setDrawerOpen(true);
+                        } else {
+                            sessions.length && setDrawerOpen(true);
+                            // setDrawerOpen(true);
+                        }
+                    }, 100);
+                }} onMouseLeave={() => {
+                    clearTimeout(hoverTimeout);
                 }}/>
                 <Layout style={{display: 'flex', height: '100%', width: '100%'}}>
                     <Layout hasSider style={{display: 'flex'}}>
