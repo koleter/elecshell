@@ -10,6 +10,7 @@ import util, {showMessage} from "@/util";
 import {AppContext, AppContextProvider} from "@/pages/context/AppContextProvider";
 import {request} from "@@/plugin-request/request";
 import DragLine from "@/pages/Session/components/dragline/DragLine";
+import FileTransfer from "@/pages/Session/fileTransfer/FileTransfer";
 
 const {Content, Sider} = Layout;
 type TargetKey = React.MouseEvent | React.KeyboardEvent | string;
@@ -144,13 +145,33 @@ const SessionMain: React.FC = () => {
                 }}/>
                 <Layout style={{display: 'flex', height: '100%', width: '100%'}}>
                     <Layout hasSider style={{display: 'flex'}}>
-                        <div
-                            style={{width: xshListWindowWidth, height: "100vh", backgroundColor: 'white'}}>
-                            <SessionList
-                                setSessions={setSessions}
-                                setActiveKey={setActiveKey}
-                            />
-                        </div>
+                        <Tabs
+                            tabPosition={'left'}
+                            items={[{
+                                key: 'sessions',
+                                label: 'sessions',
+                                forceRender: true,
+                                children: <div
+                                    style={{width: xshListWindowWidth, height: "100vh", backgroundColor: 'white'}}>
+                                    <SessionList
+                                        setSessions={setSessions}
+                                        setActiveKey={setActiveKey}
+                                    />
+                                </div>
+                            },
+                            //     {
+                            //     key: 'fileTransfer',
+                            //     label: 'fileTransfer',
+                            //     forceRender: true,
+                            //     children: sessions.map(item => {
+                            //         return <FileTransfer
+                            //             setSessions={setSessions}
+                            //             setActiveKey={setActiveKey}
+                            //         />
+                            //     })
+                            // }]}
+                        />
+
                         <DragLine
                             startPos={xshListWindowWidth}
                             moveFunc={setXshListWindowWidth}
