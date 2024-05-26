@@ -8,7 +8,7 @@ export function sleep(time: number) {
   return new Promise((resolve) => setTimeout(resolve, time));
 }
 
-export const msgMap = {};
+export const callbackMap = {};
 
 export const sessionStatusMap = {};
 

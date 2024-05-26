@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import stat
 import traceback
 import types
 import uuid
@@ -63,6 +64,23 @@ class Worker(object):
         self.xsh_conf_id = None
         self.login_script = login_script
         self.bufferRead = b''
+        # 创建 SFTP 客户端
+        self.sftp = ssh.open_sftp()
+
+
+    def get_remote_file_list(self, remote_path):
+        # 获取远程路径下的文件和文件夹属性列表
+        file_list = self.sftp.listdir_attr(remote_path)
+        ret = []
+        # 打印文件列表
+        for file in file_list:
+            item = dict()
+            item.setdefault("title", file.filename)
+            item.setdefault("key", str(uuid.uuid1()))
+            item.setdefault("isLeaf", not stat.S_ISDIR(file.st_mode))
+            ret.append(item)
+        ret.sort(key=lambda x: (x["isLeaf"], x["title"]))
+        return ret
 
     def __call__(self, fd, events):
         if events & IOLoop.READ:

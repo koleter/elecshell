@@ -148,13 +148,10 @@ class IndexHandler(MixinHandler, tornado.web.RequestHandler):
         except paramiko.BadHostKeyException:
             raise ValueError('Bad host key.')
 
-        # 创建 SFTP 客户端
-        sftp = ssh.open_sftp()
         chan = ssh.invoke_shell(term=TERM)
         chan.setblocking(0)
         # chan.settimeout(1)
         worker = Worker(id, self.loop, ssh, chan, dst_addr, login_script, self.debug)
-        worker.fileTransfer = sftp
         worker.encoding = options.encoding if options.encoding else \
             self.get_default_encoding(ssh)
         return worker

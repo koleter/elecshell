@@ -2,6 +2,7 @@ import asyncio
 import imp
 import json
 import logging
+import stat
 import struct
 import time
 import traceback
@@ -82,12 +83,15 @@ class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
             data = msg.get('data')
             if data and isinstance(data, UnicodeType):
                 worker.send(data)
-        elif type == 'getRemoveFileList':
-            remote_path = msg.get('remote_path')
-            file_list = worker.fileTransfer.listdir(remote_path)
-            # 打印文件列表
-            for file_name in file_list:
-                print(file_name)
+        elif type == 'recallback':
+            args = msg.get("args")
+            ret = getattr(worker, msg.get("methodName"))(*args)
+            worker.handler.write_message({
+                'requestId': msg.get("requestId"),
+                'val': ret,
+                'type': 'response'
+            }, binary=False)
+
         elif type == 'sendRecv':
             data = msg.get('data')
             requestId = msg.get('requestId')

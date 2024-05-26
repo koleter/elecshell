@@ -1,4 +1,4 @@
-import {Dropdown, Layout, Tabs, Modal, Input} from 'antd';
+import {Dropdown, Layout, Tabs, Modal, Input, Menu} from 'antd';
 import type {DataNode} from 'antd/es/tree';
 import React, {useState, useRef, useContext, useEffect} from 'react';
 import "./Main.less"
@@ -12,6 +12,11 @@ import {request} from "@@/plugin-request/request";
 import DragLine from "@/pages/Session/components/dragline/DragLine";
 import FileTransfer from "@/pages/Session/fileTransfer/FileTransfer";
 
+import {
+    CodeOutlined,
+    DesktopOutlined,
+} from '@ant-design/icons';
+
 const {Content, Sider} = Layout;
 type TargetKey = React.MouseEvent | React.KeyboardEvent | string;
 
@@ -24,6 +29,10 @@ export const sessionIdMapFileName = {};
 
 // 记录sessionId对应的sock等信息
 export const sessionIdRef = {};
+
+import type {MenuProps} from 'antd';
+
+type MenuItem = Required<MenuProps>['items'][number];
 
 let hoverTimeout;
 
@@ -44,9 +53,14 @@ const loop = (
     }
 };
 
+const NENU_SESSIONS = "sessions";
+const MENU_FILETRANSFER = "fileTransfer";
+
 const SessionMain: React.FC = () => {
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [sessions, setSessions] = useState([]);
+
+    const [selectedMenuKey, setSelectedMenuKey] = useState(NENU_SESSIONS);
 
     const onChange = (newActiveKey: string) => {
         setActiveKey(newActiveKey);
@@ -150,32 +164,32 @@ const SessionMain: React.FC = () => {
                 }}/>
                 <Layout style={{display: 'flex', height: '100%', width: '100%'}}>
                     <Layout hasSider style={{display: 'flex'}}>
-                        <Tabs
-                            tabPosition={'left'}
-                            items={[{
-                                key: 'sessions',
-                                label: 'sessions',
-                                forceRender: true,
-                                children: <div
-                                    style={{width: xshListWindowWidth, height: "100vh", backgroundColor: 'white'}}>
-                                    <SessionList
-                                        setSessions={setSessions}
-                                        setActiveKey={setActiveKey}
-                                    />
-                                </div>
-                            },
-                            //     {
-                            //     key: 'fileTransfer',
-                            //     label: 'fileTransfer',
-                            //     forceRender: true,
-                            //     children: sessions.map(item => {
-                            //         return <FileTransfer
-                            //             setSessions={setSessions}
-                            //             setActiveKey={setActiveKey}
-                            //         />
-                            //     })
-                            // }]}
+                        <Menu
+                            style={{width: '36px'}}
+                            mode="inline"
+                            inlineCollapsed={true}
+                            onClick={function ({item, key, keyPath, domEvent}) {
+                                // console.log(item, key, keyPath, domEvent);
+                                setSelectedMenuKey(key);
+                            }}
+                            items={[
+                                {key: NENU_SESSIONS, icon: <CodeOutlined />, label: NENU_SESSIONS},
+                                {key: MENU_FILETRANSFER, icon: <DesktopOutlined/>, label: MENU_FILETRANSFER},
+                            ]}
                         />
+
+                        <div
+                            style={{width: xshListWindowWidth, height: "100vh", backgroundColor: 'white'}}>
+                            {selectedMenuKey == NENU_SESSIONS ?
+                                <SessionList
+                                    setSessions={setSessions}
+                                    setActiveKey={setActiveKey}
+                                /> : <FileTransfer
+                                    sessions={sessions}
+                                />
+                            }
+                        </div>
+
 
                         <DragLine
                             startPos={xshListWindowWidth}

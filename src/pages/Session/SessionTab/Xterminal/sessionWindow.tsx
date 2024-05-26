@@ -2,7 +2,7 @@ import {useEffect, useRef, useContext, useState} from "react";
 import React from "react";
 import {Terminal} from "xterm"
 import "xterm/css/xterm.css"
-import util, {sleep, msgMap, sessionStatusMap, showMessage, getUUid} from "../../../../util"
+import util, {sleep, callbackMap, sessionStatusMap, showMessage, getUUid} from "../../../../util"
 import {DISCONNECTED, CONNECTING, CONNECTED, HEADER_HEIGHT} from "../../../../const"
 import {sessionIdRef, sessionIdMapFileName} from "../../main/Main"
 import {SearchAddon} from 'xterm-addon-search'
@@ -302,23 +302,15 @@ const SessionWindow: React.FC = (props) => {
                 sendData: function (data: string) {
                     sock.send(JSON.stringify({'data': data, 'type': 'data'}));
                 },
-                sendRecv: async function (data: string, maxRetryCount = 10, retryTime = 1000) {
+                callback: async function (methodName, args, callback) {
                     const uid = getUUid();
-                    console.log(`uuid: ${uid}`)
-
-                    sock.send(JSON.stringify({'data': data + '\r', requestId: uid, 'type': 'sendRecv'}));
-                    for (let i = 0; i < maxRetryCount; i++) {
-                        console.log('msgMap:', msgMap)
-                        if (uid in msgMap) {
-                            const msg = msgMap[uid];
-                            delete msgMap[uid];
-                            return msg
-                        }
-                        await sleep(retryTime);
-                    }
-                    return {
-                        error: 'excced time'
-                    }
+                    callbackMap[uid] = callback;
+                    this.send({
+                        type: 'recallback',
+                        args: args,
+                        methodName: methodName,
+                        requestId: uid,
+                    })
                 }
             };
 
@@ -370,11 +362,7 @@ const SessionWindow: React.FC = (props) => {
                         }
                         break;
                     case 'response':
-                        console.log(res);
-                        if (res.val) {
-                            msgMap[res.requestId] = res.val;
-                        }
-                        console.log(msgMap)
+                        callbackMap[res.requestId](res.val);
                         break;
                     default:
                         throw new Error(`unexpected result type: ${res.type}`);
@@ -382,7 +370,7 @@ const SessionWindow: React.FC = (props) => {
             }
 
             sessionIdRef[id].sock.onclose = function (e) {
-                console.log(`sock: ${id} closed`, e);
+                // console.log(`sock: ${id} closed`, e);
                 try {
                     sessionIdRef[id].term.write("\nthis session is closed.....");
                 } catch (e) {
