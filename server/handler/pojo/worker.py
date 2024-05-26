@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import stat
 import traceback
 import types
@@ -11,6 +12,8 @@ import time
 
 from handler.pojo.SessionContext import SessionContext
 from utils import reset_font, gen_id
+
+from util import thread_pool_util
 
 try:
     import secrets
@@ -66,6 +69,42 @@ class Worker(object):
         self.bufferRead = b''
         # 创建 SFTP 客户端
         self.sftp = ssh.open_sftp()
+
+    def _create_remote_directory(self, path):
+        """递归创建远程目录"""
+        try:
+            # 目录不存在，递归创建上级目录
+            head, tail = os.path.split(path)
+            self.sftp.chdir(head)
+        except IOError:
+            if head and tail:
+                self._create_remote_directory(head)
+                self.sftp.mkdir(head)
+            elif tail:
+                self.sftp.mkdir(tail)
+
+    async def _upload_single_file(self, local_path, remote_path):
+        self._create_remote_directory(remote_path)
+        try:
+            self.sftp.put(local_path, remote_path)
+            print(f"Successfully uploaded {local_path} to {remote_path}")
+        except Exception as e:
+            print(f"Failed to upload {local_path} to {remote_path}: {str(e)}")
+            e.with_traceback()
+
+
+    def upload_files(self, files, remote_path):
+        for file_info in files:
+            local_path = file_info["path"]
+            if os.path.isdir(local_path):
+                directory_name = os.path.basename(local_path)
+                for root, dirs, files in os.walk(local_path):
+                    extra_dirname = root.removeprefix(local_path).replace(os.path.sep, "/")
+                    for file_name in files:
+                        upload_local_path = os.path.join(root, file_name)
+                        asyncio.create_task(self._upload_single_file(upload_local_path, remote_path + "/" + directory_name + "/" + extra_dirname + "/" + file_name))
+            else:
+                asyncio.create_task(self._upload_single_file(local_path, remote_path + "/" + file_info["name"]))
 
 
     def get_remote_file_list(self, remote_path):

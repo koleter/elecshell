@@ -83,6 +83,8 @@ class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
             data = msg.get('data')
             if data and isinstance(data, UnicodeType):
                 worker.send(data)
+        elif type == 'uploadFiles':
+            worker.upload_files(*msg.get("args"))
         elif type == 'recallback':
             args = msg.get("args")
             ret = getattr(worker, msg.get("methodName"))(*args)

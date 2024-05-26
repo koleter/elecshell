@@ -235,7 +235,7 @@ const SessionList: React.FC = (props) => {
         });
 
         sessionIdMapFileName[id] = filePath.substr(filePath.lastIndexOf(path.sep) + 1);
-        console.log(sessionIdMapFileName)
+        // console.log(sessionIdMapFileName)
         setActiveKey(id);
         // xterm-256color
         request(util.baseUrl + "session", {
@@ -421,7 +421,7 @@ const SessionList: React.FC = (props) => {
         if (info.node.isLeaf) {
             dstDir = dropKey.substr(0, dropKey.lastIndexOf(path.sep));
         }
-        console.log(info.node, info.dragNode)
+        // console.log(info.node, info.dragNode)
         if (srcDir == dstDir) {
             return true;
         }
@@ -475,7 +475,7 @@ const SessionList: React.FC = (props) => {
             <Form
                 form={editForm}
                 onFinish={(formInfo) => {
-                    console.log(formInfo)
+                    // console.log(formInfo)
                     if (!modalNode.isLeaf) {
                         request(util.baseUrl + 'conf', {
                             method: 'POST',
