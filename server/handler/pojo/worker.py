@@ -163,7 +163,8 @@ class Worker(object):
 
             try:
                 val = str(self.bufferRead + data, 'utf-8')
-            except UnicodeDecodeError:
+            except UnicodeDecodeError as e:
+                e.with_traceback()
                 self.bufferRead += data
                 return
             self.bufferRead = b''
