@@ -68,7 +68,10 @@ class Worker(object):
         self.login_script = login_script
         self.bufferRead = b''
         # 创建 SFTP 客户端
-        self.sftp = ssh.open_sftp()
+        try:
+            self.sftp = ssh.open_sftp()
+        except Exception as e:
+            logging.error(e)
 
     def _create_remote_directory(self, path):
         """递归创建远程目录"""
