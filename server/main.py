@@ -16,7 +16,6 @@ from settings import (
     get_ssl_context, get_server_settings, check_encoding_setting
 )
 
-
 def make_handlers(loop, options):
     host_keys_settings = get_host_keys_settings(options)
     policy = get_policy_setting(options, host_keys_settings)

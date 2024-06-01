@@ -26,13 +26,49 @@ from tornado.iostream import _ERRNO_CONNRESET
 from tornado.util import errno_from_exception
 from handler.const import BUF_SIZE, callback_map, callback_map_lock
 
+import time
+import psutil
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
 workers = {}  # {id: worker}
 workers_lock = threading.Lock()
 
-# logger = logging.getLogger(__name__)
-# console_fmt = "%(name)s--->%(levelname)s--->%(asctime)s--->%(message)s--->%(filename)s:%(lineno)d"
-#
-# logging.basicConfig(level="INFO", format=console_fmt)
+class WatchDogFileHandler(FileSystemEventHandler):
+
+    def on_created(self, event):
+        if event.is_directory:
+            return
+        file_name = os.path.basename(event.src_path)
+        if not 'elecshellTransfer_' in file_name:
+            return
+        print(f'File {event.src_path} has been created')
+        try:
+            with open(event.src_path, 'r') as f:
+                print('文件内容: ' + f.read())
+        except PermissionError:
+            print("无权限，尝试修改文件权限")
+            os.chmod(event.src_path, 0o777)  # 修改为适当的权限值
+            with open(event.src_path, 'r') as f:
+                print('文件内容: ' + f.read())
+
+        # os.remove(event.src_path)
+
+def get_all_drive_letters():
+    partitions = psutil.disk_partitions()
+    drive_letters = [partition.device for partition in partitions]
+    return drive_letters
+
+
+event_handler = WatchDogFileHandler()
+
+drive_letters = get_all_drive_letters()
+print("Monitoring the following drives:", drive_letters)
+
+for drive in drive_letters:
+    observer = Observer()
+    observer.schedule(event_handler, drive, recursive=True)
+    observer.start()
 
 
 def clear_worker(worker):
