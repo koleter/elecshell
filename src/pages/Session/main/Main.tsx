@@ -242,7 +242,7 @@ const SessionMain: React.FC = () => {
                                                     items: [
                                                         {
                                                             label: (
-                                                                <span onClick={() => {
+                                                                <div onClick={() => {
                                                                     prompt("重命名", (name) => {
                                                                         if (!name.trim()) {
                                                                             showMessage({
@@ -263,25 +263,25 @@ const SessionMain: React.FC = () => {
                                                                         });
                                                                     });
 
-                                                                }}>重命名</span>
+                                                                }}>重命名</div>
                                                             ),
                                                             key: 'rename'
                                                         },
                                                         {
                                                             label: (
-                                                                <span onClick={() => {
+                                                                <div onClick={() => {
                                                                     setSessions(sessions.filter(session => session.key === item.key));
                                                                     closeSessions(sessions.filter(session => session.key !== item.key));
-                                                                }}>关闭其他选项卡</span>
+                                                                }}>关闭其他选项卡</div>
                                                             ),
                                                             key: 'closeOtherTabs'
                                                         },
                                                         {
                                                             label: (
-                                                                <span onClick={() => {
+                                                                <div onClick={() => {
                                                                     closeSessions(sessions);
                                                                     setSessions([]);
-                                                                }}>关闭所有选项卡</span>
+                                                                }}>关闭所有选项卡</div>
                                                             ),
                                                             key: 'closeAllTabs'
                                                         }

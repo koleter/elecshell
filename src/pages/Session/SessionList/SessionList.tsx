@@ -9,6 +9,7 @@ import {request} from "@@/plugin-request/request";
 import util, {defineValidatorWithErrMessage, getUUid} from "@/util";
 import {sessionIdMapFileName} from "@/pages/Session/main/Main";
 import {AppContext} from "@/pages/context/AppContextProvider";
+import "./SessionList.less"
 
 const path = require('path');
 
@@ -274,7 +275,8 @@ const SessionList: React.FC = (props) => {
         if (!node.isLeaf) {
             items.push({
                 label: (
-                    <span onClick={() => {
+                    <div onClick={(e) => {
+                        // e.stopPropagation();
                         prompt("请输入文件夹名", function (dirName) {
                             if (!dirName) {
                                 return;
@@ -295,17 +297,18 @@ const SessionList: React.FC = (props) => {
                                 }
                             })
                         });
-                    }}>新增文件夹</span>
+                    }}>新增文件夹</div>
                 ),
                 key: 'addFolder',
             }, {
                 label: (
-                    <span onClick={() => {
+                    <div onClick={(e) => {
+                        // e.stopPropagation();
                         form.resetFields();
                         setDataSource([]);
                         setModalNode(node);
                         setAddSessionModalVisiable(true);
-                    }}>新增会话</span>
+                    }}>新增会话</div>
                 ),
                 key: 'addSession',
             });
@@ -313,7 +316,8 @@ const SessionList: React.FC = (props) => {
             // session节点可以复制某个session配置
             items.push({
                 label: (
-                    <span onClick={() => {
+                    <div onClick={(e) => {
+                        // e.stopPropagation();
                         request(util.baseUrl + 'conf', {
                             method: 'POST',
                             body: JSON.stringify({
@@ -329,7 +333,7 @@ const SessionList: React.FC = (props) => {
                                 setRefreshTreeData(e => e + 1)
                             }
                         })
-                    }}>复制</span>
+                    }}>复制</div>
                 ),
                 key: 'duplicateSession',
             });
@@ -339,7 +343,8 @@ const SessionList: React.FC = (props) => {
         if (sessionRootKey != node.key) {
             items.push({
                 label: (
-                    <span onClick={() => {
+                    <div onClick={(e) => {
+                        // e.stopPropagation();
                         setModalNode(node);
                         if (node.isLeaf) {
                             request(util.baseUrl + 'conf', {
@@ -366,12 +371,13 @@ const SessionList: React.FC = (props) => {
                             editForm.setFieldsValue(node);
                             setEditSessionModalVisiable(true);
                         }
-                    }}>编辑</span>
+                    }}>编辑</div>
                 ),
                 key: 'edit',
             }, {
                 label: (
-                    <span onClick={() => {
+                    <div onClick={(e) => {
+                        // e.stopPropagation();
                         request(util.baseUrl + 'conf', {
                             method: 'POST',
                             body: JSON.stringify({
@@ -387,7 +393,7 @@ const SessionList: React.FC = (props) => {
                                 setRefreshTreeData(e => e + 1);
                             }
                         })
-                    }}>删除</span>
+                    }}>删除</div>
                 ),
                 key: 'delete',
             });
@@ -398,14 +404,18 @@ const SessionList: React.FC = (props) => {
 
     const titleRender = (nodeData: DataNode) => {
         return (
-            <Dropdown menu={genTreeNodeMenu(nodeData)} trigger={['contextMenu']}>
-        <span onDoubleClick={() => {
-            if (!nodeData.isLeaf) {
-                return;
-            }
-            createNewSession(nodeData.key, nodeData.path, nodeData.title);
-        }}>{nodeData.title}</span>
-            </Dropdown>
+            <div style={{display: 'inline-block', width: '100%'}} onClick={(e) => {
+                e.stopPropagation();
+            }}>
+                <Dropdown menu={genTreeNodeMenu(nodeData)} trigger={['contextMenu']}>
+                    <div style={{display: 'inline-block', width: '100%'}} onDoubleClick={() => {
+                        if (!nodeData.isLeaf) {
+                            return;
+                        }
+                        createNewSession(nodeData.key, nodeData.path, nodeData.title);
+                    }}>{nodeData.title}</div>
+                </Dropdown>
+            </div>
         );
     }
 
@@ -449,6 +459,7 @@ const SessionList: React.FC = (props) => {
 
     return <>
         <DirectoryTree
+            rootClassName="sessionList"
             className="draggable-tree"
             draggable
             blockNode

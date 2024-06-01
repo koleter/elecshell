@@ -76,9 +76,9 @@ const SessionTransfer: React.FC = (props) => {
                     // onDragOver={function ({event, node}) {
                     //     console.log("onDragOver", event, node, event.dataTransfer.files)
                     // }}
-                    // onDragStart={function ({event, node}) {
-                    //     console.log("onDragStart", event, node, event.dataTransfer.files)
-                    // }}
+                    onDragStart={function ({event, node}) {
+                        console.log("onDragStart", event, node, event.dataTransfer.files)
+                    }}
                     // onDrop={function ({event, node, dragNode, dragNodesKeys}) {
                     //     console.log("onDrop", event, node, dragNode, dragNodesKeys, event.dataTransfer.files)
                     // }}
