@@ -276,7 +276,6 @@ const SessionList: React.FC = (props) => {
             items.push({
                 label: (
                     <div onClick={(e) => {
-                        // e.stopPropagation();
                         prompt("请输入文件夹名", function (dirName) {
                             if (!dirName) {
                                 return;
@@ -303,7 +302,6 @@ const SessionList: React.FC = (props) => {
             }, {
                 label: (
                     <div onClick={(e) => {
-                        // e.stopPropagation();
                         form.resetFields();
                         setDataSource([]);
                         setModalNode(node);
@@ -317,7 +315,6 @@ const SessionList: React.FC = (props) => {
             items.push({
                 label: (
                     <div onClick={(e) => {
-                        // e.stopPropagation();
                         request(util.baseUrl + 'conf', {
                             method: 'POST',
                             body: JSON.stringify({
@@ -344,7 +341,6 @@ const SessionList: React.FC = (props) => {
             items.push({
                 label: (
                     <div onClick={(e) => {
-                        // e.stopPropagation();
                         setModalNode(node);
                         if (node.isLeaf) {
                             request(util.baseUrl + 'conf', {
@@ -377,7 +373,6 @@ const SessionList: React.FC = (props) => {
             }, {
                 label: (
                     <div onClick={(e) => {
-                        // e.stopPropagation();
                         request(util.baseUrl + 'conf', {
                             method: 'POST',
                             body: JSON.stringify({
@@ -404,18 +399,14 @@ const SessionList: React.FC = (props) => {
 
     const titleRender = (nodeData: DataNode) => {
         return (
-            <div style={{display: 'inline-block', width: '100%'}} onClick={(e) => {
-                e.stopPropagation();
-            }}>
-                <Dropdown menu={genTreeNodeMenu(nodeData)} trigger={['contextMenu']}>
-                    <div style={{display: 'inline-block', width: '100%'}} onDoubleClick={() => {
-                        if (!nodeData.isLeaf) {
-                            return;
-                        }
-                        createNewSession(nodeData.key, nodeData.path, nodeData.title);
-                    }}>{nodeData.title}</div>
-                </Dropdown>
-            </div>
+            <Dropdown menu={genTreeNodeMenu(nodeData)} trigger={['contextMenu']}>
+                <div style={{display: 'inline-block', width: '100%'}} onDoubleClick={() => {
+                    if (!nodeData.isLeaf) {
+                        return;
+                    }
+                    createNewSession(nodeData.key, nodeData.path, nodeData.title);
+                }}>{nodeData.title}</div>
+            </Dropdown>
         );
     }
 
