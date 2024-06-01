@@ -8,6 +8,7 @@ const {DirectoryTree} = Tree;
 import "./SessionTransfer.less"
 import {sessionIdRef} from "@/pages/Session/main/Main";
 import {AppContext} from "@/pages/context/AppContextProvider";
+import util, {getUUid} from "@/util";
 
 const SessionTransfer: React.FC = (props) => {
     const [treeData, setTreeData] = useState([{
@@ -64,24 +65,23 @@ const SessionTransfer: React.FC = (props) => {
                     draggable={true}
                     treeData={treeData}
                     expandAction={'doubleClick'}
-                    // onDragEnd={function ({event, node}) {
-                    //     console.log("onDragEnd", event, node, event.dataTransfer.files)
-                    // }}
-                    // onDragEnter={function ({event, node, expandedKeys}) {
-                    //     console.log("onDragEnter", event, node, expandedKeys, event.dataTransfer.files)
-                    // }}
-                    // onDragLeave={function ({event, node}) {
-                    //     console.log("onDragLeave", event, node, event.dataTransfer.files)
-                    // }}
-                    // onDragOver={function ({event, node}) {
-                    //     console.log("onDragOver", event, node, event.dataTransfer.files)
-                    // }}
                     onDragStart={function ({event, node}) {
-                        console.log("onDragStart", event, node, event.dataTransfer.files)
+                        const fileName = `elecshellTransfer_${getUUid()}`;
+                        const prop = {
+                            sessionId: activeKey,
+                            name: node.title,
+                            remoteDir: searchValue,
+                        };
+                        const fileContent = JSON.stringify(prop);
+                        const file = new Blob([fileContent], {type: 'text/plain'});
+                        const url = URL.createObjectURL(file);
+
+                        // 使用 dataTransfer.setData 设置下载链接
+                        event.dataTransfer.setData('text/uri-list', url);
+                        event.dataTransfer.setData('downloadURL', `text/plain:${fileName}:${url}`);
+
+                        console.log("onDragStart", event, node, event.dataTransfer.files);
                     }}
-                    // onDrop={function ({event, node, dragNode, dragNodesKeys}) {
-                    //     console.log("onDrop", event, node, dragNode, dragNodesKeys, event.dataTransfer.files)
-                    // }}
                 />
             </div>
 
