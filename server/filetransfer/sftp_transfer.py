@@ -4,23 +4,24 @@ import os
 import stat
 import uuid
 
+from filetransfer.base_transfer import BaseTransfer
 
-class sftp_file_transfer():
+class sftp_file_transfer(BaseTransfer):
     def __init__(self, worker):
+        super().__init__(worker)
         # 创建 SFTP 客户端
-        self.file_transfer = worker.ssh.open_sftp()
-        self.worker = worker
+        self.sftp = worker.ssh.open_sftp()
 
 
     def get_remote_file_list(self, remote_path):
         # 获取远程路径下的文件和文件夹属性列表
-        file_list = self.file_transfer.listdir_attr(remote_path)
+        file_list = self.sftp.listdir_attr(remote_path)
         ret = []
         # 打印文件列表
         for file in file_list:
             item = dict()
             item.setdefault("title", file.filename)
-            item.setdefault("key", str(uuid.uuid1()))
+            item.setdefault("key", file.filename)
             item.setdefault("isLeaf", not stat.S_ISDIR(file.st_mode))
             ret.append(item)
         ret.sort(key=lambda x: (x["isLeaf"], x["title"]))
@@ -32,19 +33,19 @@ class sftp_file_transfer():
         try:
             # 目录不存在，递归创建上级目录
             head, tail = os.path.split(path)
-            self.file_transfer.chdir(head)
+            self.sftp.chdir(head)
         except IOError:
             if head and tail:
                 self._create_remote_directory(head)
-                self.file_transfer.mkdir(head)
+                self.sftp.mkdir(head)
             elif tail:
-                self.file_transfer.mkdir(tail)
+                self.sftp.mkdir(tail)
 
 
     async def _upload_single_file(self, local_path, remote_path):
         self._create_remote_directory(remote_path)
         try:
-            self.file_transfer.put(local_path, remote_path)
+            self.sftp.put(local_path, remote_path)
             print(f"Successfully uploaded {local_path} to {remote_path}")
         except Exception as e:
             print(f"Failed to upload {local_path} to {remote_path}: {str(e)}")
@@ -65,9 +66,46 @@ class sftp_file_transfer():
                 asyncio.create_task(self._upload_single_file(local_path, remote_path + "/" + file_info["name"]))
 
 
-    def download_files(self, local_path, remote_path):
-        pass
-        # self.file_transfer.
+    def get_file_from_remote_server(self, remote_file_path, local_root_dir):
+        try:
+            self.sftp.get(remote_file_path, local_root_dir)
+        except Exception as e:
+            self.worker.handler.write_message({
+                "type": "message",
+                "status": "error",
+                "content": f'Failed to download file {remote_file_path} from remote server: {str(e)}'
+            })
+
+    def _download_directories(self, local_root_dir, remoteDir):
+        for file_info in self.sftp.listdir_attr(remoteDir):
+            remote_file_path = remoteDir + "/" + file_info.filename
+            if stat.S_ISDIR(file_info.st_mode):
+                next_local_dir = os.path.join(local_root_dir, file_info.filename)
+                os.mkdir(next_local_dir)
+                self._download_directories(next_local_dir, remote_file_path)
+            else:
+                self.get_file_from_remote_server(remote_file_path, os.path.join(local_root_dir, file_info.filename))
+
+
+    def download_single_file(self, local_root_dir, file, remoteDir):
+        remote_file_path = remoteDir + "/" + file
+        file_info_list = self.sftp.listdir_attr(remoteDir)
+        for file_info in file_info_list:
+            if not file_info.filename == file:
+                continue
+            if stat.S_ISDIR(file_info.st_mode):
+                next_local_dir = os.path.join(local_root_dir, file)
+                os.mkdir(next_local_dir)
+                self._download_directories(next_local_dir, remoteDir + "/" + file)
+            else:
+                self.get_file_from_remote_server(remoteDir + "/" + file, os.path.join(local_root_dir, file))
+            break
+
+
+    def download_files(self, local_root_dir, files, remoteDir):
+        for file in files:
+            self.download_single_file(local_root_dir, file, remoteDir)
+
 
     def close(self):
-        self.file_transfer.close()
+        self.sftp.close()

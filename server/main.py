@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import tornado.web
 import tornado.ioloop
@@ -10,6 +11,7 @@ from handler.ConfigHandler import ConfigHandler
 from handler.ExitHandler import ExitHandler
 from handler.IndexHandler import IndexHandler
 from handler import const
+from handler.pojo.worker import start_watcher
 
 from settings import (
     get_app_settings,  get_host_keys_settings, get_policy_setting,
@@ -59,6 +61,8 @@ def main():
         app_listen(app, options.sslport, options.ssladdress, server_settings)
     # url = "http://localhost:{}/session".format(options.port)
     # webbrowser.open(url, new=0, autoraise=True)
+    # asyncio.run(start_watcher())
+    # loop.add_callback(start_watcher)
     loop.start()
 
 

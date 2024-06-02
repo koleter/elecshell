@@ -121,7 +121,7 @@ const SessionWindow: React.FC = (props) => {
         }
     ]
 
-    const methodMap = {
+    const globalMethodMap = {
         prompt: (msg, callback) => {
             context.prompt(msg, callback);
         },
@@ -348,9 +348,9 @@ const SessionWindow: React.FC = (props) => {
                     case 'message':
                         showMessage(res);
                         break;
-                    case 'execMethod':
+                    case 'execSessionMethod':
                         if (res.requestId) {
-                            methodMap[res.method](res.args, (callbackResponse) => {
+                            sessionIdRef[id][res.method](res.args, (callbackResponse) => {
                                 sessionIdRef[id].send({
                                     type: 'callback',
                                     requestId: res.requestId,
@@ -358,7 +358,20 @@ const SessionWindow: React.FC = (props) => {
                                 })
                             })
                         } else {
-                            methodMap[res.method](res.args);
+                            sessionIdRef[id][res.method](res.args);
+                        }
+                        break;
+                    case 'execMethod':
+                        if (res.requestId) {
+                            globalMethodMap[res.method](res.args, (callbackResponse) => {
+                                sessionIdRef[id].send({
+                                    type: 'callback',
+                                    requestId: res.requestId,
+                                    args: callbackResponse
+                                })
+                            })
+                        } else {
+                            globalMethodMap[res.method](res.args);
                         }
                         break;
                     case 'eval':

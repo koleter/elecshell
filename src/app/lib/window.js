@@ -45,7 +45,6 @@ exports.createWindow = () => {
     win.webContents.on('before-input-event', (event, input) => {
         if (input.key === 'W' && (input.modifiers.includes('Control') || input.modifiers.includes('Command'))) {
             event.preventDefault(); // 阻止默认行为
-            console.log('Ctrl+W 被阻止');
         }
     });
 

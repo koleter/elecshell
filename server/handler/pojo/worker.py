@@ -36,17 +36,21 @@ from watchdog.events import FileSystemEventHandler
 workers = {}  # {id: worker}
 workers_lock = threading.Lock()
 
+loop = IOLoop.current()
 
 class WatchDogFileHandler(FileSystemEventHandler):
 
     def on_created(self, event):
         if event.is_directory:
             return
+        if 'chrome_drag' in event.src_path:
+            return
         file_name = os.path.basename(event.src_path)
         if not 'elecshellTransfer_' in file_name:
             return
-        logging.info(f'File {event.src_path} has been created')
         data = None
+        # 文件可能还在被创建过程中，操作系统可能还没有完全关闭文件句柄，导致暂时无法访问
+        time.sleep(0.1)
         try:
             with open(event.src_path, 'r') as f:
                 data = json.loads(f.read())
@@ -54,10 +58,9 @@ class WatchDogFileHandler(FileSystemEventHandler):
             logging.error(f"open {event.src_path} error, {str(e)}")
         os.remove(event.src_path)
         if data is None:
-            logging.error("data is None")
             return
         worker = workers.get(data.get('sessionId'))
-
+        loop.add_callback(worker.download_files, os.path.dirname(event.src_path), data.get('files'), data.get('remoteDir'))
 
 
 def get_all_drive_letters():
@@ -65,18 +68,18 @@ def get_all_drive_letters():
     drive_letters = [partition.device for partition in partitions]
     return drive_letters
 
+def start_watcher():
+    event_handler = WatchDogFileHandler()
 
-event_handler = WatchDogFileHandler()
+    drive_letters = get_all_drive_letters()
+    print("Monitoring the following drives:", drive_letters)
 
-drive_letters = get_all_drive_letters()
-print("Monitoring the following drives:", drive_letters)
+    for drive in drive_letters:
+        observer = Observer()
+        observer.schedule(event_handler, drive, recursive=True)
+        observer.start()
 
-for drive in drive_letters:
-    observer = Observer()
-    observer.schedule(event_handler, drive, recursive=True)
-    observer.start()
-
-
+start_watcher()
 def clear_worker(worker):
     with workers_lock:
         assert worker.id in workers
@@ -119,25 +122,25 @@ class Worker(object):
         except Exception as e:
             logging.error(f"Failed to initialize file transfer: {str(e)}")
 
-    def upload_files(self, files, remote_path):
+    def upload_files(self, files, remote_dir):
         self.init_file_transfer()
-        self.file_transfer.upload_files(files, remote_path)
+        self.file_transfer.upload_files(files, remote_dir)
+        self.get_remote_file_list(remote_dir)
 
 
-    def download_files(self, local_path, remote_path):
+    def download_files(self, local_root_dir, files, remote_path):
         self.init_file_transfer()
-        self.file_transfer.download_files(local_path, remote_path)
+        self.file_transfer.download_files(local_root_dir, files, remote_path)
 
 
-    def get_remote_file_list(self, msg):
+    def get_remote_file_list(self, remote_dir):
         self.init_file_transfer()
-        args = msg.get('args')
         # 获取远程路径下的文件和文件夹属性列表
-        ret = self.file_transfer.get_remote_file_list(*args)
+        ret = self.file_transfer.get_remote_file_list(remote_dir)
         self.handler.write_message({
-            'requestId': msg.get("requestId"),
-            'val': ret,
-            'type': 'response'
+            'args': ret,
+            'method': 'refreshRemoteFileList',
+            'type': 'execSessionMethod'
         }, binary=False)
 
 
