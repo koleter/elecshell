@@ -37,8 +37,16 @@ exports.createWindow = () => {
     }
     const win = new BrowserWindow(option);
 
-    globalShortcut.register("CommandOrControl+W", () => {
-        //stuff here
+    // globalShortcut.register("CommandOrControl+W", () => {
+    //     //stuff here
+    // });
+
+    // 阻止Ctrl+W关闭窗口
+    win.webContents.on('before-input-event', (event, input) => {
+        if (input.key === 'W' && (input.modifiers.includes('Control') || input.modifiers.includes('Command'))) {
+            event.preventDefault(); // 阻止默认行为
+            console.log('Ctrl+W 被阻止');
+        }
     });
 
     console.log(process.env.NODE_ENV);

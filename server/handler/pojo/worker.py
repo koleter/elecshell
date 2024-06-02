@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import json
 import logging
 import os
 import stat
@@ -14,7 +15,7 @@ from tornado.options import options
 from handler.pojo.SessionContext import SessionContext
 from utils import reset_font, gen_id
 
-from util import thread_pool_util
+from filetransfer.sftp_transfer import sftp_file_transfer
 
 try:
     import secrets
@@ -35,6 +36,7 @@ from watchdog.events import FileSystemEventHandler
 workers = {}  # {id: worker}
 workers_lock = threading.Lock()
 
+
 class WatchDogFileHandler(FileSystemEventHandler):
 
     def on_created(self, event):
@@ -43,17 +45,20 @@ class WatchDogFileHandler(FileSystemEventHandler):
         file_name = os.path.basename(event.src_path)
         if not 'elecshellTransfer_' in file_name:
             return
-        print(f'File {event.src_path} has been created')
+        logging.info(f'File {event.src_path} has been created')
+        data = None
         try:
             with open(event.src_path, 'r') as f:
-                print('文件内容: ' + f.read())
-        except PermissionError:
-            print("无权限，尝试修改文件权限")
-            os.chmod(event.src_path, 0o777)  # 修改为适当的权限值
-            with open(event.src_path, 'r') as f:
-                print('文件内容: ' + f.read())
+                data = json.loads(f.read())
+        except Exception as e:
+            logging.error(f"open {event.src_path} error, {str(e)}")
+        os.remove(event.src_path)
+        if data is None:
+            logging.error("data is None")
+            return
+        worker = workers.get(data.get('sessionId'))
 
-        # os.remove(event.src_path)
+
 
 def get_all_drive_letters():
     partitions = psutil.disk_partitions()
@@ -103,63 +108,38 @@ class Worker(object):
         self.debug = debug
         self.xsh_conf_id = None
         self.login_script = login_script
-        self.bufferRead = b''
-        # 创建 SFTP 客户端
+        self.file_transfer = None
+
+    def init_file_transfer(self):
+        if self.file_transfer is not None:
+            return
         try:
-            self.sftp = ssh.open_sftp()
+            self.file_transfer = sftp_file_transfer(self)
+            return
         except Exception as e:
-            logging.error(e)
-
-    def _create_remote_directory(self, path):
-        """递归创建远程目录"""
-        try:
-            # 目录不存在，递归创建上级目录
-            head, tail = os.path.split(path)
-            self.sftp.chdir(head)
-        except IOError:
-            if head and tail:
-                self._create_remote_directory(head)
-                self.sftp.mkdir(head)
-            elif tail:
-                self.sftp.mkdir(tail)
-
-    async def _upload_single_file(self, local_path, remote_path):
-        self._create_remote_directory(remote_path)
-        try:
-            self.sftp.put(local_path, remote_path)
-            print(f"Successfully uploaded {local_path} to {remote_path}")
-        except Exception as e:
-            print(f"Failed to upload {local_path} to {remote_path}: {str(e)}")
-            e.with_traceback()
-
+            logging.error(f"Failed to initialize file transfer: {str(e)}")
 
     def upload_files(self, files, remote_path):
-        for file_info in files:
-            local_path = file_info["path"]
-            if os.path.isdir(local_path):
-                directory_name = os.path.basename(local_path)
-                for root, dirs, files in os.walk(local_path):
-                    extra_dirname = root.removeprefix(local_path).replace(os.path.sep, "/")
-                    for file_name in files:
-                        upload_local_path = os.path.join(root, file_name)
-                        asyncio.create_task(self._upload_single_file(upload_local_path, remote_path + "/" + directory_name + "/" + extra_dirname + "/" + file_name))
-            else:
-                asyncio.create_task(self._upload_single_file(local_path, remote_path + "/" + file_info["name"]))
+        self.init_file_transfer()
+        self.file_transfer.upload_files(files, remote_path)
 
 
-    def get_remote_file_list(self, remote_path):
+    def download_files(self, local_path, remote_path):
+        self.init_file_transfer()
+        self.file_transfer.download_files(local_path, remote_path)
+
+
+    def get_remote_file_list(self, msg):
+        self.init_file_transfer()
+        args = msg.get('args')
         # 获取远程路径下的文件和文件夹属性列表
-        file_list = self.sftp.listdir_attr(remote_path)
-        ret = []
-        # 打印文件列表
-        for file in file_list:
-            item = dict()
-            item.setdefault("title", file.filename)
-            item.setdefault("key", str(uuid.uuid1()))
-            item.setdefault("isLeaf", not stat.S_ISDIR(file.st_mode))
-            ret.append(item)
-        ret.sort(key=lambda x: (x["isLeaf"], x["title"]))
-        return ret
+        ret = self.file_transfer.get_remote_file_list(*args)
+        self.handler.write_message({
+            'requestId': msg.get("requestId"),
+            'val': ret,
+            'type': 'response'
+        }, binary=False)
+
 
     def __call__(self, fd, events):
         if events & IOLoop.READ:
@@ -170,7 +150,6 @@ class Worker(object):
         if events & IOLoop.ERROR:
             logging.info("{} IOLoop.ERROR".format(self.id))
             self.close(reason='error event occurred')
-
 
     def set_handler(self, handler):
         if not self.handler:
@@ -213,7 +192,7 @@ class Worker(object):
             except tornado.websocket.WebSocketClosedError:
                 self.close(reason='websocket closed')
 
-    def recv(self, data, callback, extra_args = [], sleep=0):
+    def recv(self, data, callback, extra_args=[], sleep=0):
         logging.info('worker {} on read'.format(self.id))
 
         self.data_to_dst.append(data)
@@ -299,9 +278,11 @@ class Worker(object):
         message['requestId'] = req_id
         with callback_map_lock:
             callback_map[req_id] = (callback, args)
+
         def delete_callback():
             with callback_map_lock:
                 callback_map.pop(req_id, None)
+
         threading.Timer(30, delete_callback).start()
 
     def create_new_session(self, conf_list, callback, args):
@@ -345,6 +326,9 @@ class Worker(object):
             return
         self.closed = True
 
+        if self.file_transfer is not None:
+            self.file_transfer.close()
+
         logging.info(
             'Closing worker {} with reason: {}'.format(self.id, reason)
         )
@@ -354,4 +338,3 @@ class Worker(object):
         self.chan.close()
         self.ssh.close()
         logging.info('Connection to {}:{} lost'.format(*self.dst_addr))
-

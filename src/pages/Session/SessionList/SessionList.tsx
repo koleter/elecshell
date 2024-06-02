@@ -221,7 +221,7 @@ const SessionList: React.FC = (props) => {
      * @param title     新建session会话的标题
      * @param callback  回调函数,参数是新创建的session会话的id
      */
-    async function createNewSession(sessionConfId, filePath, title, callback) {
+    async function createNewSession(sessionConfId, filePath, title, encoding, callback) {
         const id = getUUid();
         setSessions(sessions => {
             const data = [...sessions];
@@ -230,7 +230,8 @@ const SessionList: React.FC = (props) => {
                 key: id,
                 sessionConfId: sessionConfId,
                 sessionConfPath: filePath,
-                isConnected: false
+                isConnected: false,
+                encoding
             });
             return data;
         });
@@ -404,7 +405,7 @@ const SessionList: React.FC = (props) => {
                     if (!nodeData.isLeaf) {
                         return;
                     }
-                    createNewSession(nodeData.key, nodeData.path, nodeData.title);
+                    createNewSession(nodeData.key, nodeData.path, nodeData.title, nodeData.encoding);
                 }}>{nodeData.title}</div>
             </Dropdown>
         );

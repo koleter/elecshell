@@ -45,7 +45,7 @@ const termOptions = {
 
 const SessionWindow: React.FC = (props) => {
     const terminalRef = useRef<null | HTMLDivElement>(null);
-    const {id, sessionConfId, setSessions, isConnected} = props;
+    const {id, sessionConfId, setSessions, isConnected, encoding} = props;
     const context = useContext(AppContext);
     const searchInputRef = useRef(null);
     const {} = context;
@@ -90,7 +90,7 @@ const SessionWindow: React.FC = (props) => {
                 term._searchAddon.findPrevious(searchValue, calcSearchOption(matchCase, newWords, regexp));
             }
         }, {
-            render: ".※",
+            render: "Exp",
             title: "regexp",
             getType: function () {
                 return regexp ? 'primary' : 'text';
@@ -262,7 +262,6 @@ const SessionWindow: React.FC = (props) => {
             const ws_url = util.baseUrl.split(/\?|#/, 1)[0].replace('http', 'ws'),
                 join = (ws_url[ws_url.length - 1] === '/' ? '' : '/'),
                 url = ws_url + join + 'ws?id=' + id,
-                encoding = 'utf-8',
                 decoder = window.TextDecoder ? new window.TextDecoder(encoding) : encoding;
 
             const sock = new window.WebSocket(url);
@@ -325,7 +324,18 @@ const SessionWindow: React.FC = (props) => {
             function wsockCallback(res) {
                 switch (res.type) {
                     case 'data':
-                        term.write(atob(res.val), (raw) => {
+                        // 先用atob解码Base64字符串
+                        const raw = atob(res.val);
+                        // 创建一个Uint8Array，存储解码后的字节
+                        const bytes = new Uint8Array(new ArrayBuffer(raw.length));
+
+                        // 将每个ASCII字符转换为字节
+                        for (let i = 0; i < raw.length; i++) {
+                            bytes[i] = raw.charCodeAt(i);
+                        }
+
+                        // 使用TextDecoder将字节序列转换为UTF-8字符串
+                        term.write(decoder.decode(bytes), (raw) => {
                             if (res.requestId) {
                                 sessionIdRef[id].send({
                                     type: 'callback',

@@ -307,6 +307,7 @@ const SessionMain: React.FC = () => {
                                             id={item.key}
                                             setSessions={setSessions}
                                             isConnected={item.isConnected}
+                                            encoding={item.encoding}
                                         />
                                     }
                                 })}
