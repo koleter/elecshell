@@ -325,7 +325,7 @@ const SessionWindow: React.FC = (props) => {
             function wsockCallback(res) {
                 switch (res.type) {
                     case 'data':
-                        term.write(res.val, (raw) => {
+                        term.write(atob(res.val), (raw) => {
                             if (res.requestId) {
                                 sessionIdRef[id].send({
                                     type: 'callback',

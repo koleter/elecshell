@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import logging
 import os
 import stat
@@ -8,7 +9,7 @@ import uuid
 
 import paramiko
 import threading
-import time
+from tornado.options import options
 
 from handler.pojo.SessionContext import SessionContext
 from utils import reset_font, gen_id
@@ -198,21 +199,14 @@ class Worker(object):
                 return
 
             try:
-                val = str(self.bufferRead + data, 'utf-8')
-            except UnicodeDecodeError as e:
-                e.with_traceback()
-                self.bufferRead += data
-                return
-            self.bufferRead = b''
-            try:
                 res = {
-                    'val': val,
+                    'val': base64.b64encode(data).decode(self.encoding),
                     'type': 'data'
                 }
                 if not self.handler:
                     logging.error("{}'s handler is None".format(self.id))
                 self.handler.write_message(res, binary=False)
-                if self.login_script is not None and len(self.login_script) != 0 and self.login_script[0]['expect'] in val:
+                if self.login_script is not None and len(self.login_script) != 0 and bytes(self.login_script[0]['expect'], self.encoding) in data:
                     self.send(self.login_script[0]['command'] + "\r")
                     self.login_script = self.login_script[1:]
 
