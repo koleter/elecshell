@@ -16,36 +16,33 @@ function startServer() {
         const extraArgs = '';
         // const extraArgs = `--basedir=${basePath}`;
         const args = {
-            cwd: `${path.join(__dirname, "../../../server")}`
+            cwd: process.env.NODE_ENV == 'test_production' ? `${path.join(__dirname, "../../server")}` : `${path.join(__dirname, "../../../server")}`
         };
+
+        function handleError(error) {
+            if (error.toString().match(/ModuleNotFoundError:.+?/)) {
+                throw new Error(`${error}`);
+            }
+        }
 
         exec(`python3 main.py ${extraArgs}`, args, (error, stdout, stderr) => {
             if (!error) {
                 resolve();
-                console.log(`stdout: ${stdout}`);
-                console.log(`stderr: ${stderr}`);
                 return;
             }
-            console.error(`${error}`);
-            if (error.message.startsWith("Command failed: python3 main.py")) {
+            handleError(error);
+
+            if (error.message.indexOf("python3: command not found") >= 0) {
                 exec(`python main.py ${extraArgs}`, args, (error, stdout, stderr) => {
                     if (!error) {
                         resolve();
-                        console.log(`stdout: ${stdout}`);
-                        console.log(`stderr: ${stderr}`);
                         return;
                     }
-                    if (error.message === 'Command failed: python main.py\n') {
-                        throw new Error("can not find python3 or python");
-                    }
-                    // else if (error.message.indexOf("sock.bind") >= 0) {
-                    //
-                    // }
-                    console.error(`${error}`);
-                    throw new Error(error.message);
+                    throw error;
                 });
             }
-            reject("maybe the port 8888 is used");
+            reject();
+            throw error;
         });
     });
 }
@@ -88,11 +85,11 @@ async function start() {
     // 开发模式自行启动main.py,生产模式创建子进程自动执行
     if (process.env.NODE_ENV !== 'development') {
         startServer().then(() => {
-
-        }).catch(res => {
-            throw new Error(res);
-        }).finally(() => {
             app.on('ready', createWindow);
+        }).catch(() => {
+            app.quit();
+        }).finally(() => {
+
         });
     } else {
         app.on('ready', createWindow);
