@@ -16,6 +16,7 @@ from handler.pojo.SessionContext import SessionContext
 from utils import reset_font, gen_id
 
 from filetransfer.sftp_transfer import sftp_file_transfer
+from filetransfer.py_server_transfer import py_server_sftp_file_transfer
 
 try:
     import secrets
@@ -103,7 +104,7 @@ class Worker(object):
         if not id:
             id = gen_id()
         self.id = id
-        self.data_to_dst = []
+        self.data_to_dst = ''
         self.handler = None
         self.mode = IOLoop.READ
         self.closed = False
@@ -116,8 +117,14 @@ class Worker(object):
     def init_file_transfer(self):
         if self.file_transfer is not None:
             return
+        # try:
+        #     self.file_transfer = sftp_file_transfer(self)
+        #     return
+        # except Exception as e:
+        #     logging.error(f"Failed to initialize file transfer: {str(e)}")
+
         try:
-            self.file_transfer = sftp_file_transfer(self)
+            self.file_transfer = py_server_sftp_file_transfer(self)
             return
         except Exception as e:
             logging.error(f"Failed to initialize file transfer: {str(e)}")
@@ -125,7 +132,7 @@ class Worker(object):
     def upload_files(self, files, remote_dir):
         self.init_file_transfer()
         self.file_transfer.upload_files(files, remote_dir)
-        self.get_remote_file_list(remote_dir)
+        # self.get_remote_file_list(remote_dir)
 
 
     def download_files(self, local_root_dir, files, remote_path):
@@ -136,12 +143,7 @@ class Worker(object):
     def get_remote_file_list(self, remote_dir):
         self.init_file_transfer()
         # 获取远程路径下的文件和文件夹属性列表
-        ret = self.file_transfer.get_remote_file_list(remote_dir)
-        self.handler.write_message({
-            'args': ret,
-            'method': 'refreshRemoteFileList',
-            'type': 'execSessionMethod'
-        }, binary=False)
+        self.file_transfer.get_remote_file_list(remote_dir)
 
 
     def __call__(self, fd, events):
@@ -160,11 +162,8 @@ class Worker(object):
             self.handler = handler
 
     def update_handler(self, mode):
-        if self.mode != mode:
-            self.loop.update_handler(self.fd, mode)
-            self.mode = mode
-        if mode == IOLoop.WRITE:
-            self.loop.call_later(0.1, self, self.fd, IOLoop.WRITE)
+        self.loop.update_handler(self.fd, mode)
+
 
     def _on_read(self):
         logging.debug('worker {} on read'.format(self.id))
@@ -195,10 +194,10 @@ class Worker(object):
             except tornado.websocket.WebSocketClosedError:
                 self.close(reason='websocket closed')
 
-    def recv(self, data, callback, extra_args=[], sleep=0):
-        logging.info('worker {} on read'.format(self.id))
-
-        self.data_to_dst.append(data)
+    def recv(self, data, callback=None, extra_args=[], sleep=0, show_on_term=True):
+        # logging.info('worker {} on read'.format(self.id))
+        self.update_handler(IOLoop.WRITE)
+        self.data_to_dst += data
         self._on_write()
         if sleep > 0:
             time.sleep(sleep)
@@ -217,45 +216,42 @@ class Worker(object):
         if not data:
             self.close(reason='chan closed')
             return
-
-        val = str(data, 'utf-8')
         try:
             res = {
-                'val': val,
-                'type': 'data'
+                'val': base64.b64encode(data).decode(self.encoding),
+                'type': 'data',
+                "showOnTerm": show_on_term
             }
-            self.set_callback_message(callback, res, extra_args)
-            self.handler.write_message(res, binary=False)
+            if callback:
+                self.set_callback_message(callback, res, extra_args)
+            if callback or show_on_term:
+                self.handler.write_message(res, binary=False)
+            self.update_handler(IOLoop.READ)
+            return data
         except tornado.websocket.WebSocketClosedError:
             self.close(reason='websocket closed')
 
-    def send(self, data, update_handler=True):
-        self.data_to_dst.append(data)
-        self._on_write(update_handler)
+    def send(self, data):
+        self.data_to_dst += data
+        self._on_write()
 
-    def _on_write(self, update_handler=True):
-        logging.debug('worker {} on write'.format(self.id))
+    def _on_write(self):
         if not self.data_to_dst:
             return
 
-        data = ''.join(self.data_to_dst)
-        logging.debug('{!r} to {}:{}'.format(data, *self.dst_addr))
-
         try:
-            sent = self.chan.send(data)
+            sent = self.chan.send(self.data_to_dst)
         except (OSError, IOError) as e:
             logging.error(e)
             if self.chan.closed or errno_from_exception(e) in _ERRNO_CONNRESET:
                 self.close(reason='chan error on writing')
             else:
-                self.update_handler(IOLoop.WRITE)
+                self._on_write()
         else:
-            self.data_to_dst = []
-            data = data[sent:]
-            if data:
-                self.data_to_dst.append(data)
-                self.update_handler(IOLoop.WRITE)
-            elif update_handler:
+            self.data_to_dst = self.data_to_dst[sent:]
+            if self.data_to_dst:
+                self._on_write()
+            else:
                 self.update_handler(IOLoop.READ)
 
     def prompt(self, msg, callback, args):

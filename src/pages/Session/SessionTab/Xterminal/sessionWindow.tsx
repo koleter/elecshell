@@ -343,7 +343,7 @@ const SessionWindow: React.FC = (props) => {
                                     args: raw
                                 })
                             }
-                        });
+                        }, res.showOnTerm);
                         break;
                     case 'message':
                         showMessage(res);

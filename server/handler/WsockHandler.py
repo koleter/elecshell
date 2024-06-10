@@ -132,9 +132,7 @@ class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
                     "content": 'server error'
                 })
             try:
-                result = t[0](SessionContext(worker), msg.get('args'), *t[1])
-                if result is not None:
-                    await result
+                t[0](SessionContext(worker), msg.get('args'), *t[1])
             except Exception as e:
                 traceback.print_exc()
                 pass
