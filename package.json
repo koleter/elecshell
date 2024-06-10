@@ -61,7 +61,7 @@
         "prettier": "prettier -c --write \"src/**/*\"",
         "serve": "umi-serve",
         "app": "cross-env NODE_ENV=development electron ./src/app/index.js",
-        "app:proTest": "cross-env NODE_ENV=production electron ./src/app/index.js",
+        "app:proTest": "cross-env NODE_ENV=test_production electron ./src/app/index.js",
         "app:pro": "cross-env NODE_ENV=production electron .",
         "app:build": "node scripts/build.js && electron-builder",
         "start": "cross-env NODE_OPTIONS=--openssl-legacy-provider UMI_ENV=dev umi dev",
