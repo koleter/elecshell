@@ -194,8 +194,13 @@ class Worker(object):
             except tornado.websocket.WebSocketClosedError:
                 self.close(reason='websocket closed')
 
+    def execute_implicit_command(self, cmd, callback=None, extra_args=[], sleep=0):
+        return self.recv(f'{cmd}; builtin history -d $((HISTCMD-1))', callback, extra_args, sleep, show_on_term=False)
+
     def recv(self, data, callback=None, extra_args=[], sleep=0, show_on_term=True):
         # logging.info('worker {} on read'.format(self.id))
+        if not (data.endswith('\r') or data.endswith('\n')):
+            data += "\r"
         self.update_handler(IOLoop.WRITE)
         self.data_to_dst += data
         self._on_write()

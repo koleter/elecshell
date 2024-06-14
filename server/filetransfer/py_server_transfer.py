@@ -7,9 +7,8 @@ import re
 
 from filetransfer.base_transfer import BaseTransfer
 
-from server.handler.const import BUF_SIZE
+from util import process_util
 
-ls_pattern = r'([\-dlbcps])([rwx\-]{8}[rwxtT\-])([\.\+])\s+(\d+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(.+\s+\d+\s+\d+(:\d+)?)\s+(.+)\r'
 port_pattern = re.compile(r'Port (\d+) is available')
 
 class py_server_sftp_file_transfer(BaseTransfer):
@@ -19,6 +18,8 @@ class py_server_sftp_file_transfer(BaseTransfer):
 
     def __init__(self, worker):
         super().__init__(worker)
+        self.local_server = None
+        self.remote_server = None
 
 
     def _get_remote_available_port(self):
@@ -41,36 +42,6 @@ for port in range(10000, 25000):
         output = self.worker.recv(f'{cmd}; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
         match = port_pattern.search(output)
         return match.group(1)
-
-
-    def get_remote_file_list(self, remote_path):
-        def h(ctx, output, worker):
-            if output:
-                ret = []
-                tp_list = re.findall(ls_pattern, output)
-                for file_info in tp_list:
-                    # file_info is a tuple like this: ('d', 'r-xr-xr-x', '.', '28', 'root', 'root', '4096', '6月   9 17:58', '.')
-                    file_name = file_info[9]
-                    if file_name == "." or file_name == "..":
-                        continue
-                    file_type = file_info[0]
-                    if file_type == "l":
-                        file_name = file_name.split(" -> ")[0]
-                    item = dict()
-                    item.setdefault("title", file_name)
-                    item.setdefault("key", file_name)
-                    item.setdefault("isLeaf", file_type != 'd')
-                    ret.append(item)
-                # print(output)
-                ret.sort(key=lambda x: (x["isLeaf"], x["title"]))
-                worker.handler.write_message({
-                    'args': ret,
-                    'method': 'refreshRemoteFileList',
-                    'type': 'execSessionMethod'
-                }, binary=False)
-
-        # 获取远程路径下的文件和文件夹属性列表
-        self.worker.recv(f'ls -al {remote_path}; builtin history -d $((HISTCMD-1))\r', h, [self.worker], show_on_term=False)
 
 
     def _get_python_cmd(self):
@@ -144,10 +115,10 @@ for port in range(10000, 25000):
                     self._start_remote_http_server(port, remote_dir)
                     for file_name in files:
                         upload_local_path = os.path.join(root, file_name)
-                        asyncio.create_task(self._upload_single_file(upload_local_path, remote_dir + "/" + file_name))
+                        self._upload_single_file(upload_local_path, remote_dir + "/" + file_name)
             else:
                 self._start_remote_http_server(port, remote_path)
-                asyncio.create_task(self._upload_single_file(local_path, remote_path + "/" + file_info["name"]))
+                self._upload_single_file(local_path, remote_path + "/" + file_info["name"])
 
 
     def upload_files(self, files, remote_path):
@@ -208,4 +179,7 @@ for port in range(10000, 25000):
 
 
     def close(self):
-        pass
+        if self.remote_server:
+            self.worker.execute_implicit_command(f'lsof -t -i:{self.remote_server.port} | xargs -r kill -9')
+        if self.local_server:
+            process_util.kill_process_by_port(self.local_server.port)
