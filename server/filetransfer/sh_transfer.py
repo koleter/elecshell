@@ -41,19 +41,7 @@ class py_server_sftp_file_transfer(BaseTransfer):
 
 
     def upload_files(self, files, remote_path):
-        for file_info in files:
-            local_path = file_info["path"]
-            if os.path.isdir(local_path):
-                directory_name = os.path.basename(local_path)
-                for root, dirs, files in os.walk(local_path):
-                    extra_dirname = root.removeprefix(local_path).replace(os.path.sep, "/")
-                    remote_dir = remote_path + "/" + directory_name + "/" + extra_dirname
-                    self.create_remote_directory(remote_dir)
-                    for file_name in files:
-                        upload_local_path = os.path.join(root, file_name)
-                        asyncio.create_task(self._upload_single_file(upload_local_path, remote_dir + "/" + file_name))
-            else:
-                asyncio.create_task(self._upload_single_file(local_path, remote_path + "/" + file_info["name"]))
+        self._upload_files_by_shell(files, remote_path)
 
 
     def get_file_from_remote_server(self, remote_file_path, local_root_dir):

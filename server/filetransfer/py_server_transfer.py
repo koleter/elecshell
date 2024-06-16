@@ -19,7 +19,7 @@ class py_server_sftp_file_transfer(BaseTransfer):
     def __init__(self, worker):
         super().__init__(worker)
         self.local_server = None
-        self.remote_server = None
+        self.remote_server_port = None
 
 
     def _get_remote_available_port(self):
@@ -57,53 +57,22 @@ for port in range(10000, 25000):
             return 'python2'
 
 
-    def _create_remote_directory(self, path):
-        """递归创建远程目录"""
-        self.worker.recv(f'mkdir -p {path}; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
-
-
-    async def _upload_single_file_by_shell(self, local_path, remote_path):
-        with open(local_path, 'rb') as f:
-            while True:
-                data = f.read(self.chunk_size)
-                if not data:
-                    break
-                formatted_data = ''.join(['\\x{:02x}'.format(byte) for byte in data])
-                self.worker.recv(f"printf '{formatted_data}' >> {remote_path}; builtin history -d $((HISTCMD-1))\r", show_on_term=False)
-
-
-    async def _upload_single_file_by_server(self, local_path, remote_path):
-        self.worker.recv(f"printf '{formatted_data}' >> {remote_path}; builtin history -d $((HISTCMD-1))\r", show_on_term=False)
-
-
-    def _upload_files_by_shell(self, files, remote_path):
-        for file_info in files:
-            local_path = file_info["path"]
-            if os.path.isdir(local_path):
-                directory_name = os.path.basename(local_path)
-                for root, dirs, files in os.walk(local_path):
-                    extra_dirname = root.removeprefix(local_path).replace(os.path.sep, "/")
-                    remote_dir = remote_path + "/" + directory_name + "/" + extra_dirname
-                    self._create_remote_directory(remote_dir)
-                    for file_name in files:
-                        upload_local_path = os.path.join(root, file_name)
-                        asyncio.create_task(self._upload_single_file_by_shell(upload_local_path, remote_dir + "/" + file_name))
-            else:
-                asyncio.create_task(self._upload_single_file_by_shell(local_path, remote_path + "/" + file_info["name"]))
-
-
-    def _start_remote_http_server(self, port, dir):
+    def _start_remote_http_server(self):
+        if self.remote_server_port:
+            return
+        port = self._get_remote_available_port()
         py_cmd = self._get_python_cmd()
         if py_cmd == 'python3':
-            self.worker.recv(f'{py_cmd} -m http.server {port} --directory {dir}')
+            self.worker.execute_implicit_command(f'{py_cmd} -m http.server {port} --directory / &')
         elif py_cmd == 'python2':
-            self.worker.recv(f'{py_cmd} -m SimpleHTTPServer {port} --directory {dir}')
+            self.worker.execute_implicit_command(f'{py_cmd} -m SimpleHTTPServer {port} --directory / &')
         else:
             logging.debug("cannot find python cmd")
             raise Exception("cannot find python cmd")
+        self.remote_server_port = port
 
     def upload_files_by_server(self, files, remote_path):
-        port = self._get_remote_available_port()
+        self._start_remote_http_server()
         for file_info in files:
             local_path = file_info["path"]
             if os.path.isdir(local_path):
@@ -112,29 +81,15 @@ for port in range(10000, 25000):
                     extra_dirname = root.removeprefix(local_path).replace(os.path.sep, "/")
                     remote_dir = remote_path + "/" + directory_name + "/" + extra_dirname
                     self._create_remote_directory(remote_dir)
-                    self._start_remote_http_server(port, remote_dir)
                     for file_name in files:
                         upload_local_path = os.path.join(root, file_name)
                         self._upload_single_file(upload_local_path, remote_dir + "/" + file_name)
             else:
-                self._start_remote_http_server(port, remote_path)
                 self._upload_single_file(local_path, remote_path + "/" + file_info["name"])
 
 
     def upload_files(self, files, remote_path):
-        for file_info in files:
-            local_path = file_info["path"]
-            if os.path.isdir(local_path):
-                directory_name = os.path.basename(local_path)
-                for root, dirs, files in os.walk(local_path):
-                    extra_dirname = root.removeprefix(local_path).replace(os.path.sep, "/")
-                    remote_dir = remote_path + "/" + directory_name + "/" + extra_dirname
-                    self._create_remote_directory(remote_dir)
-                    for file_name in files:
-                        upload_local_path = os.path.join(root, file_name)
-                        asyncio.create_task(self._upload_single_file(upload_local_path, remote_dir + "/" + file_name))
-            else:
-                asyncio.create_task(self._upload_single_file(local_path, remote_path + "/" + file_info["name"]))
+        self.upload_files_by_server(files, remote_path)
 
 
     def get_file_from_remote_server(self, remote_file_path, local_root_dir):
@@ -179,7 +134,7 @@ for port in range(10000, 25000):
 
 
     def close(self):
-        if self.remote_server:
-            self.worker.execute_implicit_command(f'lsof -t -i:{self.remote_server.port} | xargs -r kill -9')
+        if self.remote_server_port:
+            self.worker.execute_implicit_command(f'lsof -t -i:{self.remote_server_port.port} | xargs -r kill -9')
         if self.local_server:
             process_util.kill_process_by_port(self.local_server.port)
