@@ -257,6 +257,10 @@ const SessionWindow: React.FC = (props) => {
 
             if (terminalRef.current) {
                 terminalRef.current.addEventListener('keydown', closeSearchPanel);
+                const resizeObserver = new ResizeObserver(entries => {
+                    fitAddon.fit();
+                });
+                resizeObserver.observe(terminalRef.current);
             }
 
             const ws_url = util.baseUrl.split(/\?|#/, 1)[0].replace('http', 'ws'),
@@ -446,21 +450,18 @@ const SessionWindow: React.FC = (props) => {
     }
 
     return (
-        <div>
+        <div style={{height: getTermHeight(), display: "flex", flexDirection: 'column'}}>
             <div id={'searchPanel'} style={{
-                position: 'absolute',
                 display: showSearch ? 'flex' : 'none',
                 width: '720px',
                 alignContent: 'center',
-                top: 0,
-                left: 0,
-                zIndex: 10,
                 whiteSpace: 'nowrap'
             }}>
-                <Input.TextArea ref={searchInputRef} allowClear={true} autoSize={true} value={searchValue} onChange={(newVal) => {
-                    term._searchAddon.findNext(newVal.target.value, calcSearchOption(matchCase, words, regexp));
-                    setSearchValue(newVal.target.value);
-                }} onKeyDown={closeSearchPanel}/>
+                <Input.TextArea ref={searchInputRef} allowClear={true} autoSize={true} value={searchValue}
+                                onChange={(newVal) => {
+                                    term._searchAddon.findNext(newVal.target.value, calcSearchOption(matchCase, words, regexp));
+                                    setSearchValue(newVal.target.value);
+                                }} onKeyDown={closeSearchPanel}/>
                 <div style={{backgroundColor: 'white'}}>
                     {
                         matchButtons.map((item, index) => {
@@ -482,10 +483,8 @@ const SessionWindow: React.FC = (props) => {
                     }
                 </div>
             </div>
-
-            <div style={{height: getTermHeight(), backgroundColor: 'black'}} ref={terminalRef}/>
+            <div style={{flex: "auto", backgroundColor: 'black', overflow: "hidden"}} ref={terminalRef}/>
         </div>
-
     )
 }
 

@@ -87,10 +87,8 @@ for port in range(10000, 25000):
             else:
                 self._upload_single_file(local_path, remote_path + "/" + file_info["name"])
 
-
     def upload_files(self, files, remote_path):
         self.upload_files_by_server(files, remote_path)
-
 
     def get_file_from_remote_server(self, remote_file_path, local_root_dir):
         try:
