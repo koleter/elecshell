@@ -9,7 +9,7 @@ from filetransfer.base_transfer import BaseTransfer
 
 from util import process_util
 
-port_pattern = re.compile(r'Port (\d+) is available')
+port_pattern = re.compile(b'Port (\\d+) is available')
 
 class py_server_sftp_file_transfer(BaseTransfer):
 
@@ -48,11 +48,11 @@ for port in range(10000, 25000):
         if self.remote_py_version > 0:
             return f'python{self.remote_py_version}'
         output = self.worker.recv(f'python3; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
-        if not 'command not found' in output:
+        if not b'command not found' in output:
             self.remote_py_version = 3
             return 'python3'
         output = self.worker.recv(f'python2; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
-        if not 'command not found' in output:
+        if not b'command not found' in output:
             self.remote_py_version = 2
             return 'python2'
 
