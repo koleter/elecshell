@@ -10,6 +10,7 @@ import {sessionIdRef} from "@/pages/Session/main/Main";
 import {AppContext} from "@/pages/context/AppContextProvider";
 import util, {getUUid} from "@/util";
 import {DataNode, TreeProps} from "antd/es/tree";
+import {HEADER_HEIGHT} from "@/const";
 const path = require('path');
 
 const SessionTransfer: React.FC = (props) => {
@@ -67,8 +68,15 @@ const SessionTransfer: React.FC = (props) => {
         })
     }, []);
 
+    function dirWinHeightStyleStr() {
+        if (process.platform === 'darwin') {
+            return `calc(100vh - 50px - ${HEADER_HEIGHT}px)`;
+        }
+        return `calc(100vh - 50px)`;
+    }
+
     return <>
-        <Space direction="vertical" size="middle" style={{display: 'flex', overflow: 'auto'}}>
+        <Space className={'sftpFileListSpace'} direction="vertical" size="middle">
             <Search placeholder="input search text" onSearch={getFileList} enterButton value={searchValue}
                     onChange={(e) => {
                         // console.log(e);
@@ -78,6 +86,7 @@ const SessionTransfer: React.FC = (props) => {
             <div ref={dragWindowRef}>
                 <DirectoryTree
                     className={'sftpFileList'}
+                    style={{height: dirWinHeightStyleStr()}}
                     multiple
                     draggable={true}
                     treeData={treeData}

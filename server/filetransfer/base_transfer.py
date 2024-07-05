@@ -1,6 +1,6 @@
 import re
 
-ls_pattern = r'([\-dlbcps])([rwx\-]{8}[rwxtT\-])([\.\+])\s+(\d+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(.+\s+\d+\s+\d+(:\d+)?)\s+(.+)\r'
+ls_pattern = r'([\-dlbcps])([rwx\-]{8}[rwxtT\-])([\.\+])?\s+(\d+)\s+(\w+)\s+(\w+)\s+(\d+)\s+(.+\s+\d+\s+\d+(:\d+)?)\s+(.+)\r'
 
 
 class BaseTransfer:
