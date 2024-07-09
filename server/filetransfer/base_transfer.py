@@ -40,3 +40,8 @@ class BaseTransfer:
         # 获取远程路径下的文件和文件夹属性列表
         self.worker.recv(f'ls -al {remote_path}; builtin history -d $((HISTCMD-1))\r', h, [self.worker],
                          show_on_term=False)
+
+    def get_remote_path(self, dir, file_name):
+        if dir.endswith("/"):
+            return dir + file_name
+        return dir + "/" + file_name

@@ -9,10 +9,14 @@ from filetransfer.base_transfer import BaseTransfer
 
 from util import process_util
 
+from util.server import start_server
+
+from util.error import b_is_error
+
 port_pattern = re.compile(b'Port (\\d+) is available')
 
-class py_server_sftp_file_transfer(BaseTransfer):
 
+class py_server_sftp_file_transfer(BaseTransfer):
     chunk_size = 200
     remote_py_version = 0
 
@@ -21,12 +25,10 @@ class py_server_sftp_file_transfer(BaseTransfer):
         self.local_server = None
         self.remote_server_port = None
 
-
     def _get_remote_available_port(self):
         # def h(ctx, output):
         #     match = port_pattern.search(output)
         #     return match.group(1)
-
 
         cmd = '''python -c \'\'\'
 import socket
@@ -43,7 +45,6 @@ for port in range(10000, 25000):
         match = port_pattern.search(output)
         return match.group(1)
 
-
     def _get_python_cmd(self):
         if self.remote_py_version > 0:
             return f'python{self.remote_py_version}'
@@ -55,7 +56,6 @@ for port in range(10000, 25000):
         if not b'command not found' in output:
             self.remote_py_version = 2
             return 'python2'
-
 
     def _start_remote_http_server(self):
         if self.remote_server_port:
@@ -71,8 +71,30 @@ for port in range(10000, 25000):
             raise Exception("cannot find python cmd")
         self.remote_server_port = port
 
+    def _start_local_http_server(self):
+        if self.local_server is None:
+            httpd, local_ip, port = start_server(os.path.abspath(os.sep))
+            self.local_server = {
+                'httpd': httpd,
+                'local_ip': local_ip,
+                'port': port
+            }
+
+    def _upload_single_file(self, upload_local_path, remote_path):
+        download_url = f'http://{self.local_server["local_ip"]}:{self.local_server["port"]}{upload_local_path}'
+        out = self.worker.execute_implicit_command(f'wget -O {remote_path} {download_url}')
+        if b_is_error(out):
+            lines = out.decode(self.worker.encoding).split('\n')
+            msg_lines = lines[1:-1]
+            msg = '\n'.join(msg_lines)
+            self.worker.handler.write_message({
+                "type": "message",
+                "status": "error",
+                "content": msg
+            })
+
     def upload_files_by_server(self, files, remote_path):
-        self._start_remote_http_server()
+        self._start_local_http_server()
         for file_info in files:
             local_path = file_info["path"]
             if os.path.isdir(local_path):
@@ -83,9 +105,9 @@ for port in range(10000, 25000):
                     self._create_remote_directory(remote_dir)
                     for file_name in files:
                         upload_local_path = os.path.join(root, file_name)
-                        self._upload_single_file(upload_local_path, remote_dir + "/" + file_name)
+                        self._upload_single_file(upload_local_path, self.get_remote_path(remote_dir, file_name))
             else:
-                self._upload_single_file(local_path, remote_path + "/" + file_info["name"])
+                self._upload_single_file(local_path, self.get_remote_path(remote_path, file_info["name"]))
 
     def upload_files(self, files, remote_path):
         self.upload_files_by_server(files, remote_path)
@@ -110,7 +132,6 @@ for port in range(10000, 25000):
             else:
                 self.get_file_from_remote_server(remote_file_path, os.path.join(local_root_dir, file_info.filename))
 
-
     def download_single_file(self, local_root_dir, file, remoteDir):
         remote_file_path = remoteDir + "/" + file
         file_info_list = self.sftp.listdir_attr(remoteDir)
@@ -125,11 +146,9 @@ for port in range(10000, 25000):
                 self.get_file_from_remote_server(remoteDir + "/" + file, os.path.join(local_root_dir, file))
             break
 
-
     def download_files(self, local_root_dir, files, remoteDir):
         for file in files:
             self.download_single_file(local_root_dir, file, remoteDir)
-
 
     def close(self):
         if self.remote_server_port:
