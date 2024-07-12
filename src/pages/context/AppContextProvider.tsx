@@ -3,6 +3,7 @@ import {request} from "@@/plugin-request/request";
 import util from "@/util";
 import {message} from "antd";
 import {sessionConfInfo} from "@/pages/Session/SessionList/SessionList";
+import {NENU_SESSIONS} from "@/const";
 
 //根据定义创建Context
 export const AppContext = createContext(null);
@@ -23,6 +24,7 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
 
     const [activeKey, setActiveKey] = useState('');
 
+    const [selectedMenuKey, setSelectedMenuKey] = useState(NENU_SESSIONS);
 
     const prompt = function (title, callback, defaultUserInput = "") {
         setPromptTitle(title);
@@ -87,7 +89,9 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
             setRefreshTreeData,
             sessionRootKey,
             // session
-            activeKey, setActiveKey
+            activeKey, setActiveKey,
+            // menu
+            selectedMenuKey, setSelectedMenuKey
         }}>{/** value就是可在<AppContextProvider>组件的子组件中使用useContext() hook函数所获取的对象 */}
             {props.children}
         </AppContext.Provider>

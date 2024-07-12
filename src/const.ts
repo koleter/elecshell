@@ -4,3 +4,5 @@ export const DISCONNECTED = 0,
     // header的高度，单位是px
     HEADER_HEIGHT = 31;
 
+export const NENU_SESSIONS = "sessions";
+export const MENU_FILETRANSFER = "fileTransfer";

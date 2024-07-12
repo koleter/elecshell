@@ -1,21 +1,20 @@
-import {Dropdown, Layout, Tabs, Modal, Input, Menu} from 'antd';
+import type {MenuProps} from 'antd';
+import {Dropdown, Input, Layout, Menu, Modal, Tabs} from 'antd';
 import type {DataNode} from 'antd/es/tree';
-import React, {useState, useRef, useContext, useEffect} from 'react';
+import React, {useContext, useState} from 'react';
 import "./Main.less"
 import "xterm/css/xterm.css"
 import SessionWindow from "@/pages/Session/SessionTab/Xterminal/sessionWindow";
 import ScriptDrawer from "@/pages/Session/ScriptDrawer/ScriptDrawer";
 import SessionList from "@/pages/Session/SessionList/SessionList";
 import util, {showMessage} from "@/util";
-import {AppContext, AppContextProvider} from "@/pages/context/AppContextProvider";
+import {AppContext} from "@/pages/context/AppContextProvider";
 import {request} from "@@/plugin-request/request";
 import DragLine from "@/pages/Session/components/dragline/DragLine";
 import FileTransfer from "@/pages/Session/fileTransfer/FileTransfer";
 
-import {
-    CodeOutlined,
-    DesktopOutlined,
-} from '@ant-design/icons';
+import {CodeOutlined, DesktopOutlined,} from '@ant-design/icons';
+import {MENU_FILETRANSFER, NENU_SESSIONS} from "@/const";
 
 const {Content, Sider} = Layout;
 type TargetKey = React.MouseEvent | React.KeyboardEvent | string;
@@ -29,8 +28,6 @@ export const sessionIdMapFileName = {};
 
 // 记录sessionId对应的sock等信息
 export const sessionIdRef = {};
-
-import type {MenuProps} from 'antd';
 
 type MenuItem = Required<MenuProps>['items'][number];
 
@@ -53,14 +50,11 @@ const loop = (
     }
 };
 
-const NENU_SESSIONS = "sessions";
-const MENU_FILETRANSFER = "fileTransfer";
-
 const SessionMain: React.FC = () => {
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [sessions, setSessions] = useState([]);
 
-    const [selectedMenuKey, setSelectedMenuKey] = useState(NENU_SESSIONS);
+    const {setShowPrompt, promptOKCallback, promptUserInput, prompt, promptInputRef, activeKey, setActiveKey, selectedMenuKey, setSelectedMenuKey} = useContext(AppContext);
 
     const onChange = (newActiveKey: string) => {
         setActiveKey(newActiveKey);
@@ -103,10 +97,6 @@ const SessionMain: React.FC = () => {
     ) => {
         removeTabByKey(targetKey);
     };
-
-    const context = useContext(AppContext);
-
-    const {setShowPrompt, promptOKCallback, promptUserInput, prompt, promptInputRef, activeKey, setActiveKey} = context;
 
     const promptOk = () => {
         setShowPrompt(false);
