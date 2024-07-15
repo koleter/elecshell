@@ -4,7 +4,7 @@ import {Terminal} from "xterm"
 import "xterm/css/xterm.css"
 import util, {sleep, callbackMap, sessionStatusMap, showMessage, getUUid} from "../../../../util"
 import {DISCONNECTED, CONNECTING, CONNECTED, HEADER_HEIGHT} from "../../../../const"
-import {sessionIdRef, sessionIdMapFileName} from "../../main/Main"
+import {sessionIdRef, sessionIdMapFileName, sessionInit} from "../../main/Main"
 import {SearchAddon} from 'xterm-addon-search'
 import {FitAddon} from 'xterm-addon-fit'
 import {request} from 'umi';

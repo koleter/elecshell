@@ -10,6 +10,7 @@ import util, {defineValidatorWithErrMessage, getUUid} from "@/util";
 import {sessionIdMapFileName} from "@/pages/Session/main/Main";
 import {AppContext} from "@/pages/context/AppContextProvider";
 import "./SessionList.less"
+import {NENU_SESSIONS} from "@/const";
 
 const path = require('path');
 
@@ -30,7 +31,7 @@ const SessionList: React.FC = (props) => {
     const [dataSource, setDataSource] = useState([]);
     const [sessionPropertyActiveKey, setSessionPropertyActiveKey] = useState(defaultSessionPropertyActiveKey);
 
-    const {prompt, treeData, setRefreshTreeData, sessionRootKey} = useContext(AppContext);
+    const {prompt, treeData, setRefreshTreeData, sessionRootKey, selectedMenuKey} = useContext(AppContext);
 
     function genSessionBaseInfo(showType: string) {
         return <>
@@ -459,7 +460,7 @@ const SessionList: React.FC = (props) => {
             titleRender={titleRender}
             onDrop={onDrop}
             treeData={treeData}
-            style={{height: '100vh', overflow: 'auto'}}
+            style={{height: '100vh', overflow: 'auto', display: selectedMenuKey == NENU_SESSIONS ? 'block' : 'none'}}
         />
 
         <Modal

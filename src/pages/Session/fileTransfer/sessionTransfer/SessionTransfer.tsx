@@ -6,11 +6,11 @@ const {Search} = Input;
 const {DirectoryTree} = Tree;
 
 import "./SessionTransfer.less"
-import {sessionIdRef} from "@/pages/Session/main/Main";
+import {sessionIdRef, sessionInit} from "@/pages/Session/main/Main";
 import {AppContext} from "@/pages/context/AppContextProvider";
 import util, {getUUid} from "@/util";
 import {DataNode, TreeProps} from "antd/es/tree";
-import {HEADER_HEIGHT} from "@/const";
+import {HEADER_HEIGHT, MENU_FILETRANSFER} from "@/const";
 const path = require('path');
 
 const SessionTransfer: React.FC = (props) => {
@@ -18,8 +18,8 @@ const SessionTransfer: React.FC = (props) => {
 
     const dragWindowRef = useRef(null);
 
-    const {activeKey} = useContext(AppContext);
-
+    const {activeKey, selectedMenuKey} = useContext(AppContext);
+    // selectedMenuKey == MENU_FILETRANSFER &&
     const [searchValue, setSearchValue] = useState('/');
 
     const [selectedKeys, setSelectedKeys] = useState([]);
@@ -32,11 +32,17 @@ const SessionTransfer: React.FC = (props) => {
         })
     }
 
-    function getFileList(param) {
+    function getFileList() {
         getFileListWithSpcifiedPath(searchValue);
     }
 
+    const [inited, setInited] = useState(false);
     useEffect(() => {
+        if (selectedMenuKey != MENU_FILETRANSFER || inited) {
+            return
+        }
+
+        setInited(true);
         sessionIdRef[activeKey].refreshRemoteFileList = (result) => {
             result.unshift({
                 title: "..",
@@ -66,7 +72,7 @@ const SessionTransfer: React.FC = (props) => {
                 args: [fileInfos, searchValue]
             });
         })
-    }, []);
+    }, [selectedMenuKey]);
 
     function dirWinHeightStyleStr() {
         if (process.platform === 'darwin') {
@@ -140,4 +146,4 @@ const SessionTransfer: React.FC = (props) => {
     </>
 };
 
-export default SessionTransfer;
+export default React.memo(SessionTransfer);

@@ -170,14 +170,11 @@ const SessionMain: React.FC = () => {
 
                         <div
                             style={{width: xshListWindowWidth, height: "100vh", backgroundColor: 'white'}}>
-                            {selectedMenuKey == NENU_SESSIONS ?
-                                <SessionList
-                                    setSessions={setSessions}
-                                    setActiveKey={setActiveKey}
-                                /> : <FileTransfer
-                                    sessions={sessions}
-                                />
-                            }
+                            <SessionList
+                                setSessions={setSessions}
+                                setActiveKey={setActiveKey}
+                            />
+                            <FileTransfer sessions={sessions}/>
                         </div>
 
 
