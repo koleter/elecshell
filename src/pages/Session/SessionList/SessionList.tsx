@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useState} from "react";
+import React, {useContext, useEffect, useRef, useState} from "react";
 import {Dropdown, Form, Input, message, Modal, Tabs, Tree, Button} from "antd";
 import {
     EditableProTable
@@ -11,6 +11,7 @@ import {sessionIdMapFileName} from "@/pages/Session/main/Main";
 import {AppContext} from "@/pages/context/AppContextProvider";
 import "./SessionList.less"
 import {NENU_SESSIONS} from "@/const";
+import {fileSep} from "@/pages/util/path";
 
 const path = require('path');
 
@@ -32,6 +33,12 @@ const SessionList: React.FC = (props) => {
     const [sessionPropertyActiveKey, setSessionPropertyActiveKey] = useState(defaultSessionPropertyActiveKey);
 
     const {prompt, treeData, setRefreshTreeData, sessionRootKey, selectedMenuKey} = useContext(AppContext);
+
+    useEffect(() => {
+        document.addEventListener("copy", e => {
+            console.log(e)
+        })
+    }, []);
 
     function genSessionBaseInfo(showType: string) {
         return <>
@@ -412,22 +419,7 @@ const SessionList: React.FC = (props) => {
         );
     }
 
-    const onDrop: TreeProps['onDrop'] = (info) => {
-
-        const dropKey = info.node.path;
-        const dragKey = info.dragNode.path;
-        let srcDir = dragKey;
-        if (info.dragNode.isLeaf) {
-            srcDir = dragKey.substr(0, dragKey.lastIndexOf(path.sep));
-        }
-        let dstDir = dropKey;
-        if (info.node.isLeaf) {
-            dstDir = dropKey.substr(0, dropKey.lastIndexOf(path.sep));
-        }
-        // console.log(info.node, info.dragNode)
-        if (srcDir == dstDir) {
-            return true;
-        }
+    function moveFile(dragKey, dropKey) {
         request(util.baseUrl + 'conf', {
             method: 'POST',
             body: JSON.stringify({
@@ -444,6 +436,27 @@ const SessionList: React.FC = (props) => {
                 setRefreshTreeData(e => e + 1);
             }
         })
+    }
+
+    const onDrop: TreeProps['onDrop'] = (info) => {
+        console.log(info, "path.sep: " + fileSep());
+        const dropKey = info.node.path;
+        const dragKey = info.dragNode.path;
+        let srcDir = dragKey;
+        if (info.dragNode.isLeaf) {
+            srcDir = dragKey.substr(0, dragKey.lastIndexOf(fileSep()));
+            console.log("srcDir: ", srcDir);
+        }
+        let dstDir = dropKey;
+        if (info.node.isLeaf) {
+            dstDir = dropKey.substr(0, dropKey.lastIndexOf(fileSep()));
+            console.log("dstDir: ", dstDir);
+        }
+        // console.log(info.node, info.dragNode)
+        if (srcDir == dstDir) {
+            return true;
+        }
+        moveFile(dragKey, dropKey);
     };
 
     function commonSessionModalClose() {
@@ -451,17 +464,22 @@ const SessionList: React.FC = (props) => {
     }
 
     return <>
-        <DirectoryTree
-            rootClassName="sessionList"
-            className="draggable-tree"
-            draggable
-            blockNode
-            autoExpandParent={false}
-            titleRender={titleRender}
-            onDrop={onDrop}
-            treeData={treeData}
-            style={{height: '100vh', overflow: 'auto', display: selectedMenuKey == NENU_SESSIONS ? 'block' : 'none'}}
-        />
+        <div onKeyUp={e => {
+            console.log("div", e)
+        }}>
+            <DirectoryTree
+                rootClassName="sessionList"
+                className="draggable-tree"
+                draggable
+                blockNode
+                autoExpandParent={false}
+                titleRender={titleRender}
+                onDrop={onDrop}
+                treeData={treeData}
+                style={{height: '100vh', overflow: 'auto', display: selectedMenuKey == NENU_SESSIONS ? 'block' : 'none'}}
+            />
+        </div>
+
 
         <Modal
             width={calcSessionPropertyModalWidth()}
