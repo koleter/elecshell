@@ -36,24 +36,10 @@ const SessionTransfer: React.FC = (props) => {
         getFileListWithSpcifiedPath(searchValue);
     }
 
-    const [inited, setInited] = useState(false);
     useEffect(() => {
-        if (selectedMenuKey != MENU_FILETRANSFER || inited) {
+        if (selectedMenuKey != MENU_FILETRANSFER) {
             return
         }
-
-        setInited(true);
-        sessionIdRef[activeKey].refreshRemoteFileList = (result) => {
-            result.unshift({
-                title: "..",
-                key: "..",
-                isLeaf: false,
-                remoteDirectory: searchValue
-            });
-            setTreeData(result);
-        };
-
-        getFileList();
 
         dragWindowRef.current && dragWindowRef.current.addEventListener('drop', (e) => {
             e.preventDefault();     // 取消默认事件f.path
@@ -72,6 +58,27 @@ const SessionTransfer: React.FC = (props) => {
                 args: [fileInfos, searchValue]
             });
         })
+    }, [searchValue, selectedMenuKey]);
+
+    const [inited, setInited] = useState(false);
+    useEffect(() => {
+        if (selectedMenuKey != MENU_FILETRANSFER || inited) {
+            return
+        }
+
+        setInited(true);
+
+        getFileList();
+        sessionIdRef[activeKey].refreshRemoteFileList = (result) => {
+            result.unshift({
+                title: "..",
+                key: "..",
+                isLeaf: false,
+                remoteDirectory: searchValue
+            });
+            setTreeData(result);
+        };
+
     }, [selectedMenuKey]);
 
     function dirWinHeightStyleStr() {
