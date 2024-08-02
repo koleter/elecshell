@@ -36,29 +36,31 @@ const SessionTransfer: React.FC = (props) => {
         getFileListWithSpcifiedPath(searchValue);
     }
 
-    useEffect(() => {
-        if (selectedMenuKey != MENU_FILETRANSFER) {
-            return
+    dragWindowRef.current?.addEventListener('drop', (e) => {
+        e.preventDefault();     // 取消默认事件f.path
+        e.stopPropagation();    // 阻止冒泡事件
+        console.log(searchValue, e.dataTransfer.files)
+        const fileInfos = [];
+        for (const file of e.dataTransfer.files) {
+            fileInfos.push({
+                name: file.name,
+                path: file.path
+            })
         }
+        sessionIdRef[activeKey]?.send({
+            type: 'exec_worker_method',
+            methodName: "upload_files",
+            args: [fileInfos, searchValue]
+        });
+    })
 
-        dragWindowRef.current && dragWindowRef.current.addEventListener('drop', (e) => {
-            e.preventDefault();     // 取消默认事件f.path
-            e.stopPropagation();    // 阻止冒泡事件
-            console.log(e.dataTransfer.files)
-            const fileInfos = [];
-            for (const file of e.dataTransfer.files) {
-                fileInfos.push({
-                    name: file.name,
-                    path: file.path
-                })
-            }
-            sessionIdRef[activeKey]?.send({
-                type: 'exec_worker_method',
-                methodName: "upload_files",
-                args: [fileInfos, searchValue]
-            });
-        })
-    }, [searchValue, selectedMenuKey]);
+    // useEffect(() => {
+    //     if (selectedMenuKey != MENU_FILETRANSFER) {
+    //         return
+    //     }
+    //
+    //
+    // }, [searchValue, selectedMenuKey]);
 
     const [inited, setInited] = useState(false);
     useEffect(() => {
