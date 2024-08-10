@@ -108,7 +108,7 @@ class Worker(object):
         self.handler = None
         self.mode = IOLoop.READ
         self.closed = False
-        # self.lock = threading.Lock()
+        self.recv_lock = threading.Lock()
         self.debug = debug
         self.xsh_conf_id = None
         self.login_script = login_script
@@ -168,7 +168,11 @@ class Worker(object):
     def _on_read(self):
         logging.debug('worker {} on read'.format(self.id))
         try:
-            data = self.chan.recv(BUF_SIZE)
+            self.recv_lock.acquire()
+            try:
+                data = self.chan.recv(BUF_SIZE)
+            finally:
+                self.recv_lock.release()
         except (OSError, IOError) as e:
             traceback.print_exc()
             logging.error(str(e))
@@ -201,22 +205,26 @@ class Worker(object):
         # logging.info('worker {} on read'.format(self.id))
         if not (data.endswith('\r') or data.endswith('\n')):
             data += "\r"
-        self.update_handler(IOLoop.WRITE)
+        # self.update_handler(IOLoop.WRITE)
         self.data_to_dst += data
-        self._on_write()
-        if sleep > 0:
-            time.sleep(sleep)
-        while not self.chan.recv_ready():
-            time.sleep(0.1)
-
-        data = b""
+        self.recv_lock.acquire()
         try:
-            data += self.chan.recv(BUF_SIZE)
-        except (OSError, IOError) as e:
-            traceback.print_exc()
-            if self.chan.closed or errno_from_exception(e) in _ERRNO_CONNRESET:
-                self.close(reason='chan error on reading')
-                return
+            self._on_write()
+            if sleep > 0:
+                time.sleep(sleep)
+            while not self.chan.recv_ready():
+                time.sleep(0.1)
+
+            data = b""
+            try:
+                data += self.chan.recv(BUF_SIZE)
+            except (OSError, IOError) as e:
+                traceback.print_exc()
+                if self.chan.closed or errno_from_exception(e) in _ERRNO_CONNRESET:
+                    self.close(reason='chan error on reading')
+                    return
+        finally:
+            self.recv_lock.release()
 
         if not data:
             self.close(reason='chan closed')
@@ -231,7 +239,7 @@ class Worker(object):
                 self.set_callback_message(callback, res, extra_args)
             if callback or show_on_term:
                 self.handler.write_message(res, binary=False)
-            self.update_handler(IOLoop.READ)
+            # self.update_handler(IOLoop.READ)
             return data
         except tornado.websocket.WebSocketClosedError:
             self.close(reason='websocket closed')
