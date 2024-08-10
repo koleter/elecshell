@@ -77,7 +77,7 @@ class AutoAddPolicy(paramiko.client.MissingHostKeyPolicy):
                     paramiko.hostkeys.HostKeyEntry([hostname], key)
                 )
 
-                with open(client._host_keys_filename, 'a') as f:
+                with open(client._host_keys_filename, 'a', encoding='utf-8') as f:
                     f.write('{} {} {}\n'.format(
                         hostname, keytype, key.get_base64()
                     ))

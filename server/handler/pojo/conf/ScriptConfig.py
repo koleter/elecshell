@@ -18,7 +18,7 @@ class ScriptConfig(BaseConfig):
         script_data = []
         for file in os.listdir(self.path):
             file_path = os.path.join(self.path, file)
-            with open(file_path, 'r') as f:
+            with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.loads(f.read())
                 script_item = {
                     'title': {

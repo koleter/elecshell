@@ -172,7 +172,7 @@ class IndexHandler(MixinHandler, tornado.web.RequestHandler):
             data = json.loads(self.request.body)
             session_conf_file_path = os.path.join(xsh_dir_path, data['filePath'])
             session_name = data.get('sessionName')
-            with open(session_conf_file_path, 'r') as f:
+            with open(session_conf_file_path, 'r', encoding='utf-8') as f:
                 session_conf = json.loads(f.read())
                 hostname = getRealstr(session_conf.get('hostname'))
                 port = session_conf.get('port')
