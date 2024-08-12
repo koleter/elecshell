@@ -100,7 +100,10 @@ const SessionTransfer: React.FC = (props) => {
                         setSearchValue(e.target.value);
                     }}/>
 
-            <div ref={dragWindowRef}>
+            <div ref={dragWindowRef} className={'dropDiv'}
+                 onDragEnter={(e) => {e.preventDefault()}}
+                 onDragOver={(e) => {e.preventDefault()}}
+            >
                 <DirectoryTree
                     className={'sftpFileList'}
                     style={{height: dirWinHeightStyleStr()}}

@@ -23,7 +23,23 @@ def start_server(root_path):
         def do_GET(self):
             ip = self.client_address
             print(f"远程IP地址是：{ip}")
-            super().do_GET()
+            # super().do_GET()
+            # 获取请求的路径
+            path = self.path
+
+            # 检查路径是否指向一个有效的文件
+            if os.path.isfile(path):
+                # 设置响应头
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                # 打开文件并读取内容
+                with open(path, 'rb') as file:
+                    self.wfile.write(file.read())
+            else:
+                # 如果文件不存在，则返回404错误
+                self.send_error(404, "File Not Found")
             # try:
             #     # 解析请求路径，获取文件绝对路径
             #     absolute_path = os.path.abspath(os.path.join(self.directory, self.path[1:]))

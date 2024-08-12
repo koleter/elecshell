@@ -161,5 +161,6 @@ for port in range(10000, 25000):
     def close(self):
         if self.remote_server_port:
             self.worker.execute_implicit_command(f'lsof -t -i:{self.remote_server_port.port} | xargs -r kill -9')
-        if self.local_server:
-            process_util.kill_process_by_port(self.local_server.port)
+        for root_dir, server_info in self.local_servers.items():
+            server_info.get('httpd').shutdown()
+
