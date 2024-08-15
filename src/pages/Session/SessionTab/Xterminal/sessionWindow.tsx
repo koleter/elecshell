@@ -252,8 +252,12 @@ const SessionWindow: React.FC = (props) => {
             const fitAddon = new FitAddon();
             term.loadAddon(fitAddon);
             term._fitAddon = fitAddon;
-            term.open(terminalRef.current as HTMLDivElement);
-            term.focus();
+
+            const resizeHandle = () => {
+                console.log("resizing....")
+                fitAddon.fit();
+            };
+            window.addEventListener("resize", resizeHandle);
 
             if (terminalRef.current) {
                 terminalRef.current.addEventListener('keydown', closeSearchPanel);
@@ -280,18 +284,17 @@ const SessionWindow: React.FC = (props) => {
                 }
 
                 function termResize(size) {
-                    term._fitAddon.fit();
                     const {cols, rows} = size;
                     sendTermResizeMessage(cols, rows);
                 }
 
                 term.onResize(termResize);
 
-                window.addEventListener("resize", () => {
-                    fitAddon.fit();
-                });
+                // The following two lines must be placed here so that the term.onResize event can be triggered during initialization.
+                term.open(terminalRef.current as HTMLDivElement);
+                term.focus();
 
-                term._fitAddon.fit();
+                fitAddon.fit();
             };
 
             sessionIdRef[id] = {
@@ -398,6 +401,7 @@ const SessionWindow: React.FC = (props) => {
 
             sessionIdRef[id].sock.onclose = function (e) {
                 // console.log(`sock: ${id} closed`, e);
+                window.removeEventListener('resize', resizeHandle);
                 try {
                     sessionIdRef[id].term.write("\nthis session is closed.....");
                 } catch (e) {
