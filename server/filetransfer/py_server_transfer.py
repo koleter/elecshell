@@ -4,10 +4,10 @@ import logging
 import os
 import stat
 import re
+import uuid
 
 from filetransfer.base_transfer import BaseTransfer
 
-from util import process_util
 from util.file_util import get_root_dir_path
 
 from util.server import start_server
@@ -23,7 +23,7 @@ class py_server_sftp_file_transfer(BaseTransfer):
 
     def __init__(self, worker):
         super().__init__(worker)
-        self.local_servers = {}
+        self.local_server = None
         self.remote_server_port = None
 
     def _get_remote_available_port(self):
@@ -72,25 +72,21 @@ for port in range(10000, 25000):
             raise Exception("cannot find python cmd")
         self.remote_server_port = port
 
-    def _start_local_http_server(self, file_info_list):
-        for file_info in file_info_list:
-            root_dir = get_root_dir_path(file_info["path"])
-            local_server = self.local_servers.get(root_dir)
-            if local_server is None:
-                httpd, local_ip, port = start_server(root_dir)
-                self.local_servers[root_dir] = {
-                    'httpd': httpd,
-                    'local_ip': local_ip,
-                    'port': port
-                }
+    def _start_local_http_server(self):
+        if self.local_server is None:
+            token = str(uuid.uuid1())
+            httpd, local_ip, port = start_server(token)
+            self.local_server = {
+                'httpd': httpd,
+                'local_ip': local_ip,
+                'port': port,
+                'token': token
+            }
 
     def _upload_single_file(self, upload_local_path, remote_path):
-        root_dir = get_root_dir_path(upload_local_path)
-        upload_local_path = upload_local_path.lstrip(root_dir)
-        upload_local_path = upload_local_path.replace("\\", "/")
-        local_server = self.local_servers.get(root_dir)
+        local_server = self.local_server
         download_url = f'http://{local_server["local_ip"]}:{local_server["port"]}/{upload_local_path}'
-        out = self.worker.execute_implicit_command(f'wget -O {remote_path} {download_url}')
+        out = self.worker.execute_implicit_command(f'wget -O {remote_path} {download_url} || rm -f {remote_path}')
         if b_is_error(out):
             lines = out.decode(self.worker.encoding).split('\n')
             msg_lines = lines[1:-1]
@@ -102,7 +98,7 @@ for port in range(10000, 25000):
             })
 
     def upload_files_by_server(self, file_info_list, remote_path):
-        self._start_local_http_server(file_info_list)
+        self._start_local_http_server()
         for file_info in file_info_list:
             local_path = file_info["path"]
             if os.path.isdir(local_path):

@@ -4,13 +4,12 @@ import http.server
 import socketserver
 import os
 import threading
-from uuid import uuid4
 
 from util.port import get_unused_port
 from util.net import get_local_host_ip
 
 
-def start_server(root_path):
+def start_server(token):
     port = get_unused_port()
     local_ip = get_local_host_ip()
 
@@ -18,7 +17,7 @@ def start_server(root_path):
     class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         # 设置根目录，默认为当前目录
         def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory=root_path, **kwargs)
+            super().__init__(*args, **kwargs)
 
         def do_GET(self):
             ip = self.client_address
@@ -27,37 +26,42 @@ def start_server(root_path):
             # 获取请求的路径
             path = self.path
 
+            # 分离路径和查询字符串
+            query_start = path.find('?')
+            if query_start != -1:
+                query_string = path[query_start + 1:]
+                file_path = path[:query_start]
+            else:
+                self.send_error(404, "File Not Found")
+                return
+
+            # 解析查询字符串
+            query_params = {}
+            for param in query_string.split('&'):
+                key_value = param.split('=')
+                if len(key_value) == 2:
+                    key, value = key_value
+                    query_params[key] = value
+
+            # 输出查询参数
+            print("Query parameters:", query_params)
+            if query_params.get("token") != token:
+                self.send_error(404, "File Not Found")
+                return
+
             # 检查路径是否指向一个有效的文件
-            if os.path.isfile(path):
+            if os.path.isfile(file_path):
                 # 设置响应头
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
 
                 # 打开文件并读取内容
-                with open(path, 'rb') as file:
+                with open(file_path, 'rb') as file:
                     self.wfile.write(file.read())
             else:
                 # 如果文件不存在，则返回404错误
                 self.send_error(404, "File Not Found")
-            # try:
-            #     # 解析请求路径，获取文件绝对路径
-            #     absolute_path = os.path.abspath(os.path.join(self.directory, self.path[1:]))
-            #
-            #     # 检查文件是否存在
-            #     if os.path.exists(absolute_path):
-            #         # 如果请求的是文件，则返回文件内容
-            #         with open(absolute_path, 'rb') as f:
-            #             self.send_response(200)
-            #             self.send_header('Content-type', 'text/html')
-            #             self.end_headers()
-            #             self.wfile.write(f.read())
-            #     else:
-            #         # 如果文件不存在，返回 404 错误
-            #         self.send_error(404, 'File Not Found: {}'.format(self.path))
-            # except Exception as e:
-            #     # 处理异常情况
-            #     self.send_error(500, 'Internal Server Error: {}'.format(str(e)))
 
 
     # 创建一个简单的 HTTP 服务器
