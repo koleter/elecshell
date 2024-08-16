@@ -64,6 +64,11 @@ exports.createWindow = () => {
         win.webContents.on('did-finish-load', () => {
             win.webContents.openDevTools();
         });
+    } else if (process.env.NODE_ENV === 'test_production') {
+        win.loadFile(path.join(__dirname, "../../../antdBuild/index.html"));
+        win.webContents.on('did-finish-load', () => {
+            win.webContents.openDevTools();
+        });
     } else {
         // win.loadURL("http://localhost:8888/session")
         win.loadFile(path.join(__dirname, "../../antdBuild/index.html"));
