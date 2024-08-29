@@ -85,10 +85,11 @@ async function start() {
     // 开发模式自行启动main.py,生产模式创建子进程自动执行
     if (process.env.NODE_ENV !== 'development') {
         startServer();
-        setTimeout(() => {
-            app.on('ready', createWindow);
-        }, 300);
-
+        app.on('ready', () => {
+            setTimeout(() => {
+                createWindow();
+            }, 300);
+        });
     } else {
         app.on('ready', createWindow);
     }
