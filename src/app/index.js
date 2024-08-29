@@ -84,7 +84,7 @@ async function start() {
     // code. You can also put them in separate files and import them here.
     // 开发模式自行启动main.py,生产模式创建子进程自动执行
     if (process.env.NODE_ENV !== 'development') {
-        startServer();
+        await startServer();
         app.on('ready', createWindow);
     } else {
         app.on('ready', createWindow);
