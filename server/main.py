@@ -11,6 +11,7 @@ from handler.ExitHandler import ExitHandler
 from handler.IndexHandler import IndexHandler
 from handler.NotFoundHandler import NotFoundHandler
 from handler.WsockHandler import WsockHandler
+from logging.handlers import RotatingFileHandler
 from settings import base_dir
 from settings import (
     get_app_settings, get_host_keys_settings, get_policy_setting,
@@ -24,7 +25,7 @@ logger.setLevel(logging.INFO)
 log_file_dir = os.path.join(base_dir, 'logs')
 if not os.path.exists(log_file_dir):
     os.makedirs(log_file_dir)
-file_handler = logging.FileHandler(os.path.join(log_file_dir, "server.log"))
+file_handler = RotatingFileHandler(os.path.join(log_file_dir, "server.log"), maxBytes=5*1024*1024, backupCount=5)
 file_handler.setLevel(logging.DEBUG)  # 设置文件handler的日志级别
 file_formatter = logging.Formatter("%(asctime)s - %(threadName)s - %(filename)s:%(lineno)d - %(levelname)s: %(message)s")
 file_handler.setFormatter(file_formatter)
