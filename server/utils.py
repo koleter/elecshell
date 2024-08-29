@@ -1,6 +1,6 @@
-import datetime
 import ipaddress
 import re
+
 
 try:
     import secrets
@@ -19,19 +19,7 @@ try:
 except ImportError:
     from urlparse import urlparse
 
-import logging
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-# 设置将日志输出到控制台
-controlshow = logging.StreamHandler()
-controlshow.setLevel(logging.INFO)
-# 设置日志的格式
-formatter = logging.Formatter("%(asctime)s - %(threadName)s - %(filename)s:%(lineno)d - %(levelname)s: %(message)s")
-controlshow.setFormatter(formatter)
-
-logger.addHandler(controlshow)
 
 numeric = re.compile(r'[0-9]+$')
 allowed = re.compile(r'(?!-)[a-z0-9-]{1,63}(?<!-)$', re.IGNORECASE)
