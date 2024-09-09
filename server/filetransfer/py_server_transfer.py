@@ -85,7 +85,7 @@ for port in range(10000, 25000):
 
     def _upload_single_file(self, upload_local_path, remote_path):
         local_server = self.local_server
-        download_url = f'http://{local_server["local_ip"]}:{local_server["port"]}/{upload_local_path}'
+        download_url = f'http://{local_server["local_ip"]}:{local_server["port"]}/{upload_local_path}?token={local_server["token"]}'
         out = self.worker.execute_implicit_command(f'wget -O {remote_path} {download_url} || rm -f {remote_path}')
         if b_is_error(out):
             lines = out.decode(self.worker.encoding).split('\n')
