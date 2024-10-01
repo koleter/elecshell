@@ -5,6 +5,7 @@ const {exec} = require('child_process');
 const {Platform} = require('./platform/platform');
 const {template} = require('./lib/menu');
 const {createWindow} = require('./lib/window');
+const {sleep} = require("./lib/util");
 
 const menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
@@ -32,7 +33,7 @@ function startServer() {
             }
             handleError(error);
 
-            if (error.message.indexOf("python3: command not found") >= 0) {
+            if (error.message.indexOf("python3: command not found") >= 0 || error.message === "Command failed: python3 main.py \n") {
                 exec(`python main.py ${extraArgs}`, args, (error, stdout, stderr) => {
                     if (!error) {
                         resolve();
@@ -40,6 +41,7 @@ function startServer() {
                     }
                     throw error;
                 });
+                return;
             }
             reject();
             throw error;
@@ -48,7 +50,27 @@ function startServer() {
 }
 
 async function start() {
-    app.on('quit', async () => {
+    // app.on('quit', async () => {
+    //     if (process.env.NODE_ENV !== 'development') {
+    //         await request({
+    //             url: 'http://localhost:8888/exit',
+    //             method: "POST",
+    //             json: true,
+    //             headers: {
+    //                 "content-type": "application/json",
+    //             }
+    //         }, function (error, response, body) {
+    //             if (!error) {
+    //                 console.log(body); // 请求成功的处理逻辑
+    //             }
+    //         });
+    //     }
+    // });
+
+    // Quit when all windows are closed, except on macOS. There, it's common
+    // for applications and their menu bar to stay active until the user quits
+    // explicitly with Cmd + Q.
+    app.on('window-all-closed', async () => {
         if (process.env.NODE_ENV !== 'development') {
             await request({
                 url: 'http://localhost:8888/exit',
@@ -63,12 +85,6 @@ async function start() {
                 }
             });
         }
-    });
-
-    // Quit when all windows are closed, except on macOS. There, it's common
-    // for applications and their menu bar to stay active until the user quits
-    // explicitly with Cmd + Q.
-    app.on('window-all-closed', () => {
         app.quit();
     });
 
