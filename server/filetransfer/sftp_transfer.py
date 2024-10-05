@@ -1,10 +1,9 @@
 import asyncio
-import logging
 import os
 import stat
-import uuid
 
 from filetransfer.base_transfer import BaseTransfer
+
 
 class sftp_file_transfer(BaseTransfer):
     def __init__(self, worker):

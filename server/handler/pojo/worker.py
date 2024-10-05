@@ -1,22 +1,16 @@
-import asyncio
 import base64
 import json
 import logging
 import os
-import stat
+import threading
 import traceback
 import types
 import uuid
 
 import paramiko
-import threading
-from tornado.options import options
-
-from handler.pojo.SessionContext import SessionContext
-from utils import reset_font, gen_id
-
-from filetransfer.sftp_transfer import sftp_file_transfer
 from filetransfer.py_server_transfer import py_server_sftp_file_transfer
+from handler.pojo.SessionContext import SessionContext
+from utils import gen_id
 
 try:
     import secrets

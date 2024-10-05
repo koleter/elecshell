@@ -29,6 +29,8 @@ export const sessionIdMapFileName = {};
 // 记录sessionId对应的sock等信息
 export const sessionIdRef = {};
 
+export const sessionInit = {};
+
 type MenuItem = Required<MenuProps>['items'][number];
 
 let hoverTimeout;

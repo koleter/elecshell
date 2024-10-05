@@ -1,5 +1,5 @@
 import React, {useContext, useEffect, useState, useRef} from "react";
-import {Dropdown, Form, Input, message, Modal, Space, Tree, Divider} from "antd";
+import {Dropdown, Form, Input, message, Modal, Space, Tree, Divider, Button} from "antd";
 
 const {Search} = Input;
 
@@ -11,16 +11,19 @@ import {AppContext} from "@/pages/context/AppContextProvider";
 import util, {getUUid} from "@/util";
 import {DataNode, TreeProps} from "antd/es/tree";
 import {HEADER_HEIGHT, MENU_FILETRANSFER} from "@/const";
+import {AimOutlined} from "@ant-design/icons";
+import {spiltResponseWithLine} from "@/pages/util/terminal_util";
 const path = require('path');
 
 const SessionTransfer: React.FC = (props) => {
+    const {session} = props;
     const [treeData, setTreeData] = useState([]);
 
     const dragWindowRef = useRef(null);
 
     const {activeKey, selectedMenuKey} = useContext(AppContext);
     // selectedMenuKey == MENU_FILETRANSFER &&
-    const [searchValue, setSearchValue] = useState('/');
+    const [searchValue, setSearchValue] = useState('');
 
     const [selectedKeys, setSelectedKeys] = useState([]);
 
@@ -36,29 +39,26 @@ const SessionTransfer: React.FC = (props) => {
         getFileListWithSpcifiedPath(searchValue);
     }
 
-    const [inited, setInited] = useState(false);
     useEffect(() => {
-        if (selectedMenuKey != MENU_FILETRANSFER || inited) {
-            return
+        if (!sessionInit[session.key]) {
+            sessionInit[session.key] = [];
         }
 
-        setInited(true);
-
-        getFileList();
-        sessionIdRef[activeKey].refreshRemoteFileList = (result) => {
-            result.unshift({
-                title: "..",
-                key: "..",
-                isLeaf: false,
-                remoteDirectory: searchValue
-            });
-            setTreeData(result);
-        };
-
-    }, [selectedMenuKey]);
+        sessionInit[session.key].push(() => {
+            sessionIdRef[activeKey].refreshRemoteFileList = (result) => {
+                console.log(result)
+                result.unshift({
+                    title: "..",
+                    key: "..",
+                    isLeaf: false,
+                    remoteDirectory: searchValue
+                });
+                setTreeData(result);
+            };
+        });
+    }, []);
 
     useEffect(() => {
-
         const handleDrop = (e) => {
             e.preventDefault();     // 取消默认事件f.path
             e.stopPropagation();    // 阻止冒泡事件
@@ -94,11 +94,25 @@ const SessionTransfer: React.FC = (props) => {
 
     return <>
         <Space className={'sftpFileListSpace'} direction="vertical" size="middle">
-            <Search placeholder="input search text" onSearch={getFileList} enterButton value={searchValue}
-                    onChange={(e) => {
-                        // console.log(e);
-                        setSearchValue(e.target.value);
-                    }}/>
+            <div style={{display: "flex", flexDirection: "row"}}>
+                <Search placeholder="input search text" onSearch={getFileList} enterButton value={searchValue}
+                        onChange={(e) => {
+                            setSearchValue(e.target.value);
+                        }}/>
+                <Button icon={<AimOutlined />} onClick={() => {
+                    sessionIdRef[activeKey]?.sendRecv('pwd', function (val: string) {
+                        console.log(val);
+                        const lines = spiltResponseWithLine(val);
+                        for (let i = 0; i < lines.length; i++) {
+                            if (lines[i].startsWith("/")) {
+                                setSearchValue(lines[i]);
+                                return;
+                            }
+                        }
+                        message.error('can not get pwd, error is ' + val);
+                    })
+                }}></Button>
+            </div>
 
             <div ref={dragWindowRef} className={'dropDiv'}
                  onDragEnter={(e) => {e.preventDefault()}}
@@ -113,7 +127,6 @@ const SessionTransfer: React.FC = (props) => {
                     expandAction={false}
                     selectedKeys={selectedKeys}
                     onSelect={function(selectedKeys, e:{selected: boolean, selectedNodes, node, event}) {
-                        console.log(selectedKeys, e)
                         setSelectedKeys(selectedKeys);
                     }}
                     titleRender={(nodeData: DataNode) => {
@@ -155,7 +168,6 @@ const SessionTransfer: React.FC = (props) => {
                     }}
                 />
             </div>
-
         </Space>
     </>
 };

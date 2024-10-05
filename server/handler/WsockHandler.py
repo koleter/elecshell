@@ -1,21 +1,18 @@
-import asyncio
+import base64
 import imp
 import json
 import logging
-import stat
 import struct
-import time
 import traceback
 
 import paramiko
 import tornado.web
-from tornado.ioloop import IOLoop
-
 from exception.InvalidValueError import InvalidValueError
 from handler.MixinHandler import MixinHandler
 from handler.const import callback_map, callback_map_lock
 from handler.pojo.SessionContext import SessionContext
 from handler.pojo.worker import workers, clear_worker, workers_lock
+from tornado.ioloop import IOLoop
 from utils import (
     UnicodeType
 )
@@ -86,15 +83,16 @@ class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
         elif type == 'exec_worker_method':
             getattr(worker, msg.get("methodName"))(*msg.get("args"))
 
+        # exec a command and recv the result
         elif type == 'sendRecv':
             data = msg.get('data')
             requestId = msg.get('requestId')
 
-            recv = worker.on_recv(data)
+            recv = worker.execute_implicit_command(data)
 
             worker.handler.write_message({
                 'requestId': requestId,
-                'val': recv,
+                'val': base64.b64encode(recv).decode(worker.encoding),
                 'type': 'response'
             }, binary=False)
         elif type == 'exec':

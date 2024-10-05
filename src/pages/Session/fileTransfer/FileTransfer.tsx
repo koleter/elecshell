@@ -11,7 +11,7 @@ const FileTransfer: React.FC = (props) => {
         {
             sessions.map((session) => {
                 return <div key={session.key} style={{display: activeKey === session.key ? 'block' : 'none'}}>
-                    <SessionTransfer/>
+                    <SessionTransfer session={session}/>
                 </div>
             })
         }

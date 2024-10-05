@@ -272,6 +272,19 @@ const SessionWindow: React.FC = (props) => {
                 url = ws_url + join + 'ws?id=' + id,
                 decoder = window.TextDecoder ? new window.TextDecoder(encoding) : encoding;
 
+            function decode(val) {
+                // 先用atob解码Base64字符串
+                const raw = atob(val);
+                // 创建一个Uint8Array，存储解码后的字节
+                const bytes = new Uint8Array(new ArrayBuffer(raw.length));
+
+                // 将每个ASCII字符转换为字节
+                for (let i = 0; i < raw.length; i++) {
+                    bytes[i] = raw.charCodeAt(i);
+                }
+                return decoder.decode(bytes);
+            }
+
             const sock = new window.WebSocket(url);
             sessionStatusMap[id] = CONNECTING;
 
@@ -295,6 +308,12 @@ const SessionWindow: React.FC = (props) => {
                 term.focus();
 
                 fitAddon.fit();
+                setTimeout(() => {
+                    while (sessionInit[id]?.length) {
+                        const f = sessionInit[id].shift();
+                        f();
+                    }
+                }, 100);
             };
 
             sessionIdRef[id] = {
@@ -307,6 +326,11 @@ const SessionWindow: React.FC = (props) => {
                 },
                 sendData: function (data: string) {
                     sock.send(JSON.stringify({'data': data, 'type': 'data'}));
+                },
+                sendRecv: function (cmd: string, f: Function) {
+                    const requestId = getUUid();
+                    callbackMap[requestId] = f;
+                    sock.send(JSON.stringify({'data': cmd, requestId: requestId, 'type': 'sendRecv'}));
                 },
                 callback: async function (methodName, args, callback) {
                     const uid = getUUid();
@@ -331,18 +355,8 @@ const SessionWindow: React.FC = (props) => {
             function wsockCallback(res) {
                 switch (res.type) {
                     case 'data':
-                        // 先用atob解码Base64字符串
-                        const raw = atob(res.val);
-                        // 创建一个Uint8Array，存储解码后的字节
-                        const bytes = new Uint8Array(new ArrayBuffer(raw.length));
-
-                        // 将每个ASCII字符转换为字节
-                        for (let i = 0; i < raw.length; i++) {
-                            bytes[i] = raw.charCodeAt(i);
-                        }
-
                         // 使用TextDecoder将字节序列转换为UTF-8字符串
-                        term.write(decoder.decode(bytes), (raw) => {
+                        term.write(decode(res.val), (raw) => {
                             if (res.requestId) {
                                 sessionIdRef[id].send({
                                     type: 'callback',
@@ -392,7 +406,8 @@ const SessionWindow: React.FC = (props) => {
                         }
                         break;
                     case 'response':
-                        callbackMap[res.requestId](res.val);
+                        callbackMap[res.requestId](decode(res.val));
+                        delete callbackMap[res.requestId];
                         break;
                     default:
                         throw new Error(`unexpected result type: ${res.type}`);
