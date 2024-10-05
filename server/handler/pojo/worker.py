@@ -161,10 +161,10 @@ class Worker(object):
     def _on_read(self):
         logging.debug('worker {} on read'.format(self.id))
         try:
-            if self.recv_lock.locked() or not self.chan.recv_ready():
-                return
             self.recv_lock.acquire()
             try:
+                if not self.chan.recv_ready():
+                    return
                 data = self.chan.recv(BUF_SIZE)
             finally:
                 self.recv_lock.release()
