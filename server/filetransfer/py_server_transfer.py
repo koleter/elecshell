@@ -1,18 +1,12 @@
-import asyncio
-import binascii
 import logging
 import os
-import stat
 import re
+import stat
 import uuid
 
 from filetransfer.base_transfer import BaseTransfer
-
-from util.file_util import get_root_dir_path
-
-from util.server import start_server
-
 from util.error import b_is_error
+from util.server import start_server
 
 port_pattern = re.compile(b'Port (\\d+) is available')
 

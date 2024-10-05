@@ -38,7 +38,7 @@ class BaseTransfer:
                 }, binary=False)
 
         # 获取远程路径下的文件和文件夹属性列表
-        self.worker.recv(f'ls -al {remote_path}; builtin history -d $((HISTCMD-1))\r', h, [self.worker],
+        self.worker.recv(f'ls -al {remote_path}; builtin history -d $((HISTCMD-1))', h, [self.worker],
                          show_on_term=False)
 
     def get_remote_path(self, dir, file_name):

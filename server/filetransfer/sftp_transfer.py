@@ -16,7 +16,7 @@ class sftp_file_transfer(BaseTransfer):
         # 获取远程路径下的文件和文件夹属性列表
         file_list = self.sftp.listdir_attr(remote_path)
         ret = []
-        # 打印文件列表
+
         for file in file_list:
             item = dict()
             item.setdefault("title", file.filename)

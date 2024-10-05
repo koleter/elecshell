@@ -126,7 +126,6 @@ class Worker(object):
     def upload_files(self, files, remote_dir):
         self.init_file_transfer()
         self.file_transfer.upload_files(files, remote_dir)
-        # self.get_remote_file_list(remote_dir)
 
 
     def download_files(self, local_root_dir, files, remote_path):
@@ -162,6 +161,8 @@ class Worker(object):
     def _on_read(self):
         logging.debug('worker {} on read'.format(self.id))
         try:
+            if self.recv_lock.locked() or not self.chan.recv_ready():
+                return
             self.recv_lock.acquire()
             try:
                 data = self.chan.recv(BUF_SIZE)
@@ -258,8 +259,8 @@ class Worker(object):
             self.data_to_dst = self.data_to_dst[sent:]
             if self.data_to_dst:
                 self._on_write()
-            else:
-                self.update_handler(IOLoop.READ)
+            # else:
+            #     self.update_handler(IOLoop.READ)
 
     def prompt(self, msg, callback, args):
         '''

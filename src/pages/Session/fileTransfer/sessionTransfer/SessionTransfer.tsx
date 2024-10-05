@@ -62,7 +62,6 @@ const SessionTransfer: React.FC = (props) => {
         const handleDrop = (e) => {
             e.preventDefault();     // 取消默认事件f.path
             e.stopPropagation();    // 阻止冒泡事件
-            console.log(searchValue, e.dataTransfer.files)
             const fileInfos = [];
             for (const file of e.dataTransfer.files) {
                 fileInfos.push({
