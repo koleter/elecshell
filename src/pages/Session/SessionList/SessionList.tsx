@@ -214,9 +214,8 @@ const SessionList: React.FC = (props) => {
     function calcSessionPropertyModalWidth() {
         switch (sessionPropertyActiveKey) {
             case "baseInfo":
-                return '35vw'
             case 'loginScript':
-                return '35vw';
+                return '75vw';
             default:
                 throw new Error("unexpect active key: " + sessionPropertyActiveKey);
         }
