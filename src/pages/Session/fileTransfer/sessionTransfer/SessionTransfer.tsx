@@ -103,8 +103,9 @@ const SessionTransfer: React.FC = (props) => {
                         console.log(val);
                         const lines = spiltResponseWithLine(val);
                         for (let i = 0; i < lines.length; i++) {
-                            if (lines[i].startsWith("/")) {
-                                setSearchValue(lines[i]);
+                            const line = lines[i];
+                            if (line.startsWith("/")) {
+                                setSearchValue(line.trimEnd());
                                 return;
                             }
                         }
@@ -134,7 +135,7 @@ const SessionTransfer: React.FC = (props) => {
                                 return;
                             }
                             if (nodeData.key == "..") {
-                                const parentDirectory = path.dirname(nodeData.remoteDirectory);
+                                const parentDirectory = path.dirname(searchValue);
                                 const normalize = path.normalize(parentDirectory);
                                 setSearchValue(normalize);
                                 getFileListWithSpcifiedPath(normalize);
