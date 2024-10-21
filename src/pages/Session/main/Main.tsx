@@ -259,6 +259,31 @@ const SessionMain: React.FC = () => {
                                                         {
                                                             label: (
                                                                 <div onClick={() => {
+                                                                    window.electronAPI.ipcRenderer.send('save-file-dialog', item.key);
+                                                                    window.electronAPI.ipcRenderer.on('selected-file', function (event, result, sessionId) {
+                                                                        if (result.canceled) {
+                                                                            return;
+                                                                        }
+                                                                        setSessions( () => {
+                                                                            const data = [...sessions];
+                                                                            for (let i = 0; i < data.length; i++) {
+                                                                                if (data[i].key === sessionId) {
+                                                                                    data[i].logPath = result.filePath;
+                                                                                    return data;
+                                                                                }
+                                                                            }
+                                                                            return data;
+                                                                        });
+                                                                    });
+                                                                }}>
+                                                                    {item.logPath ? '关闭日志' : "启动日志"}
+                                                                </div>
+                                                            ),
+                                                            key: 'log'
+                                                        },
+                                                        {
+                                                            label: (
+                                                                <div onClick={() => {
                                                                     setSessions(sessions.filter(session => session.key === item.key));
                                                                     closeSessions(sessions.filter(session => session.key !== item.key));
                                                                 }}>关闭其他选项卡</div>
@@ -297,6 +322,7 @@ const SessionMain: React.FC = () => {
                                             setSessions={setSessions}
                                             isConnected={item.isConnected}
                                             encoding={item.encoding}
+                                            session={item}
                                         />
                                     }
                                 })}

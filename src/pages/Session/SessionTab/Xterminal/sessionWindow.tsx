@@ -45,7 +45,7 @@ const termOptions = {
 
 const SessionWindow: React.FC = (props) => {
     const terminalRef = useRef<null | HTMLDivElement>(null);
-    const {id, sessionConfId, setSessions, isConnected, encoding} = props;
+    const {id, sessionConfId, setSessions, isConnected, encoding, session} = props;
     const context = useContext(AppContext);
     const searchInputRef = useRef(null);
     const {} = context;
@@ -363,6 +363,14 @@ const SessionWindow: React.FC = (props) => {
                                     requestId: res.requestId,
                                     args: raw
                                 })
+                            }
+
+                            if (session.logPath) {
+                                window.electronAPI.FS_appendFile(session.logPath, raw, err => {
+                                    if (err) {
+                                        console.error('追加数据时发生错误:', err);
+                                    }
+                                });
                             }
                         }, res.showOnTerm);
                         break;

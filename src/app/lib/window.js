@@ -1,5 +1,12 @@
-const {BrowserWindow, screen, globalShortcut, ipcMain} = require('electron');
+const {BrowserWindow, screen, globalShortcut, ipcMain, dialog} = require('electron');
 const path = require('path');
+
+ipcMain.on("sendAllWindowsIpcMessage", (event, arg) => {
+    const allWindows = BrowserWindow.getAllWindows();
+    allWindows.forEach((win) => {
+        win.webContents.send(arg);
+    });
+});
 
 exports.createWindow = () => {
     const {width, height} = screen.getPrimaryDisplay().workAreaSize;//获取到屏幕的宽度和高度
@@ -48,15 +55,17 @@ exports.createWindow = () => {
         }
     });
 
-    console.log(process.env.NODE_ENV);
-    console.log(process.cwd());
-
-    ipcMain.on("sendAllWindowsIpcMessage", (event, arg) => {
-        const allWindows = BrowserWindow.getAllWindows();
-        allWindows.forEach((win) => {
-            win.webContents.send(arg);
+    ipcMain.on('save-file-dialog', function (event, sessionId) {
+        dialog.showSaveDialog(win, {
+            title: '请选择保存日志的文件',
+            properties: ['showHiddenFiles']
+        }).then(function (files) {
+            if (files) event.sender.send('selected-file', files, sessionId);
         });
     });
+
+    console.log(process.env.NODE_ENV);
+    console.log(process.cwd());
 
     // Open the DevTools.
     if (process.env.NODE_ENV === 'development') {
