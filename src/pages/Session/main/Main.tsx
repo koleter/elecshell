@@ -258,27 +258,43 @@ const SessionMain: React.FC = () => {
                                                         },
                                                         {
                                                             label: (
-                                                                <div onClick={() => {
-                                                                    window.electronAPI.ipcRenderer.send('save-file-dialog', item.key);
-                                                                    window.electronAPI.ipcRenderer.on('selected-file', function (event, result, sessionId) {
-                                                                        if (result.canceled) {
-                                                                            return;
-                                                                        }
-                                                                        setSessions( () => {
+                                                                <>
+                                                                    {item['logPath'] ? <div onClick={() => {
+                                                                        setSessions(() => {
                                                                             const data = [...sessions];
                                                                             for (let i = 0; i < data.length; i++) {
-                                                                                if (data[i].key === sessionId) {
-                                                                                    data[i].logPath = result.filePath;
+                                                                                if (data[i].key === item.key) {
+                                                                                    data[i].logPath = "";
                                                                                     return data;
                                                                                 }
                                                                             }
                                                                             return data;
                                                                         });
-                                                                    });
-                                                                }}>
-                                                                    {item.logPath ? '关闭日志' : "启动日志"}
-                                                                </div>
-                                                            ),
+                                                                    }}>
+                                                                        关闭日志
+                                                                    </div> : <div onClick={() => {
+                                                                        window.electronAPI.ipcRenderer.send('save-file-dialog', item.key);
+                                                                        window.electronAPI.ipcRenderer.on('selected-file', function (event, result, sessionId) {
+                                                                            if (result.canceled) {
+                                                                                return;
+                                                                            }
+                                                                            setSessions( () => {
+                                                                                const data = [...sessions];
+                                                                                for (let i = 0; i < data.length; i++) {
+                                                                                    if (data[i].key === sessionId) {
+                                                                                        data[i].logPath = result.filePath;
+                                                                                        return data;
+                                                                                    }
+                                                                                }
+                                                                                return data;
+                                                                            });
+                                                                        });
+                                                                    }}>
+                                                                        启动日志
+                                                                    </div>
+                                                                    }
+                                                                </>
+                                                                ),
                                                             key: 'log'
                                                         },
                                                         {

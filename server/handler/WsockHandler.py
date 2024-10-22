@@ -1,5 +1,7 @@
+import asyncio
 import base64
 import imp
+import inspect
 import json
 import logging
 import struct
@@ -100,7 +102,10 @@ class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
 
             try:
                 module = imp.load_source(path, path)
-                module.Main(SessionContext(worker))
+                if inspect.iscoroutinefunction(module.Main):
+                    await module.Main(SessionContext(worker))
+                else:
+                    module.Main(SessionContext(worker))
                 worker.handler.write_message({
                     'type': 'message',
                     'status': 'success',

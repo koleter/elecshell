@@ -45,16 +45,18 @@ const SessionTransfer: React.FC = (props) => {
         }
 
         sessionInit[session.key].push(() => {
-            sessionIdRef[activeKey].refreshRemoteFileList = (result) => {
-                console.log(result)
-                result.unshift({
-                    title: "..",
-                    key: "..",
-                    isLeaf: false,
-                    remoteDirectory: searchValue
-                });
-                setTreeData(result);
-            };
+            if (sessionIdRef[activeKey]) {
+                sessionIdRef[activeKey].refreshRemoteFileList = (result) => {
+                    console.log(result)
+                    result.unshift({
+                        title: "..",
+                        key: "..",
+                        isLeaf: false,
+                        remoteDirectory: searchValue
+                    });
+                    setTreeData(result);
+                };
+            }
         });
     }, []);
 

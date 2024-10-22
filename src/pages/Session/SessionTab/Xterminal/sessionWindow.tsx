@@ -366,11 +366,14 @@ const SessionWindow: React.FC = (props) => {
                             }
 
                             if (session.logPath) {
-                                window.electronAPI.FS_appendFile(session.logPath, raw, err => {
-                                    if (err) {
-                                        console.error('追加数据时发生错误:', err);
-                                    }
-                                });
+                                try {
+                                    window.electronAPI.FS_appendFileSync(session.logPath, raw);
+                                } catch (err) {
+                                    showMessage({
+                                        status: 'error',
+                                        content: err
+                                    })
+                                }
                             }
                         }, res.showOnTerm);
                         break;
