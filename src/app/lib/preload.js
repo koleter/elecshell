@@ -9,6 +9,7 @@ const electronAPI = {
     ipcRenderer: ipcRenderer,
     BrowserWindow: BrowserWindow,
     FS_appendFileSync: fs.appendFileSync,
+    FS_writeFileSync: fs.writeFileSync,
     getVersions() {
         return process.versions;
     }

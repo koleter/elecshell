@@ -278,6 +278,7 @@ const SessionMain: React.FC = () => {
                                                                             if (result.canceled) {
                                                                                 return;
                                                                             }
+                                                                            window.electronAPI.FS_writeFileSync(result.filePath, "");
                                                                             setSessions( () => {
                                                                                 const data = [...sessions];
                                                                                 for (let i = 0; i < data.length; i++) {
