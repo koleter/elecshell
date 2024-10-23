@@ -13,6 +13,7 @@ exports.createWindow = () => {
     // Create the browser window.
 
     const option = {
+        title: 'elecshell',
         width: width * 0.9,
         height: height * 0.9,
         webPreferences: {

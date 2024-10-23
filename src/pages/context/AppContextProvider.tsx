@@ -58,6 +58,7 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
             params: {
                 type: 'SessionConfig',
             },
+            timeout: 10000,
         }).then(res => {
             if (res.status !== 'success') {
                 message[res.status](res.msg);

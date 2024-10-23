@@ -1,11 +1,12 @@
 const {app, BrowserWindow, screen, ipcMain, Menu, globalShortcut, remote} = require('electron');
 const path = require('path');
 const request = require('request');
-const {exec} = require('child_process');
+const {exec, spawn} = require('child_process');
 const {Platform} = require('./platform/platform');
 const {template} = require('./lib/menu');
 const {createWindow} = require('./lib/window');
 const {sleep} = require("./lib/util");
+const fetch = require('node-fetch');
 
 const menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
@@ -13,40 +14,62 @@ Menu.setApplicationMenu(menu);
 const basePath = Platform.getUserBasePath();
 
 function startServer() {
-    return new Promise((resolve, reject) => {
-        const extraArgs = '';
-        // const extraArgs = `--basedir=${basePath}`;
-        const args = {
-            cwd: process.env.NODE_ENV == 'test_production' ? `${path.join(__dirname, "../../server")}` : `${path.join(__dirname, "../../../server")}`
-        };
+    const extraArgs = '';
+    // const extraArgs = `--basedir=${basePath}`;
+    const args = {
+        cwd: process.env.NODE_ENV == 'test_production' ? `${path.join(__dirname, "../../server")}` : `${path.join(__dirname, "../../../server")}`
+    };
 
-        function handleError(error) {
-            if (error.toString().match(/ModuleNotFoundError:.+?/)) {
-                throw new Error(`${error}`);
+    function handleError(error) {
+        if (error.toString().match(/ModuleNotFoundError:.+?/)) {
+            throw new Error(`${error}`);
+        }
+    }
+
+    exec(`python3 main.py ${extraArgs}`, args, (error, stdout, stderr) => {
+        if (!error) {
+            return;
+        }
+        handleError(error);
+
+        if (error.message.indexOf("python3: command not found") >= 0 || error.message === "Command failed: python3 main.py \n") {
+            exec(`python main.py ${extraArgs}`, args, (error, stdout, stderr) => {
+                if (!error) {
+                    return;
+                }
+                throw error;
+            });
+            return;
+        }
+        throw error;
+    });
+}
+
+async function waitForServerStart() {
+    try {
+        while (true) {
+            const response = await fetch('http://localhost:8888/ping', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                await sleep(1000);
+                continue;
+            }
+
+            const data = await response.text();
+            if (data === "pong") {
+                return;
+            } else {
+                throw new Error(`HTTP error! response: ${data}`);
             }
         }
-
-        exec(`python3 main.py ${extraArgs}`, args, (error, stdout, stderr) => {
-            if (!error) {
-                resolve();
-                return;
-            }
-            handleError(error);
-
-            if (error.message.indexOf("python3: command not found") >= 0 || error.message === "Command failed: python3 main.py \n") {
-                exec(`python main.py ${extraArgs}`, args, (error, stdout, stderr) => {
-                    if (!error) {
-                        resolve();
-                        return;
-                    }
-                    throw error;
-                });
-                return;
-            }
-            reject();
-            throw error;
-        });
-    });
+    } catch (error) {
+        console.error('Error:', error.message);
+    }
 }
 
 async function start() {
@@ -72,8 +95,7 @@ async function start() {
     // explicitly with Cmd + Q.
     app.on('window-all-closed', async () => {
         if (process.env.NODE_ENV !== 'development') {
-            await request({
-                url: 'http://localhost:8888/exit',
+            await request('http://localhost:8888/exit',{
                 method: "POST",
                 json: true,
                 headers: {
@@ -101,10 +123,11 @@ async function start() {
     // 开发模式自行启动main.py,生产模式创建子进程自动执行
     if (process.env.NODE_ENV !== 'development') {
         startServer();
+        await waitForServerStart();
         app.on('ready', () => {
             setTimeout(() => {
                 createWindow();
-            }, 300);
+            }, 500);
         });
     } else {
         app.on('ready', createWindow);

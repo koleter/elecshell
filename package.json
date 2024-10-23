@@ -16,9 +16,7 @@
             "out/**/*",
             "antdBuild/**/*"
         ],
-        "extraFiles": [
-
-        ],
+        "extraFiles": [],
         "extraResources": [
             "server/**/*"
         ],

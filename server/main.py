@@ -12,6 +12,8 @@ from handler.IndexHandler import IndexHandler
 from handler.NotFoundHandler import NotFoundHandler
 from handler.WsockHandler import WsockHandler
 from logging.handlers import RotatingFileHandler
+
+from handler.PingHandler import PingHandler
 from settings import base_dir
 from settings import (
     get_app_settings, get_host_keys_settings, get_policy_setting,
@@ -51,6 +53,8 @@ def make_handlers(loop, options):
         (r'/ws', WsockHandler, dict(loop=loop)),
         (r'/conf', ConfigHandler, dict(loop=loop)),
         (r'/exit', ExitHandler, dict(loop=loop)),
+        (r'/ping', PingHandler, dict(loop=loop)),
+
     ]
     return handlers
 
