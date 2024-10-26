@@ -48,7 +48,7 @@ const SessionWindow: React.FC = (props) => {
     const {id, sessionConfId, setSessions, isConnected, encoding, session} = props;
     const context = useContext(AppContext);
     const searchInputRef = useRef(null);
-    const {} = context;
+    const {activeKey} = context;
     // 展示搜索框
     const [showSearch, setShowSearch] = useState(false);
 
@@ -457,6 +457,14 @@ const SessionWindow: React.FC = (props) => {
             };
         }
     }, [isConnected]);
+
+    useEffect(() => {
+        setTimeout(() => {
+            if (id == activeKey) {
+                term.focus();
+            }
+        }, 100);
+    }, [activeKey]);
 
     function getTermHeight() {
         if (window.electronAPI.platform != 'win32') {
