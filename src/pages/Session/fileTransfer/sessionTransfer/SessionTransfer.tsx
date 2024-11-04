@@ -19,7 +19,7 @@ const SessionTransfer: React.FC = (props) => {
     const {session} = props;
     const [treeData, setTreeData] = useState([]);
 
-    const dragWindowRef = useRef(null);
+    const dragWindowRef = useRef<Element>(null);
 
     const {activeKey, selectedMenuKey} = useContext(AppContext);
     // selectedMenuKey == MENU_FILETRANSFER &&
@@ -152,7 +152,7 @@ const SessionTransfer: React.FC = (props) => {
                     }}
                     onDragStart={function ({event, node}) {
                         console.log(event, node)
-                        const fileName = `elecshellTransfer_${getUUid()}`;
+                        const fileName = `\.elecshellTransfer_${getUUid()}`;
                         const files = new Set(selectedKeys);
                         files.add(node.key);
                         const prop = {

@@ -9,7 +9,7 @@ from util.port import get_unused_port
 from util.net import get_local_host_ip
 
 
-def start_server(token):
+def start_remote_server(token):
     port = get_unused_port()
     local_ip = get_local_host_ip()
 

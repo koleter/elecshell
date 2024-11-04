@@ -6,7 +6,7 @@ import uuid
 
 from filetransfer.base_transfer import BaseTransfer
 from util.error import b_is_error
-from util.server import start_server
+from util.local_server import start_local_server
 
 port_pattern = re.compile(b'Port (\\d+) is available')
 
@@ -18,7 +18,7 @@ class py_server_sftp_file_transfer(BaseTransfer):
     def __init__(self, worker):
         super().__init__(worker)
         self.local_server = None
-        self.remote_server_port = None
+        self.remote_server = None
 
     def _get_remote_available_port(self):
         # def h(ctx, output):
@@ -53,23 +53,30 @@ for port in range(10000, 25000):
             return 'python2'
 
     def _start_remote_http_server(self):
-        if self.remote_server_port:
+        if self.remote_server:
             return
         port = self._get_remote_available_port()
         py_cmd = self._get_python_cmd()
-        if py_cmd == 'python3':
+
+        self.remote_server = dict()
+        self.remote_server['port'] = port
+        self.remote_server['host'] = self.work.dst_addr[0]
+        token = str(uuid.uuid1())
+        self.remote_server['token'] = token
+
+        if self.remote_py_version == 3:
             self.worker.execute_implicit_command(f'{py_cmd} -m http.server {port} --directory / &')
-        elif py_cmd == 'python2':
+        elif self.remote_py_version == 2:
             self.worker.execute_implicit_command(f'{py_cmd} -m SimpleHTTPServer {port} --directory / &')
         else:
             logging.debug("cannot find python cmd")
             raise Exception("cannot find python cmd")
-        self.remote_server_port = port
+
 
     def _start_local_http_server(self):
         if self.local_server is None:
             token = str(uuid.uuid1())
-            httpd, local_ip, port = start_server(token)
+            httpd, local_ip, port = start_local_server(token)
             self.local_server = {
                 'httpd': httpd,
                 'local_ip': local_ip,
@@ -145,12 +152,14 @@ for port in range(10000, 25000):
             break
 
     def download_files(self, local_root_dir, files, remoteDir):
+        self._start_remote_http_server()
         for file in files:
             self.download_single_file(local_root_dir, file, remoteDir)
 
     def close(self):
-        if self.remote_server_port:
-            self.worker.execute_implicit_command(f'lsof -t -i:{self.remote_server_port.port} | xargs -r kill -9')
-        for root_dir, server_info in self.local_servers.items():
-            server_info.get('httpd').shutdown()
+        pass
+        # if self.remote_server_port:
+        #     self.worker.execute_implicit_command(f'lsof -t -i:{self.remote_server_port.port} | xargs -r kill -9')
+        # for root_dir, server_info in self.local_servers.items():
+        #     server_info.get('httpd').shutdown()
 

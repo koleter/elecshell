@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import os
+import platform
 import threading
 import traceback
 import types
@@ -45,12 +46,14 @@ class WatchDogFileHandler(FileSystemEventHandler):
             return
         data = None
         # 文件可能还在被创建过程中，操作系统可能还没有完全关闭文件句柄，导致暂时无法访问
-        time.sleep(0.1)
-        try:
-            with open(event.src_path, 'r') as f:
-                data = json.loads(f.read())
-        except Exception as e:
-            logging.error(f"open {event.src_path} error, {str(e)}")
+        for i in range(5):
+            time.sleep(0.1)
+            try:
+                with open(event.src_path, 'r') as f:
+                    data = json.loads(f.read())
+                    break
+            except Exception as e:
+                logging.error(f"open {event.src_path} error, {str(e)}")
         os.remove(event.src_path)
         if data is None:
             return
@@ -58,7 +61,7 @@ class WatchDogFileHandler(FileSystemEventHandler):
         loop.add_callback(worker.download_files, os.path.dirname(event.src_path), data.get('files'), data.get('remoteDir'))
 
 
-def get_all_drive_letters():
+def get_all_window_drive_letters():
     partitions = psutil.disk_partitions()
     drive_letters = [partition.device for partition in partitions]
     return drive_letters
@@ -66,7 +69,10 @@ def get_all_drive_letters():
 def start_watcher():
     event_handler = WatchDogFileHandler()
 
-    drive_letters = get_all_drive_letters()
+    if platform.system() == 'Windows':
+        drive_letters = get_all_window_drive_letters()
+    else:
+        drive_letters = ["/"]
     print("Monitoring the following drives:", drive_letters)
 
     for drive in drive_letters:
