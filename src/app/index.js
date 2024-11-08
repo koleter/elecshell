@@ -13,6 +13,12 @@ Menu.setApplicationMenu(menu);
 
 const basePath = Platform.getUserBasePath();
 
+app.whenReady().then(() => {
+    globalShortcut.register('CommandOrControl+W', () => {
+
+    });
+});
+
 function startServer() {
     const extraArgs = '';
     // const extraArgs = `--basedir=${basePath}`;
