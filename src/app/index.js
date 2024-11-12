@@ -7,6 +7,8 @@ const {template} = require('./lib/menu');
 const {createWindow} = require('./lib/window');
 const {sleep} = require("./lib/util");
 const fetch = require('node-fetch');
+const {port} = require("./constant/base");
+
 
 const menu = Menu.buildFromTemplate(template);
 Menu.setApplicationMenu(menu);
@@ -20,7 +22,7 @@ app.whenReady().then(() => {
 });
 
 function startServer() {
-    const extraArgs = '';
+    const extraArgs = `--port=${port}`;
     // const extraArgs = `--basedir=${basePath}`;
     const args = {
         cwd: process.env.NODE_ENV == 'test_production' ? `${path.join(__dirname, "../../server")}` : `${path.join(__dirname, "../../../server")}`
@@ -101,7 +103,7 @@ async function start() {
     // explicitly with Cmd + Q.
     app.on('window-all-closed', async () => {
         if (process.env.NODE_ENV !== 'development') {
-            await request('http://localhost:8888/exit',{
+            await request(`http://localhost:${port}/exit`,{
                 method: "POST",
                 json: true,
                 headers: {
@@ -138,6 +140,14 @@ async function start() {
     } else {
         app.on('ready', createWindow);
     }
+    setInterval(async () => {
+        await fetch(`http://localhost:${port}/ping`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+    }, 8000);
 }
 
 start();
