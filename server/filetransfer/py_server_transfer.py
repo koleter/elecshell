@@ -1,16 +1,18 @@
+import asyncio
 import logging
 import os
 import re
 import stat
 import uuid
 
+import requests
 from filetransfer.base_transfer import BaseTransfer
 from util.error import b_is_error
 from util.local_server import start_local_server
 
-port_pattern = re.compile(b'Port (\\d+) is available')
+port_pattern = re.compile(b'Port (\\d+) is unavailable')
 py_version_pattern = re.compile(b'Python (\\d)\\.')
-
+host_pattern = re.compile(b'((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
 
 python2_start_server_str = '''"""
 # -*- coding: utf-8 -*-
@@ -21,9 +23,6 @@ import urlparse
 
 class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
     def do_GET(self):
-        ip = self.client_address
-        print "远程IP地址是：{}".format(ip)
-
         # 获取请求的路径
         path = self.path
 
@@ -33,11 +32,11 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             query_string = path[query_start + 1:]
             file_path = path[:query_start]
         else:
-            self.send_error(404, "File Not Found")
+            self.send_error(404)
             return
 
         # 解析查询字符串
-        query_params = {}
+        query_params = dict()
         for param in query_string.split('&'):
             key_value = param.split('=')
             if len(key_value) == 2:
@@ -45,9 +44,9 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                 query_params[key] = value
 
         # 输出查询参数
-        print "Query parameters:", query_params
-        if query_params.get("token") != "{token}":
-            self.send_error(404, "File Not Found")
+        print 'Query parameters:', query_params
+        if query_params.get('token') != '{token}':
+            self.send_error(404)
             return
 
         # 检查路径是否指向一个有效的文件
@@ -57,18 +56,22 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             self.send_header('Content-type', 'text/html')
             self.end_headers()
 
-            # 打开文件并读取内容
-            with open(file_path, 'rb') as file:
-                self.wfile.write(file.read())
+            try:
+                # 打开文件并读取内容
+                with open(file_path, 'rb') as file:
+                    self.wfile.write(file.read())
+            except IOError as e:
+                self.send_error(500, 'Internal Server Error')
+                print 'Error opening file:', e
         else:
             # 如果文件不存在，则返回404错误
-            self.send_error(404, "File Not Found")
+            self.send_error(404)
 
 # 创建一个简单的 HTTP 服务器
-httpd = SocketServer.TCPServer(("0.0.0.0", {port}), MyHTTPRequestHandler)
+httpd = SocketServer.TCPServer(('0.0.0.0', {port}), MyHTTPRequestHandler)
+print 'Start server success'
 httpd.serve_forever()
 """'''
-
 
 python3_start_server_str = '''"""
 import http.server
@@ -83,7 +86,6 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         ip = self.client_address
-        print(f"远程IP地址是：{ip}")
         # super().do_GET()
         # 获取请求的路径
         path = self.path
@@ -94,11 +96,11 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             query_string = path[query_start + 1:]
             file_path = path[:query_start]
         else:
-            self.send_error(404, "File Not Found")
+            self.send_error(404, 'File Not Found')
             return
 
         # 解析查询字符串
-        query_params = {}
+        query_params = dict()
         for param in query_string.split('&'):
             key_value = param.split('=')
             if len(key_value) == 2:
@@ -106,9 +108,9 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 query_params[key] = value
 
         # 输出查询参数
-        print("Query parameters:", query_params)
-        if query_params.get("token") != "{token}":
-            self.send_error(404, "File Not Found")
+        print('Query parameters:', query_params)
+        if query_params.get('token') != '{token}':
+            self.send_error(404, 'File Not Found')
             return
 
         # 检查路径是否指向一个有效的文件
@@ -123,10 +125,11 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(file.read())
         else:
             # 如果文件不存在，则返回404错误
-            self.send_error(404, "File Not Found")
+            self.send_error(404, 'File Not Found')
 
 # 创建一个简单的 HTTP 服务器
-httpd = socketserver.TCPServer(("0.0.0.0", {port}), MyHTTPRequestHandler)
+httpd = socketserver.TCPServer(('0.0.0.0', {port}), MyHTTPRequestHandler)
+print('Start server success')
 httpd.serve_forever()
 """'''
 
@@ -141,25 +144,27 @@ class py_server_sftp_file_transfer(BaseTransfer):
         self.local_server = None
         self.remote_server = None
 
-    def _get_remote_available_port(self):
-        # def h(ctx, output):
-        #     match = port_pattern.search(output)
-        #     return match.group(1)
+    def _get_remote_host(self):
+        cmd = "hostname -I | tr ' ' '\\n' | grep -v '^172\.' | xargs"
+        match = self.worker.execute_implicit_command(cmd, pattern=host_pattern)
+        return match.group(0).decode('utf-8')
 
+    def _get_remote_unavailable_port(self, start_port):
         cmd = '''python -c \'\'\'
 import socket
 import sys
 
-for port in range(10000, 25000):
+for port in range({start_port}, 60000):
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     result = sock.connect_ex(("localhost", port))
-    if result != 0:
-        print("Port %d is available" % port)
+    if result == 0:
+        print("Port %d is unavailable" % port)
         sys.exit(0)
-\'\'\''''
-        output = self.worker.recv(f'{cmd}; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
-        match = port_pattern.search(output)
-        return match.group(1)
+\'\'\''''.format(start_port=start_port)
+        match = self.worker.execute_implicit_command(cmd, pattern=port_pattern)
+        # output = self.worker.recv(f'{cmd}; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
+        # match = port_pattern.search(output)
+        return int(match.group(1))
 
     def _handle_python_cmd_and_version(self):
         if self.remote_py_version > 0:
@@ -168,7 +173,7 @@ for port in range(10000, 25000):
         if not b'command not found' in output:
             self.remote_py_cmd = 'python'
             match = py_version_pattern.search(output)
-            self.remote_py_version = match.group(1)
+            self.remote_py_version = int(match.group(1))
             return
         output = self.worker.recv(f'python3 -V; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
         if not b'command not found' in output:
@@ -184,23 +189,28 @@ for port in range(10000, 25000):
     def _start_remote_http_server(self):
         if self.remote_server:
             return
-        port = self._get_remote_available_port()
-        self._handle_python_cmd_and_version()
-
         self.remote_server = dict()
-        self.remote_server['port'] = port
-        self.remote_server['host'] = self.work.dst_addr[0]
         token = str(uuid.uuid1())
         self.remote_server['token'] = token
+        self._handle_python_cmd_and_version()
 
-        if self.remote_py_version == 3:
-            py_code = python3_start_server_str.format(token=token, port=port)
-        elif self.remote_py_version == 2:
-            py_code = python2_start_server_str.format(token=token, port=port)
-        else:
-            logging.debug("cannot find python cmd")
-            raise Exception("cannot find python cmd")
-        self.worker.execute_implicit_command(f'{self.remote_py_cmd} -c {py_code} &')
+        port = 10000
+        while True:
+            port = self._get_remote_unavailable_port(port+1)
+            if self.remote_py_version == 3:
+                py_code = python3_start_server_str.format(token=token, port=port)
+            elif self.remote_py_version == 2:
+                py_code = python2_start_server_str.format(token=token, port=port)
+            else:
+                logging.debug("cannot find python cmd")
+                raise Exception("cannot find python cmd")
+            match = self.worker.recv_util_match_exp(f'({self.remote_py_cmd} -c {py_code} & builtin history -d $((HISTCMD-1)))', re.compile(b'(Address already in use)|(Start server success.*Start server success)'), show_on_term=True)
+            if match.group(2) is not None:
+                break
+
+        self.remote_server['port'] = port
+        self.remote_server['host'] = self._get_remote_host()
+
 
     def _start_local_http_server(self):
         if self.local_server is None:
@@ -267,18 +277,9 @@ for port in range(10000, 25000):
                 self.get_file_from_remote_server(remote_file_path, os.path.join(local_root_dir, file_info.filename))
 
     def download_single_file(self, local_root_dir, file, remoteDir):
-        remote_file_path = remoteDir + "/" + file
-        file_info_list = self.sftp.listdir_attr(remoteDir)
-        for file_info in file_info_list:
-            if not file_info.filename == file:
-                continue
-            if stat.S_ISDIR(file_info.st_mode):
-                next_local_dir = os.path.join(local_root_dir, file)
-                os.mkdir(next_local_dir)
-                self._download_directories(next_local_dir, remoteDir + "/" + file)
-            else:
-                self.get_file_from_remote_server(remoteDir + "/" + file, os.path.join(local_root_dir, file))
-            break
+        url = "http://{}:{}/{}/{}".format(self.remote_server["host"], self.remote_server["port"], remoteDir, file)
+        response = requests.get(url)
+        print(response)
 
     def download_files(self, local_root_dir, files, remoteDir):
         self._start_remote_http_server()
@@ -291,4 +292,3 @@ for port in range(10000, 25000):
         #     self.worker.execute_implicit_command(f'lsof -t -i:{self.remote_server_port.port} | xargs -r kill -9')
         # for root_dir, server_info in self.local_servers.items():
         #     server_info.get('httpd').shutdown()
-

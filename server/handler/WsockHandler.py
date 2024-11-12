@@ -83,7 +83,11 @@ class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
             if data and isinstance(data, UnicodeType):
                 worker.send(data)
         elif type == 'exec_worker_method':
-            getattr(worker, msg.get("methodName"))(*msg.get("args"))
+            method = getattr(worker, msg.get("methodName"))
+            if inspect.iscoroutinefunction(method):
+                await method(*msg.get("args"))
+            else:
+                method(*msg.get("args"))
 
         # exec a command and recv the result
         elif type == 'sendRecv':

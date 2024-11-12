@@ -1,8 +1,10 @@
+import asyncio
 import base64
 import json
 import logging
 import os
 import platform
+import re
 import threading
 import traceback
 import types
@@ -12,6 +14,8 @@ import paramiko
 from filetransfer.py_server_transfer import py_server_sftp_file_transfer
 from handler.pojo.SessionContext import SessionContext
 from utils import gen_id
+
+from util.kmp import compute_prefix_function
 
 try:
     import secrets
@@ -33,6 +37,7 @@ workers = {}  # {id: worker}
 workers_lock = threading.Lock()
 
 loop = IOLoop.current()
+
 
 class WatchDogFileHandler(FileSystemEventHandler):
 
@@ -58,13 +63,15 @@ class WatchDogFileHandler(FileSystemEventHandler):
         if data is None:
             return
         worker = workers.get(data.get('sessionId'))
-        loop.add_callback(worker.download_files, os.path.dirname(event.src_path), data.get('files'), data.get('remoteDir'))
+        loop.add_callback(worker.download_files, os.path.dirname(event.src_path), data.get('files'),
+                          data.get('remoteDir'))
 
 
 def get_all_window_drive_letters():
     partitions = psutil.disk_partitions()
     drive_letters = [partition.device for partition in partitions]
     return drive_letters
+
 
 def start_watcher():
     event_handler = WatchDogFileHandler()
@@ -80,7 +87,10 @@ def start_watcher():
         observer.schedule(event_handler, drive, recursive=True)
         observer.start()
 
+
 start_watcher()
+
+
 def clear_worker(worker):
     with workers_lock:
         assert worker.id in workers
@@ -133,17 +143,14 @@ class Worker(object):
         self.init_file_transfer()
         self.file_transfer.upload_files(files, remote_dir)
 
-
     def download_files(self, local_root_dir, files, remote_path):
         self.init_file_transfer()
         self.file_transfer.download_files(local_root_dir, files, remote_path)
-
 
     def get_remote_file_list(self, remote_dir):
         self.init_file_transfer()
         # 获取远程路径下的文件和文件夹属性列表
         self.file_transfer.get_remote_file_list(remote_dir)
-
 
     def __call__(self, fd, events):
         if events & IOLoop.READ:
@@ -162,7 +169,6 @@ class Worker(object):
 
     def update_handler(self, mode):
         self.loop.update_handler(self.fd, mode)
-
 
     def _on_read(self):
         logging.debug('worker {} on read'.format(self.id))
@@ -192,15 +198,134 @@ class Worker(object):
                 if not self.handler:
                     logging.error("{}'s handler is None".format(self.id))
                 self.handler.write_message(res, binary=False)
-                if self.login_script is not None and len(self.login_script) != 0 and bytes(self.login_script[0]['expect'], self.encoding) in data:
+                if self.login_script is not None and len(self.login_script) != 0 and bytes(
+                    self.login_script[0]['expect'], self.encoding) in data:
                     self.send(self.login_script[0]['command'] + "\r")
                     self.login_script = self.login_script[1:]
 
             except tornado.websocket.WebSocketClosedError:
                 self.close(reason='websocket closed')
 
-    def execute_implicit_command(self, cmd, callback=None, extra_args=[], sleep=0):
-        return self.recv(f'{cmd}; builtin history -d $((HISTCMD-1))', callback, extra_args, sleep, show_on_term=False)
+    def execute_implicit_command(self, cmd, callback=None, extra_args=[], sleep=0, pattern: re.Pattern[bytes] = None):
+        if pattern:
+            return self.recv_util_match_exp(f'({cmd}; builtin history -d $((HISTCMD-1)))', pattern, callback, extra_args,
+                                            show_on_term=False)
+        else:
+            return self.recv(f'({cmd}; builtin history -d $((HISTCMD-1)))', callback, extra_args, sleep,
+                             show_on_term=False)
+
+    def recv_util_match_exp(self, data, pattern: re.Pattern[bytes], callback=None, extra_args=[], show_on_term=True):
+        # logging.info('worker {} on read'.format(self.id))
+        if not (data.endswith('\r') or data.endswith('\n')):
+            data += "\r"
+        # self.update_handler(IOLoop.WRITE)
+        self.data_to_dst += data
+
+        self.recv_lock.acquire()
+        try:
+            self._on_write()
+
+            data = b""
+            while True:
+                try:
+                    while not self.chan.recv_ready():
+                        # await asyncio.sleep(0.1)
+                        time.sleep(0.1)
+                    data += self.chan.recv(BUF_SIZE)
+                except (OSError, IOError) as e:
+                    traceback.print_exc()
+                    if self.chan.closed or errno_from_exception(e) in _ERRNO_CONNRESET:
+                        self.close(reason='chan error on reading')
+                        return
+                matches = pattern.search(data)
+                if matches:
+                    break
+        finally:
+            self.recv_lock.release()
+
+        if not data:
+            self.close(reason='chan closed')
+            return
+        try:
+            if not callback and not show_on_term:
+                return matches
+            res = {
+                'val': base64.b64encode(data).decode(self.encoding),
+                'type': 'data',
+                "showOnTerm": show_on_term
+            }
+            if callback:
+                self.set_callback_message(callback, res, extra_args)
+            self.handler.write_message(res, binary=False)
+            # self.update_handler(IOLoop.READ)
+            return matches
+        except tornado.websocket.WebSocketClosedError:
+            self.close(reason='websocket closed')
+
+    def recv_util(self, cmd, expect_list: list[bytes], callback=None, extra_args=[], show_on_term=True):
+        # logging.info('worker {} on read'.format(self.id))
+        if not (cmd.endswith('\r') or cmd.endswith('\n')):
+            cmd += "\r"
+        # self.update_handler(IOLoop.WRITE)
+        self.data_to_dst += cmd
+        self.recv_lock.acquire()
+        try:
+            self._on_write()
+            data = b""
+            text = b""
+
+            for pattern in expect_list:
+                m = len(pattern)
+                j = 0
+                table = compute_prefix_function(pattern)
+
+                while True:
+                    continue_outer = False
+                    while len(text) > 0:
+                        if j > 0 and text[0] != pattern[j]:
+                            j = table[j - 1]
+                            text = text[1:]
+                            continue
+                        if text[0] == pattern[j]:
+                            j += 1
+                        if j == m:
+                            continue_outer = True
+                            break
+                        text = text[1:]
+                    if continue_outer:
+                        break
+
+                    try:
+                        while not self.chan.recv_ready():
+                            time.sleep(0.1)
+                        text = self.chan.recv(BUF_SIZE)
+                        data += text
+                    except (OSError, IOError) as e:
+                        traceback.print_exc()
+                        if self.chan.closed or errno_from_exception(e) in _ERRNO_CONNRESET:
+                            self.close(reason='chan error on reading')
+                            return
+        finally:
+            self.recv_lock.release()
+
+        if not data:
+            self.close(reason='chan closed')
+            return
+        try:
+            if not callback and not show_on_term:
+                return data
+            res = {
+                'val': base64.b64encode(data).decode(self.encoding),
+                'type': 'data',
+                "showOnTerm": show_on_term
+            }
+            if callback:
+                self.set_callback_message(callback, res, extra_args)
+            self.handler.write_message(res, binary=False)
+            # self.update_handler(IOLoop.READ)
+            return data
+        except tornado.websocket.WebSocketClosedError:
+            self.close(reason='websocket closed')
 
     def recv(self, data, callback=None, extra_args=[], sleep=0, show_on_term=True):
         # logging.info('worker {} on read'.format(self.id))
@@ -212,9 +337,12 @@ class Worker(object):
         try:
             self._on_write()
             if sleep > 0:
+                # await asyncio.sleep(sleep)
                 time.sleep(sleep)
             while not self.chan.recv_ready():
                 time.sleep(0.1)
+                # 使用 await asyncio.sleep(1) 会莫名其妙卡死
+                # await asyncio.sleep(0.1)
 
             data = b""
             try:
@@ -231,6 +359,8 @@ class Worker(object):
             self.close(reason='chan closed')
             return
         try:
+            if not callback and not show_on_term:
+                return data
             res = {
                 'val': base64.b64encode(data).decode(self.encoding),
                 'type': 'data',
@@ -238,8 +368,7 @@ class Worker(object):
             }
             if callback:
                 self.set_callback_message(callback, res, extra_args)
-            if callback or show_on_term:
-                self.handler.write_message(res, binary=False)
+            self.handler.write_message(res, binary=False)
             # self.update_handler(IOLoop.READ)
             return data
         except tornado.websocket.WebSocketClosedError:
