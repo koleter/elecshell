@@ -2,7 +2,6 @@ import asyncio
 import logging
 import os
 import re
-import stat
 import uuid
 
 import requests
@@ -12,7 +11,7 @@ from util.local_server import start_local_server
 
 port_pattern = re.compile(b'Port (\\d+) is unavailable')
 py_version_pattern = re.compile(b'Python (\\d)\\.')
-host_pattern = re.compile(b'((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
+host_pattern = re.compile(br'((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
 
 python2_start_server_str = '''"""
 # -*- coding: utf-8 -*-
@@ -198,11 +197,11 @@ class py_server_sftp_file_transfer(BaseTransfer):
         self.remote_server = None
 
     def _get_remote_host(self):
-        cmd = "hostname -I | tr ' ' '\\n' | grep -v '^172\.' | xargs"
+        cmd = r"hostname -I | tr ' ' '\\n' | grep -v '^172\.' | xargs"
         match = self.worker.execute_implicit_command(cmd, pattern=host_pattern)
         return match.group(0).decode('utf-8')
 
-    def _get_remote_unavailable_port(self, start_port):
+    def _get_remote_unavailable_port(self):
         cmd = '''python -c \'\'\'
 import socket
 
@@ -215,7 +214,7 @@ try:
     print("Port %d is unavailable" % available_port)
 finally:
     sock.close()
-\'\'\''''.format(start_port=start_port)
+\'\'\''''
         match = self.worker.execute_implicit_command(cmd, pattern=port_pattern)
         # output = self.worker.recv(f'{cmd}; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
         # match = port_pattern.search(output)
@@ -224,20 +223,19 @@ finally:
     def _handle_python_cmd_and_version(self):
         if self.remote_py_version > 0:
             return
-        output = self.worker.recv(f'python3 -V; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
-        if not b'command not found' in output:
-            self.remote_py_cmd = 'python3'
-            self.remote_py_version = 3
-            return
         output = self.worker.recv(f'python -V; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
-        if not b'command not found' in output:
+        if b'command not found' not in output:
             self.remote_py_cmd = 'python'
             match = py_version_pattern.search(output)
             self.remote_py_version = int(match.group(1))
             return
-
+        output = self.worker.recv(f'python3 -V; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
+        if b'command not found' not in output:
+            self.remote_py_cmd = 'python3'
+            self.remote_py_version = 3
+            return
         output = self.worker.recv(f'python2 -V; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
-        if not b'command not found' in output:
+        if b'command not found' not in output:
             self.remote_py_cmd = 'python2'
             self.remote_py_version = 2
             return
@@ -250,9 +248,8 @@ finally:
         self.remote_server['token'] = token
         self._handle_python_cmd_and_version()
 
-        port = 10000
         while True:
-            port = self._get_remote_unavailable_port(port + 1)
+            port = self._get_remote_unavailable_port()
             if self.remote_py_version == 3:
                 py_code = python3_start_server_str.format(token=token, port=port)
             elif self.remote_py_version == 2:
