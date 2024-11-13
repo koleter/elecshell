@@ -22,7 +22,7 @@ app.whenReady().then(() => {
 });
 
 function startServer() {
-    const extraArgs = `--port=${port}`;
+    const extraArgs = ``;
     // const extraArgs = `--basedir=${basePath}`;
     const args = {
         cwd: process.env.NODE_ENV == 'test_production' ? `${path.join(__dirname, "../../server")}` : `${path.join(__dirname, "../../../server")}`

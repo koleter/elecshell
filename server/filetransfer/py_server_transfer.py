@@ -22,6 +22,11 @@ import os
 import urlparse
 
 class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
+
+    def log_message(self, format, *args):
+        # 不执行任何操作，从而禁用日志
+        pass
+
     def do_GET(self):
         # 获取请求的路径
         path = self.path
@@ -43,8 +48,6 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                 key, value = key_value
                 query_params[key] = value
 
-        # 输出查询参数
-        print 'Query parameters:', query_params
         if query_params.get('token') != '{token}':
             self.send_error(404)
             return
@@ -84,6 +87,10 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    def log_message(self, format, *args):
+        # 不执行任何操作，从而禁用日志
+        pass
+
     def do_GET(self):
         ip = self.client_address
         # super().do_GET()
@@ -107,8 +114,6 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 key, value = key_value
                 query_params[key] = value
 
-        # 输出查询参数
-        print('Query parameters:', query_params)
         if query_params.get('token') != '{token}':
             self.send_error(404, 'File Not Found')
             return
@@ -152,14 +157,16 @@ class py_server_sftp_file_transfer(BaseTransfer):
     def _get_remote_unavailable_port(self, start_port):
         cmd = '''python -c \'\'\'
 import socket
-import sys
 
-for port in range({start_port}, 60000):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    result = sock.connect_ex(("localhost", port))
-    if result == 0:
-        print("Port %d is unavailable" % port)
-        sys.exit(0)
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+try:
+    # 绑定到任意端口
+    sock.bind(("localhost", 0))
+    # 获取分配的端口号
+    available_port = sock.getsockname()[1]
+    print("Port %d is unavailable" % available_port)
+finally:
+    sock.close()
 \'\'\''''.format(start_port=start_port)
         match = self.worker.execute_implicit_command(cmd, pattern=port_pattern)
         # output = self.worker.recv(f'{cmd}; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
@@ -204,7 +211,7 @@ for port in range({start_port}, 60000):
             else:
                 logging.debug("cannot find python cmd")
                 raise Exception("cannot find python cmd")
-            match = self.worker.recv_util_match_exp(f'({self.remote_py_cmd} -c {py_code} & builtin history -d $((HISTCMD-1)))', re.compile(b'(Address already in use)|(Start server success.*Start server success)'), show_on_term=True)
+            match = self.worker.recv_util_match_exp(f'{self.remote_py_cmd} -c {py_code} & builtin history -d $((HISTCMD-1))', re.compile(b'(Address already in use)|(Start server success.*Start server success)', flags=re.MULTILINE | re.DOTALL), show_on_term=False)
             if match.group(2) is not None:
                 break
 
@@ -277,9 +284,17 @@ for port in range({start_port}, 60000):
                 self.get_file_from_remote_server(remote_file_path, os.path.join(local_root_dir, file_info.filename))
 
     def download_single_file(self, local_root_dir, file, remoteDir):
-        url = "http://{}:{}/{}/{}".format(self.remote_server["host"], self.remote_server["port"], remoteDir, file)
-        response = requests.get(url)
+        url = "http://{}:{}/{}/{}?token={}".format(self.remote_server["host"], self.remote_server["port"], remoteDir, file, self.remote_server["token"])
+        response = requests.get(url, stream=True)
+        if response.status_code == 200:
+            # 打开文件以二进制模式写入
+            with open(local_root_dir + "/" + file, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
         print(response)
+        print(response.content)
+        print(response.text)
 
     def download_files(self, local_root_dir, files, remoteDir):
         self._start_remote_http_server()
