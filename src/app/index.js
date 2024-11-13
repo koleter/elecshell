@@ -8,6 +8,7 @@ const {createWindow} = require('./lib/window');
 const {sleep} = require("./lib/util");
 const fetch = require('node-fetch');
 const {port} = require("./constant/base");
+const {platform} = require("os");
 
 
 const menu = Menu.buildFromTemplate(template);
@@ -21,35 +22,85 @@ app.whenReady().then(() => {
     });
 });
 
-function startServer() {
-    const extraArgs = ``;
-    // const extraArgs = `--basedir=${basePath}`;
-    const args = {
-        cwd: process.env.NODE_ENV == 'test_production' ? `${path.join(__dirname, "../../server")}` : `${path.join(__dirname, "../../../server")}`
+// 检测系统中是否存在 `python` 或 `python3` 命令
+function detectPythonCommand(callback) {
+    const isWindows = platform() === 'win32';
+    const checkCommand = (command, callback) => {
+        const cmd = isWindows ? `where ${command}` : `which ${command}`;
+        exec(cmd, (err, stdout) => {
+            if (!err && stdout.trim()) {
+                callback(command);
+            } else {
+                callback(null);
+            }
+        });
     };
 
-    function handleError(error) {
-        if (error.toString().match(/ModuleNotFoundError:.+?/)) {
-            throw new Error(`${error}`);
+    checkCommand('python3', (python3Command) => {
+        if (python3Command) {
+            callback(python3Command);
+        } else {
+            checkCommand('python', (pythonCommand) => {
+                callback(pythonCommand);
+            });
         }
+    });
+}
+
+// 启动 Python 脚本
+function startPythonScript(pythonCommand) {
+    if (!pythonCommand) {
+        console.error('Python or Python3 command not found');
+        return;
     }
 
-    exec(`python3 main.py ${extraArgs}`, args, (error, stdout, stderr) => {
-        if (!error) {
-            return;
-        }
-        handleError(error);
+    const pythonProcess = spawn(pythonCommand, ["main.py"], {
+        detached: false, // 子进程依赖于父进程
+        stdio: ['inherit', 'inherit', 'inherit'], // 继承父进程的标准输入输出错误流
+        cwd: process.env.NODE_ENV === 'test_production' ? `${path.join(__dirname, "../../server")}` : `${path.join(__dirname, "../../../server")}`
+    });
 
-        if (error.message.indexOf("python3: command not found") >= 0 || error.message === "Command failed: python3 main.py \n") {
-            exec(`python main.py ${extraArgs}`, args, (error, stdout, stderr) => {
-                if (!error) {
-                    return;
-                }
-                throw error;
-            });
-            return;
+    // 监听子进程的退出事件
+    pythonProcess.on('exit', (code, signal) => {
+        console.log(`Python process exited with code ${code} and signal ${signal}`);
+    });
+
+    // 监听 Node.js 进程的退出事件
+    process.on('exit', (code) => {
+        console.log(`Node.js process exiting with code ${code}`);
+        if (pythonProcess) {
+            pythonProcess.kill(); // 杀死 Python 进程
         }
-        throw error;
+    });
+
+    // 监听 Node.js 进程的 SIGINT 和 SIGTERM 信号
+    process.on('SIGINT', () => {
+        console.log('Node.js process received SIGINT');
+        if (pythonProcess) {
+            pythonProcess.kill(); // 杀死 Python 进程
+        }
+        process.exit();
+    });
+
+    process.on('SIGTERM', () => {
+        console.log('Node.js process received SIGTERM');
+        if (pythonProcess) {
+            pythonProcess.kill(); // 杀死 Python 进程
+        }
+        process.exit();
+    });
+
+    console.log('Node.js process started and Python process spawned');
+}
+
+function startServer() {
+
+    detectPythonCommand((pythonCommand) => {
+        if (pythonCommand) {
+            startPythonScript(pythonCommand);
+        } else {
+            throw new Error('python or python3 command not found, you should install python3');
+        }
     });
 }
 
@@ -81,23 +132,6 @@ async function waitForServerStart() {
 }
 
 async function start() {
-    // app.on('quit', async () => {
-    //     if (process.env.NODE_ENV !== 'development') {
-    //         await request({
-    //             url: 'http://localhost:8888/exit',
-    //             method: "POST",
-    //             json: true,
-    //             headers: {
-    //                 "content-type": "application/json",
-    //             }
-    //         }, function (error, response, body) {
-    //             if (!error) {
-    //                 console.log(body); // 请求成功的处理逻辑
-    //             }
-    //         });
-    //     }
-    // });
-
     // Quit when all windows are closed, except on macOS. There, it's common
     // for applications and their menu bar to stay active until the user quits
     // explicitly with Cmd + Q.
@@ -140,14 +174,6 @@ async function start() {
     } else {
         app.on('ready', createWindow);
     }
-    setInterval(async () => {
-        await fetch(`http://localhost:${port}/ping`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-    }, 8000);
 }
 
 start();
