@@ -20,6 +20,24 @@ import SimpleHTTPServer
 import SocketServer
 import os
 import urlparse
+import json
+
+def list_directory_contents(path):
+    def _list_contents(path, indent=0):
+        entries = []
+        try:
+            for entry in os.listdir(path):
+                entry_path = os.path.join(path, entry)
+                if os.path.isdir(entry_path):
+                    entries.append(('D', entry, _list_contents(entry_path, indent + 1)))
+                else:
+                    entries.append(('F', entry))
+        except OSError as e:
+            pass
+        return entries
+
+    return _list_contents(path)
+
 
 class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
@@ -54,7 +72,6 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
         # 检查路径是否指向一个有效的文件
         if os.path.isfile(file_path):
-            # 设置响应头
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
@@ -66,6 +83,12 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             except IOError as e:
                 self.send_error(500, 'Internal Server Error')
                 print 'Error opening file:', e
+        elif os.path.isdir(file_path):
+            self.send_response(202)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+
+            self.wfile.write(json.dumps(list_directory_contents(file_path)))
         else:
             # 如果文件不存在，则返回404错误
             self.send_error(404)
@@ -77,9 +100,28 @@ httpd.serve_forever()
 """'''
 
 python3_start_server_str = '''"""
+# -*- coding: utf-8 -*-
 import http.server
 import socketserver
 import os
+import json
+
+def list_directory_contents(path):
+    def _list_contents(path, indent=0):
+        entries = []
+        try:
+            for entry in os.listdir(path):
+                entry_path = os.path.join(path, entry)
+                if os.path.isdir(entry_path):
+                    entries.append(('D', entry, _list_contents(entry_path, indent + 1)))
+                else:
+                    entries.append(('F', entry))
+        except OSError as e:
+            pass
+        return entries
+
+    return _list_contents(path)
+
 
 
 class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
@@ -128,6 +170,12 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             # 打开文件并读取内容
             with open(file_path, 'rb') as file:
                 self.wfile.write(file.read())
+        elif os.path.isdir(file_path):
+            self.send_response(202)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+
+            self.wfile.write(json.dumps(list_directory_contents(file_path)).encode('utf-8'))
         else:
             # 如果文件不存在，则返回404错误
             self.send_error(404, 'File Not Found')
@@ -176,17 +224,18 @@ finally:
     def _handle_python_cmd_and_version(self):
         if self.remote_py_version > 0:
             return
+        output = self.worker.recv(f'python3 -V; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
+        if not b'command not found' in output:
+            self.remote_py_cmd = 'python3'
+            self.remote_py_version = 3
+            return
         output = self.worker.recv(f'python -V; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
         if not b'command not found' in output:
             self.remote_py_cmd = 'python'
             match = py_version_pattern.search(output)
             self.remote_py_version = int(match.group(1))
             return
-        output = self.worker.recv(f'python3 -V; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
-        if not b'command not found' in output:
-            self.remote_py_cmd = 'python3'
-            self.remote_py_version = 3
-            return
+
         output = self.worker.recv(f'python2 -V; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
         if not b'command not found' in output:
             self.remote_py_cmd = 'python2'
@@ -203,7 +252,7 @@ finally:
 
         port = 10000
         while True:
-            port = self._get_remote_unavailable_port(port+1)
+            port = self._get_remote_unavailable_port(port + 1)
             if self.remote_py_version == 3:
                 py_code = python3_start_server_str.format(token=token, port=port)
             elif self.remote_py_version == 2:
@@ -211,13 +260,15 @@ finally:
             else:
                 logging.debug("cannot find python cmd")
                 raise Exception("cannot find python cmd")
-            match = self.worker.recv_util_match_exp(f'{self.remote_py_cmd} -c {py_code} & builtin history -d $((HISTCMD-1))', re.compile(b'(Address already in use)|(Start server success.*Start server success)', flags=re.MULTILINE | re.DOTALL), show_on_term=False)
+            match = self.worker.recv_util_match_exp(
+                f'{self.remote_py_cmd} -c {py_code} & builtin history -d $((HISTCMD-1))',
+                re.compile(b'(Address already in use)|(Start server success.*Start server success)',
+                           flags=re.MULTILINE | re.DOTALL), show_on_term=False)
             if match.group(2) is not None:
                 break
 
         self.remote_server['port'] = port
         self.remote_server['host'] = self._get_remote_host()
-
 
     def _start_local_http_server(self):
         if self.local_server is None:
@@ -273,18 +324,22 @@ finally:
                 "content": f'Failed to download file {remote_file_path} from remote server: {str(e)}'
             })
 
-    def _download_directories(self, local_root_dir, remoteDir):
-        for file_info in self.sftp.listdir_attr(remoteDir):
-            remote_file_path = remoteDir + "/" + file_info.filename
-            if stat.S_ISDIR(file_info.st_mode):
-                next_local_dir = os.path.join(local_root_dir, file_info.filename)
-                os.mkdir(next_local_dir)
-                self._download_directories(next_local_dir, remote_file_path)
-            else:
-                self.get_file_from_remote_server(remote_file_path, os.path.join(local_root_dir, file_info.filename))
+    def _download_directories(self, local_root_dir, dir_name, remote_dir, tree, tasks=[]):
+        cur_dir_path = os.path.join(local_root_dir, dir_name)
+        os.makedirs(cur_dir_path, exist_ok=True)
+        cur_remote_dir_path = os.path.join(remote_dir, dir_name)
+        for entry in tree:
+            if entry[0] == 'F':
+                # file
+                tasks.append(self.download_single_file(cur_dir_path, entry[1], cur_remote_dir_path))
+            elif entry[0] == 'D':
+                # directory
+                self._download_directories(cur_dir_path, entry[1], cur_remote_dir_path, entry[2], tasks)
+        return tasks
 
-    def download_single_file(self, local_root_dir, file, remoteDir):
-        url = "http://{}:{}/{}/{}?token={}".format(self.remote_server["host"], self.remote_server["port"], remoteDir, file, self.remote_server["token"])
+    async def download_single_file(self, local_root_dir, file, remoteDir):
+        url = "http://{}:{}/{}/{}?token={}".format(self.remote_server["host"], self.remote_server["port"], remoteDir,
+                                                   file, self.remote_server["token"])
         response = requests.get(url, stream=True)
         if response.status_code == 200:
             # 打开文件以二进制模式写入
@@ -292,18 +347,24 @@ finally:
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
-        print(response)
-        print(response.content)
-        print(response.text)
+        elif response.status_code == 202:
+            tree = response.json()
+            tasks = self._download_directories(local_root_dir, file, remoteDir, tree)
+            await asyncio.gather(*tasks)
+        else:
+            self.worker.handler.write_message({
+                "type": "message",
+                "status": "error",
+                "content": response.text
+            })
+
+    async def _download_files(self, local_root_dir, files, remoteDir):
+        self._start_remote_http_server()
+        tasks = [self.download_single_file(local_root_dir, file, remoteDir) for file in files]
+        await asyncio.gather(*tasks)
 
     def download_files(self, local_root_dir, files, remoteDir):
-        self._start_remote_http_server()
-        for file in files:
-            self.download_single_file(local_root_dir, file, remoteDir)
+        asyncio.create_task(self._download_files(local_root_dir, files, remoteDir))
 
     def close(self):
-        self.remote_server = None
-        # if self.remote_server_port:
-        #     self.worker.execute_implicit_command(f'lsof -t -i:{self.remote_server_port.port} | xargs -r kill -9')
-        # for root_dir, server_info in self.local_servers.items():
-        #     server_info.get('httpd').shutdown()
+        pass
