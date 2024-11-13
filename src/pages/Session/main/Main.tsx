@@ -56,7 +56,17 @@ const SessionMain: React.FC = () => {
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [sessions, setSessions] = useState([]);
 
-    const {setShowPrompt, promptOKCallback, promptUserInput, prompt, promptInputRef, activeKey, setActiveKey, selectedMenuKey, setSelectedMenuKey} = useContext(AppContext);
+    const {
+        setShowPrompt,
+        promptOKCallback,
+        promptUserInput,
+        prompt,
+        promptInputRef,
+        activeKey,
+        setActiveKey,
+        selectedMenuKey,
+        setSelectedMenuKey
+    } = useContext(AppContext);
 
     const onChange = (newActiveKey: string) => {
         setActiveKey(newActiveKey);
@@ -135,25 +145,6 @@ const SessionMain: React.FC = () => {
                            }} value={promptUserInput}/>
                 </Modal>
 
-                <div style={{
-                    position: 'absolute',
-                    right: '0',
-                    bottom: 0,
-                    width: '20px',
-                    height: '95%',
-                    zIndex: 999
-                }} onMouseEnter={() => {
-                    hoverTimeout = setTimeout(() => {
-                        if (process.env.NODE_ENV === 'development') {
-                            setDrawerOpen(true);
-                        } else {
-                            sessions.length && setDrawerOpen(true);
-                            // setDrawerOpen(true);
-                        }
-                    }, 100);
-                }} onMouseLeave={() => {
-                    clearTimeout(hoverTimeout);
-                }}/>
                 <Layout style={{display: 'flex', height: '100%', width: '100%'}}>
                     <Layout hasSider style={{display: 'flex'}}>
                         <Menu
@@ -165,13 +156,13 @@ const SessionMain: React.FC = () => {
                                 setSelectedMenuKey(key);
                             }}
                             items={[
-                                {key: NENU_SESSIONS, icon: <CodeOutlined />, label: NENU_SESSIONS},
+                                {key: NENU_SESSIONS, icon: <CodeOutlined/>, label: NENU_SESSIONS},
                                 {key: MENU_FILETRANSFER, icon: <DesktopOutlined/>, label: MENU_FILETRANSFER},
                             ]}
                         />
 
                         <div
-                            style={{width: xshListWindowWidth, height: "100vh", backgroundColor: 'white'}}>
+                            style={{height: "100vh", backgroundColor: 'white'}}>
                             <SessionList
                                 setSessions={setSessions}
                                 setActiveKey={setActiveKey}
@@ -194,9 +185,9 @@ const SessionMain: React.FC = () => {
                                     })
                                 })
                             }}
-                            canMove={(e, end) => {
+                            canMove={(e, endPos) => {
                                 // 拖拽时，宽度不能减小到一定程度
-                                if (e.movementX < 0 && end < 200) {
+                                if (e.movementX < 0 && endPos < 200) {
                                     return false;
                                 }
                                 return true;
@@ -279,7 +270,7 @@ const SessionMain: React.FC = () => {
                                                                                 return;
                                                                             }
                                                                             window.electronAPI.FS_writeFileSync(result.filePath, "");
-                                                                            setSessions( () => {
+                                                                            setSessions(() => {
                                                                                 const data = [...sessions];
                                                                                 for (let i = 0; i < data.length; i++) {
                                                                                     if (data[i].key === sessionId) {
@@ -295,7 +286,7 @@ const SessionMain: React.FC = () => {
                                                                     </div>
                                                                     }
                                                                 </>
-                                                                ),
+                                                            ),
                                                             key: 'log'
                                                         },
                                                         {
@@ -355,6 +346,26 @@ const SessionMain: React.FC = () => {
                     drawerOpen={drawerOpen}
                     setDrawerOpen={setDrawerOpen}
                 />
+
+                <div style={{
+                    position: 'absolute',
+                    right: '0',
+                    bottom: 0,
+                    width: '20px',
+                    height: '95%',
+                    zIndex: 999
+                }} onMouseEnter={() => {
+                    hoverTimeout = setTimeout(() => {
+                        if (process.env.NODE_ENV === 'development') {
+                            setDrawerOpen(true);
+                        } else {
+                            sessions.length && setDrawerOpen(true);
+                            // setDrawerOpen(true);
+                        }
+                    }, 100);
+                }} onMouseLeave={() => {
+                    clearTimeout(hoverTimeout);
+                }}/>
             </div>
         }}
 

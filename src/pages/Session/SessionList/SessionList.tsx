@@ -12,7 +12,6 @@ import {AppContext} from "@/pages/context/AppContextProvider";
 import "./SessionList.less"
 import {NENU_SESSIONS} from "@/const";
 import {fileSep} from "@/pages/util/path";
-import {getTermHeight} from "@/pages/util/style";
 
 const path = require('path');
 
@@ -33,7 +32,7 @@ const SessionList: React.FC = (props) => {
     const [dataSource, setDataSource] = useState([]);
     const [sessionPropertyActiveKey, setSessionPropertyActiveKey] = useState(defaultSessionPropertyActiveKey);
 
-    const {prompt, treeData, setRefreshTreeData, sessionRootKey, selectedMenuKey} = useContext(AppContext);
+    const {prompt, treeData, setRefreshTreeData, sessionRootKey, selectedMenuKey, xshListWindowWidth} = useContext(AppContext);
 
     useEffect(() => {
         document.addEventListener("copy", e => {
@@ -463,7 +462,9 @@ const SessionList: React.FC = (props) => {
         setSessionPropertyActiveKey(defaultSessionPropertyActiveKey);
     }
 
-    return <>
+    return <div
+        style={{width: xshListWindowWidth}}
+    >
         <DirectoryTree
             rootClassName="sessionList"
             className="draggable-tree"
@@ -596,7 +597,7 @@ const SessionList: React.FC = (props) => {
                 {genSessionFormProperties("create")}
             </Form>
         </Modal>
-    </>
+    </div>
 }
 
 export default SessionList;

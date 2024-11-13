@@ -1,4 +1,7 @@
+import {useRef} from 'react';
+
 const DragLine = ({startPos, canMove = null, moveFunc = null, moveEndFunc = null, direction = "row"}) => {
+    const startPosRef = useRef(0);
     let style;
     if ("column" == direction) {
         style = {height: '6px', width: '100%', cursor: 'row-resize'}
@@ -8,29 +11,25 @@ const DragLine = ({startPos, canMove = null, moveFunc = null, moveEndFunc = null
     return <div
         style={style}
         onMouseDown={(e) => {
-            let start;
-            if ("column" == direction) {
-                start = e.clientY;
-            } else {
-                start = e.clientX;
-            }
+            startPosRef.current = startPos;
+
             // @ts-ignore
             function move(e) {
-                console.log(e)
+                // console.log(e)
                 let delta;
                 if ("column" == direction) {
-                    delta = e.clientY - start;
+                    delta = e.movementY;
                 } else {
-                    delta = e.clientX - start;
+                    delta = e.movementX;
                 }
 
-                if (canMove && !canMove(e, startPos + delta)) {
+                if (canMove && !canMove(e, startPosRef.current + delta)) {
                     return;
                 }
-                start = start + delta;
 
+                startPosRef.current += delta;
                 // @ts-ignore
-                moveFunc && moveFunc(start);
+                moveFunc && moveFunc(startPosRef.current);
             }
 
             document.addEventListener('mousemove', move);
@@ -38,7 +37,7 @@ const DragLine = ({startPos, canMove = null, moveFunc = null, moveEndFunc = null
             function removeDocumentListener() {
                 document.removeEventListener('mousemove', move);
                 document.removeEventListener('mouseup', removeDocumentListener);
-                moveEndFunc && moveEndFunc(start);
+                moveEndFunc && moveEndFunc(startPosRef.current);
             }
 
             document.addEventListener('mouseup', removeDocumentListener);
