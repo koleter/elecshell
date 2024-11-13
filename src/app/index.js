@@ -94,7 +94,6 @@ function startPythonScript(pythonCommand) {
 }
 
 function startServer() {
-
     detectPythonCommand((pythonCommand) => {
         if (pythonCommand) {
             startPythonScript(pythonCommand);
@@ -136,19 +135,6 @@ async function start() {
     // for applications and their menu bar to stay active until the user quits
     // explicitly with Cmd + Q.
     app.on('window-all-closed', async () => {
-        if (process.env.NODE_ENV !== 'development') {
-            await request(`http://localhost:${port}/exit`,{
-                method: "POST",
-                json: true,
-                headers: {
-                    "content-type": "application/json",
-                }
-            }, function (error, response, body) {
-                if (!error) {
-                    console.log(body); // 请求成功的处理逻辑
-                }
-            });
-        }
         app.quit();
     });
 
