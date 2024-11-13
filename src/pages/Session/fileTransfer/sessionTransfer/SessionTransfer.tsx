@@ -47,7 +47,7 @@ const SessionTransfer: React.FC = (props) => {
         sessionInit[session.key].push(() => {
             if (sessionIdRef[activeKey]) {
                 sessionIdRef[activeKey].refreshRemoteFileList = (result) => {
-                    console.log(result)
+                    // console.log(result);
                     result.unshift({
                         title: "..",
                         key: "..",

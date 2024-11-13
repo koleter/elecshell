@@ -16,6 +16,7 @@ import {
     ArrowUpOutlined,
     ArrowDownOutlined
 } from '@ant-design/icons';
+import {getTermHeight} from "@/pages/util/style";
 
 // 查询框中所有元素的高度
 const searchPanelHeight = '34px';
@@ -465,13 +466,6 @@ const SessionWindow: React.FC = (props) => {
             }
         }, 100);
     }, [activeKey]);
-
-    function getTermHeight() {
-        if (window.electronAPI.platform != 'win32') {
-            return `calc(100vh - ${HEADER_HEIGHT}px  - 40px)`;
-        }
-        return `calc(100vh - 40px)`;
-    }
 
     function calcSearchOption(matchCase, words, regexp) {
         const res = Object.assign({}, defaultSearchOption);

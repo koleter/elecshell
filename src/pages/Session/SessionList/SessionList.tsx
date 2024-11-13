@@ -12,6 +12,7 @@ import {AppContext} from "@/pages/context/AppContextProvider";
 import "./SessionList.less"
 import {NENU_SESSIONS} from "@/const";
 import {fileSep} from "@/pages/util/path";
+import {getTermHeight} from "@/pages/util/style";
 
 const path = require('path');
 
@@ -463,22 +464,17 @@ const SessionList: React.FC = (props) => {
     }
 
     return <>
-        <div onKeyUp={e => {
-            console.log("div", e)
-        }}>
-            <DirectoryTree
-                rootClassName="sessionList"
-                className="draggable-tree"
-                draggable
-                blockNode
-                autoExpandParent={false}
-                titleRender={titleRender}
-                onDrop={onDrop}
-                treeData={treeData}
-                style={{height: '100vh', overflow: 'auto', display: selectedMenuKey == NENU_SESSIONS ? 'block' : 'none'}}
-            />
-        </div>
-
+        <DirectoryTree
+            rootClassName="sessionList"
+            className="draggable-tree"
+            draggable
+            blockNode
+            autoExpandParent={false}
+            titleRender={titleRender}
+            onDrop={onDrop}
+            treeData={treeData}
+            style={{height: `calc(100vh - 18px)`, overflow: 'auto', display: selectedMenuKey == NENU_SESSIONS ? 'block' : 'none'}}
+        />
 
         <Modal
             width={calcSessionPropertyModalWidth()}
