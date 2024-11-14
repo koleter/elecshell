@@ -47,6 +47,18 @@ function detectPythonCommand(callback) {
     });
 }
 
+function terminateProcess(process) {
+    process.kill('SIGTERM'); // 发送 SIGTERM 信号
+    setTimeout(() => {
+        if (process.killed) {
+            console.log('Python process terminated successfully');
+        } else {
+            console.log('Python process did not terminate, sending SIGKILL');
+            process.kill('SIGKILL'); // 发送 SIGKILL 信号
+        }
+    }, 5000); // 等待 5 秒
+}
+
 // 启动 Python 脚本
 function startPythonScript(pythonCommand) {
     if (!pythonCommand) {
@@ -69,7 +81,7 @@ function startPythonScript(pythonCommand) {
     process.on('exit', (code) => {
         console.log(`Node.js process exiting with code ${code}`);
         if (pythonProcess) {
-            pythonProcess.kill(); // 杀死 Python 进程
+            terminateProcess(pythonProcess);
         }
     });
 
@@ -77,7 +89,7 @@ function startPythonScript(pythonCommand) {
     process.on('SIGINT', () => {
         console.log('Node.js process received SIGINT');
         if (pythonProcess) {
-            pythonProcess.kill(); // 杀死 Python 进程
+            terminateProcess(pythonProcess);
         }
         process.exit();
     });
@@ -85,7 +97,7 @@ function startPythonScript(pythonCommand) {
     process.on('SIGTERM', () => {
         console.log('Node.js process received SIGTERM');
         if (pythonProcess) {
-            pythonProcess.kill(); // 杀死 Python 进程
+            terminateProcess(pythonProcess);
         }
         process.exit();
     });
