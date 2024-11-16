@@ -158,7 +158,7 @@ const SessionWindow: React.FC = (props) => {
                             sessionName: sessionConf.session_name
                         };
                 }
-                arr.push(request(util.baseUrl + "session", {
+                arr.push(util.request("session", {
                     method: 'POST',
                     body: JSON.stringify(body),
                 }));
@@ -245,7 +245,7 @@ const SessionWindow: React.FC = (props) => {
     }
 
     // 等后端ssh连接建立后再建立websocket连接
-    useEffect(() => {
+    useEffect(async () => {
         if (isConnected) {
             const searchAddon = new SearchAddon();
             term.loadAddon(searchAddon);
@@ -268,7 +268,8 @@ const SessionWindow: React.FC = (props) => {
                 resizeObserver.observe(terminalRef.current);
             }
 
-            const ws_url = util.baseUrl.split(/\?|#/, 1)[0].replace('http', 'ws'),
+            var raw_url = await util.getUrl();
+            const ws_url = raw_url.split(/\?|#/, 1)[0].replace('http', 'ws'),
                 join = (ws_url[ws_url.length - 1] === '/' ? '' : '/'),
                 url = ws_url + join + 'ws?id=' + id,
                 decoder = window.TextDecoder ? new window.TextDecoder(encoding) : encoding;

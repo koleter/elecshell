@@ -36,7 +36,7 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
 
     useEffect(() => {
         document.title = 'elecshell';
-        request(util.baseUrl + 'conf', {
+        util.request('conf', {
             method: 'GET',
             params: {
                 type: 'GlobalAutoConfig',
@@ -53,7 +53,7 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
     }, []);
 
     useEffect(() => {
-        request(util.baseUrl + 'conf', {
+        util.request('conf', {
             method: 'GET',
             params: {
                 type: 'SessionConfig',

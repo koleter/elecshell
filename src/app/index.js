@@ -7,8 +7,8 @@ const {template} = require('./lib/menu');
 const {createWindow} = require('./lib/window');
 const {sleep} = require("./lib/util");
 const fetch = require('node-fetch');
-const {port} = require("./constant/base");
 const {platform} = require("os");
+const {getServerPort} = require("./lib/server");
 
 
 const menu = Menu.buildFromTemplate(template);
@@ -51,22 +51,20 @@ function terminateProcess(process) {
     process.kill('SIGTERM'); // 发送 SIGTERM 信号
     setTimeout(() => {
         if (process.killed) {
-            console.log('Python process terminated successfully');
         } else {
-            console.log('Python process did not terminate, sending SIGKILL');
             process.kill('SIGKILL'); // 发送 SIGKILL 信号
         }
     }, 5000); // 等待 5 秒
 }
 
 // 启动 Python 脚本
-function startPythonScript(pythonCommand) {
+async function startPythonScript(pythonCommand) {
     if (!pythonCommand) {
         console.error('Python or Python3 command not found');
         return;
     }
 
-    const pythonProcess = spawn(pythonCommand, ["main.py"], {
+    const pythonProcess = spawn(pythonCommand, [`main.py`, `--port=${await getServerPort()}`], {
         detached: false, // 子进程依赖于父进程
         stdio: ['inherit', 'inherit', 'inherit'], // 继承父进程的标准输入输出错误流
         cwd: process.env.NODE_ENV === 'test_production' ? `${path.join(__dirname, "../../server")}` : `${path.join(__dirname, "../../../server")}`
@@ -106,9 +104,9 @@ function startPythonScript(pythonCommand) {
 }
 
 function startServer() {
-    detectPythonCommand((pythonCommand) => {
+    detectPythonCommand(async (pythonCommand) => {
         if (pythonCommand) {
-            startPythonScript(pythonCommand);
+            await startPythonScript(pythonCommand);
         } else {
             throw new Error('python or python3 command not found, you should install python3');
         }
@@ -118,7 +116,7 @@ function startServer() {
 async function waitForServerStart() {
     try {
         while (true) {
-            const response = await fetch('http://localhost:8888/ping', {
+            const response = await fetch(`http://localhost:${await getServerPort()}/ping`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',

@@ -12,7 +12,8 @@ const electronAPI = {
     FS_writeFileSync: fs.writeFileSync,
     getVersions() {
         return process.versions;
-    }
+    },
+    ENV: process.env.NODE_ENV
 };
 
 if (process.contextIsolated) {

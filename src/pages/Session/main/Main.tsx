@@ -175,7 +175,7 @@ const SessionMain: React.FC = () => {
                             startPos={xshListWindowWidth}
                             moveFunc={setXshListWindowWidth}
                             moveEndFunc={(startX) => {
-                                request(util.baseUrl + 'conf', {
+                                util.request('conf', {
                                     method: 'POST',
                                     body: JSON.stringify({
                                         type: 'GlobalAutoConfig',

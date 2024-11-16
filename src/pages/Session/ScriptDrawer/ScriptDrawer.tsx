@@ -27,7 +27,7 @@ const ScriptDrawer: React.FC = (props) => {
     const [scriptType, setScriptType] = useState(TYPE_RUN_PYTHON_SCRIPT);
 
     useEffect(() => {
-        request(util.baseUrl + 'conf', {
+        util.request('conf', {
             method: 'GET',
             params: {
                 type: 'ScriptConfig',
@@ -159,7 +159,7 @@ const ScriptDrawer: React.FC = (props) => {
                             <a
                                 key="view"
                                 onClick={() => {
-                                    request(util.baseUrl + 'conf', {
+                                    util.request('conf', {
                                         method: 'POST',
                                         body: JSON.stringify({
                                             type: 'ScriptConfig',
@@ -239,7 +239,7 @@ const ScriptDrawer: React.FC = (props) => {
                 }}
                 onFinish={(formInfo) => {
                     console.log(formInfo);
-                    request(util.baseUrl + 'conf', {
+                    util.request('conf', {
                         method: 'POST',
                         body: JSON.stringify({
                             type: 'ScriptConfig',
@@ -276,7 +276,7 @@ const ScriptDrawer: React.FC = (props) => {
                 form={editScriptForm}
                 onFinish={(formInfo) => {
                     console.log(formInfo)
-                    request(util.baseUrl + 'conf', {
+                    util.request('conf', {
                         method: 'POST',
                         body: JSON.stringify({
                             type: 'ScriptConfig',

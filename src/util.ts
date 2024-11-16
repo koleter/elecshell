@@ -1,7 +1,30 @@
 import {message} from 'antd';
+import {request} from "@@/plugin-request/request";
+
+let port: number;
+let url: string;
+
+async function getUrl() {
+    if (url) {
+        return url;
+    }
+    if (process.env.NODE_ENV === 'development') {
+        port = 8888;
+    } else {
+        port = await window.electronAPI.ipcRenderer.invoke('request-server-port');
+    }
+    url = `http://localhost:${port}/`;
+    return url;
+}
 
 export default {
-  baseUrl: "http://localhost:8888/"
+  baseUrl: async () => {
+      return await getUrl()
+  },
+    getUrl: getUrl,
+    request: async (uri: string, options) => {
+      return await request(await getUrl() + uri, options);
+    }
 }
 
 export function sleep(time: number) {

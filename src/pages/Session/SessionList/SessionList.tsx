@@ -247,7 +247,7 @@ const SessionList: React.FC = (props) => {
         // console.log(sessionIdMapFileName)
         setActiveKey(id);
         // xterm-256color
-        request(util.baseUrl + "session", {
+        util.request("session", {
             method: 'POST',
             body: JSON.stringify({
                 id,
@@ -288,7 +288,7 @@ const SessionList: React.FC = (props) => {
                             if (!dirName) {
                                 return;
                             }
-                            request(util.baseUrl + 'conf', {
+                            util.request('conf', {
                                 method: 'POST',
                                 body: JSON.stringify({
                                     type: 'SessionConfig',
@@ -323,7 +323,7 @@ const SessionList: React.FC = (props) => {
             items.push({
                 label: (
                     <div onClick={(e) => {
-                        request(util.baseUrl + 'conf', {
+                        util.request('conf', {
                             method: 'POST',
                             body: JSON.stringify({
                                 type: 'SessionConfig',
@@ -351,7 +351,7 @@ const SessionList: React.FC = (props) => {
                     <div onClick={(e) => {
                         setModalNode(node);
                         if (node.isLeaf) {
-                            request(util.baseUrl + 'conf', {
+                            util.request('conf', {
                                 method: 'POST',
                                 body: JSON.stringify({
                                     type: 'SessionConfig',
@@ -381,7 +381,7 @@ const SessionList: React.FC = (props) => {
             }, {
                 label: (
                     <div onClick={(e) => {
-                        request(util.baseUrl + 'conf', {
+                        util.request('conf', {
                             method: 'POST',
                             body: JSON.stringify({
                                 type: 'SessionConfig',
@@ -419,7 +419,7 @@ const SessionList: React.FC = (props) => {
     }
 
     function moveFile(dragKey, dropKey) {
-        request(util.baseUrl + 'conf', {
+        util.request('conf', {
             method: 'POST',
             body: JSON.stringify({
                 type: 'SessionConfig',
@@ -495,7 +495,7 @@ const SessionList: React.FC = (props) => {
                 onFinish={(formInfo) => {
                     // console.log(formInfo)
                     if (!modalNode.isLeaf) {
-                        request(util.baseUrl + 'conf', {
+                        util.request('conf', {
                             method: 'POST',
                             body: JSON.stringify({
                                 type: 'SessionConfig',
@@ -518,7 +518,7 @@ const SessionList: React.FC = (props) => {
                     if (typeof formInfo.privatekey != "string") {
                         formInfo.privatekey = formInfo.filePath;
                     }
-                    request(util.baseUrl + 'conf', {
+                    util.request('conf', {
                         method: 'POST',
                         body: JSON.stringify({
                             type: 'SessionConfig',
@@ -574,7 +574,7 @@ const SessionList: React.FC = (props) => {
                 form={form}
                 onFinish={(formInfo) => {
                     formInfo.login_script = dataSource || [];
-                    request(util.baseUrl + 'conf', {
+                    util.request('conf', {
                         method: 'POST',
                         body: JSON.stringify({
                             type: 'SessionConfig',

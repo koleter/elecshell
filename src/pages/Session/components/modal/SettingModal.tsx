@@ -38,7 +38,7 @@ const SettingModal = () => {
     const [refresh, setRefresh] = useState(0);
 
     useEffect(() => {
-        request(util.baseUrl + 'conf', {
+        util.request('conf', {
             method: 'GET',
             params: {
                 type: 'ConfigableGlobalConfig',
@@ -94,7 +94,7 @@ const SettingModal = () => {
                 })
                 return;
             }
-            request(util.baseUrl + 'conf', {
+            util.request('conf', {
                 method: 'POST',
                 body: JSON.stringify({
                     type: 'ConfigableGlobalConfig',
