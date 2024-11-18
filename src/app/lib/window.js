@@ -1,11 +1,16 @@
 const {BrowserWindow, screen, globalShortcut, ipcMain, dialog} = require('electron');
 const path = require('path');
+const {switchFileInExploer} = require("./fileDialog");
 
 ipcMain.on("sendAllWindowsIpcMessage", (event, arg) => {
     const allWindows = BrowserWindow.getAllWindows();
     allWindows.forEach((win) => {
         win.webContents.send(arg);
     });
+});
+
+ipcMain.on("switchFileInExploer", (event, filePath) => {
+    switchFileInExploer(filePath);
 });
 
 exports.createWindow = () => {

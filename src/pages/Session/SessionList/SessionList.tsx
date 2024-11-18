@@ -3,7 +3,7 @@ import {Dropdown, Form, Input, message, Modal, Tabs, Tree, Button} from "antd";
 import {
     EditableProTable
 } from '@ant-design/pro-components';
-import Upload from "../components/upload/Upload"
+import UploadInFormItem from "../components/upload/Upload"
 import {DataNode, TreeProps} from "antd/es/tree";
 import {request} from "@@/plugin-request/request";
 import util, {defineValidatorWithErrMessage, getUUid} from "@/util";
@@ -104,7 +104,7 @@ const SessionList: React.FC = (props) => {
                     return args.path
                 }}
             >
-                <Upload/>
+                <UploadInFormItem/>
             </Form.Item>
 
             <Form.Item

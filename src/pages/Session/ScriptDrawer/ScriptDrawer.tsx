@@ -1,13 +1,14 @@
 import React, {useEffect, useState} from "react";
 import {Button, Drawer, Form, Input, message, Modal, Radio, Select} from "antd";
 import { PythonOutlined, FileTextOutlined } from '@ant-design/icons';
-import Upload from "../components/upload/Upload"
+
 import {ProList} from "@ant-design/pro-components";
 import {FormattedMessage} from "@@/plugin-locale/localeExports";
 import {request} from "@@/plugin-request/request";
 import util, {showMessage} from "@/util";
 import {sessionIdMapFileName, sessionIdRef} from "@/pages/Session/main/Main";
 import ScriptOwner from "@/pages/Session/ScriptDrawer/ScriptOwner";
+import UploadInFormItem from "../components/upload/Upload";
 
 const TYPE_RUN_PYTHON_SCRIPT = 1;
 const TYPE_SEND_STRING = 2;
@@ -73,8 +74,7 @@ const ScriptDrawer: React.FC = (props) => {
                     }}
                     rules={[{required: true, message: '请选择python脚本文件!'}]}
                 >
-                    <Upload>
-                    </Upload>
+                    <UploadInFormItem/>
                 </Form.Item>
                 :
                 <Form.Item
@@ -144,7 +144,7 @@ const ScriptDrawer: React.FC = (props) => {
                                 key="link"
                                 onClick={() => {
                                     const fields = Object.assign(row, {name: row.title.name});
-                                    console.log(fields, row);
+                                    // console.log(fields, row);
                                     setScriptType(row.scriptType);
                                     editScriptForm.setFieldsValue(fields);
                                     setEditScriptModalVisiable(true);

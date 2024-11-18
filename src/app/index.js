@@ -1,4 +1,4 @@
-const {app, BrowserWindow, screen, ipcMain, Menu, globalShortcut, remote} = require('electron');
+const {app, BrowserWindow, screen, ipcMain, Menu, globalShortcut, remote, dialog} = require('electron');
 const path = require('path');
 const request = require('request');
 const {exec, spawn} = require('child_process');

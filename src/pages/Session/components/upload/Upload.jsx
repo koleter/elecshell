@@ -2,7 +2,7 @@ import React, {useState, useEffect} from "react";
 import {Button, Upload} from "antd";
 import {UploadOutlined} from '@ant-design/icons';
 
-const MyUpload = (props) => {
+const UploadInFormItem = (props) => {
   const {value, onChange} = props;
   // console.log("value", value)
 
@@ -21,6 +21,10 @@ const MyUpload = (props) => {
   }, [value])
 
   return <Upload maxCount={1}
+                 onPreview={(file) => {
+                     console.log("onPreview", file);
+                     electronAPI.ipcRenderer.send('switchFileInExploer', file.name);
+                 }}
                  onChange={(e) => {
                    // console.log(e);
                    var path = e?.file?.originFileObj?.path || "";
@@ -42,4 +46,4 @@ const MyUpload = (props) => {
   </Upload>
 }
 
-export default MyUpload;
+export default UploadInFormItem;
