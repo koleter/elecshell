@@ -18,11 +18,11 @@ const UploadInFormItem = (props) => {
       status: 'done',
       url: value,
     }]);
-  }, [value])
+  }, [value]);
 
   return <Upload maxCount={1}
                  onPreview={(file) => {
-                     console.log("onPreview", file);
+                     // console.log("onPreview", file);
                      electronAPI.ipcRenderer.send('switchFileInExploer', file.name);
                  }}
                  onChange={(e) => {
