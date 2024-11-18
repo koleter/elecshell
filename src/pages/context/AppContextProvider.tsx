@@ -30,8 +30,13 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
         setPromptTitle(title);
         setPromptOKCallback(() => callback);
         setPromptUserInput(defaultUserInput);
-        setShowPrompt(true);
-        promptInputRef?.current?.focus();
+        setShowPrompt(() => {
+            setTimeout(() => {
+                promptInputRef?.current?.focus();
+            }, 0)
+            return true;
+        });
+
     }
 
     useEffect(() => {
