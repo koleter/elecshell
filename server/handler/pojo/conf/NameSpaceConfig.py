@@ -1,12 +1,12 @@
 from handler.pojo.conf.CachableConfig import CachableConfig
 
-class ConfigableGlobalConfig(CachableConfig):
+class NameSpaceConfig(CachableConfig):
     """
-    a class used by settings
+    a class used by namespace
     """
 
     def __init__(self, path):
-        super().__init__(path, "configableGlobalConf.json")
+        super().__init__(path, "namespace.json")
 
     def default_conf(self):
         return dict({

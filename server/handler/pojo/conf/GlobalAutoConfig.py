@@ -1,7 +1,3 @@
-import json
-import logging
-import os
-
 from handler.pojo.conf.CachableConfig import CachableConfig
 
 class GlobalAutoConfig(CachableConfig):

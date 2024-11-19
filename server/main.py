@@ -8,6 +8,7 @@ from tornado.options import options
 from handler import const
 from handler.ConfigHandler import ConfigHandler
 from handler.IndexHandler import IndexHandler
+from handler.NameSpaceHandler import NameSpaceHandler
 from handler.NotFoundHandler import NotFoundHandler
 from handler.WsockHandler import WsockHandler
 from logging.handlers import RotatingFileHandler
@@ -52,7 +53,7 @@ def make_handlers(loop, options):
         (r'/ws', WsockHandler, dict(loop=loop)),
         (r'/conf', ConfigHandler, dict(loop=loop)),
         (r'/ping', PingHandler, dict(loop=loop)),
-
+        (r'/query_namespace', NameSpaceHandler, dict(loop=loop)),
     ]
     return handlers
 

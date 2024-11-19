@@ -2,10 +2,10 @@ import {
     ModalForm,
     EditableProTable
 } from '@ant-design/pro-components';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import util, {getUUid, showMessage} from "@/util";
 import {request} from "@@/plugin-request/request";
-import {message, Input} from 'antd';
+import {message, Input, Tabs, Select, Space} from 'antd';
 
 const columns = [
     {
@@ -36,6 +36,16 @@ const SettingModal = () => {
     const [modalVisit, setModalVisit] = useState(false);
     const [dataSource, setDataSource] = useState([]);
     const [refresh, setRefresh] = useState(0);
+
+    const [nameSpaceOptions, setNameSpaceOptions] = useState([]);
+
+    useEffect(() => {
+        util.request('query_namespace', {
+            method: 'GET',
+        }).then(res => {
+            setNameSpaceOptions(res);
+        })
+    }, [])
 
     useEffect(() => {
         util.request('conf', {
@@ -112,27 +122,57 @@ const SettingModal = () => {
         }}
         onOpenChange={setModalVisit}
     >
-        <EditableProTable
-            columns={columns}
-            rowKey="id"
-            value={dataSource}
-            onChange={setDataSource}
-            recordCreatorProps={{
-                newRecordType: 'dataSource',
-                record: () => ({
-                    id: getUUid(),
-                }),
-            }}
-            editable={{
-                type: 'multiple',
-                editableKeys: dataSource.map(item => item.id),
-                actionRender: (row, config, defaultDoms) => {
-                    return [defaultDoms.delete];
-                },
-                onValuesChange: (record, recordList) => {
-                    setDataSource(recordList);
-                },
-            }}
+        <Tabs style={{
+            height: "60vh"
+        }}
+              tabBarGutter={4}
+              tabPosition={'left'}
+              items={[{
+                  key: 'connectVariable',
+                  label: '连接变量',
+                  children: <EditableProTable
+                      columns={columns}
+                      rowKey="id"
+                      value={dataSource}
+                      onChange={setDataSource}
+                      recordCreatorProps={{
+                          newRecordType: 'dataSource',
+                          record: () => ({
+                              id: getUUid(),
+                          }),
+                      }}
+                      editable={{
+                          type: 'multiple',
+                          editableKeys: dataSource.map(item => item.id),
+                          actionRender: (row, config, defaultDoms) => {
+                              return [defaultDoms.delete];
+                          },
+                          onValuesChange: (record, recordList) => {
+                              setDataSource(recordList);
+                          },
+                      }}
+                  />
+              }, {
+                  key: 'namespace',
+                  label: '命名空间',
+                  children: <Select
+                      style={{ width: '100%' }}
+                      placeholder="select one namespace"
+                      defaultValue={['default']}
+                      onChange={(value, option) => {
+                          console.log(value, option);
+                      }}
+                      options={nameSpaceOptions}
+                      // optionRender={(option) => (
+                      //     <Space>
+                      //       <span role="img" aria-label={option.data.label}>
+                      //         {option.data.emoji}
+                      //       </span>
+                      //         {option.data.desc}
+                      //     </Space>
+                      // )}
+                  />
+              }]}
         />
     </ModalForm>
 }
