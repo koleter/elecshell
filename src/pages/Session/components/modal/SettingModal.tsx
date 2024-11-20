@@ -2,10 +2,11 @@ import {
     ModalForm,
     EditableProTable
 } from '@ant-design/pro-components';
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import util, {getUUid, showMessage} from "@/util";
 import {request} from "@@/plugin-request/request";
-import {message, Input, Tabs, Select, Space} from 'antd';
+import {message, Input, Tabs, Select, Form, Button, Flex} from 'antd';
+import {FormattedMessage} from "@@/plugin-locale/localeExports";
 
 const columns = [
     {
@@ -14,8 +15,8 @@ const columns = [
     },
     {
         title: '变量值',
-        renderFormItem: (_, { isEditable }) => {
-            return <Input.Password />;
+        renderFormItem: (_, {isEditable}) => {
+            return <Input.Password/>;
         },
         render: (text, record, _, action) => [
             <Input.Password placeholder="input password" defaultValue={text}/>
@@ -128,6 +129,22 @@ const SettingModal = () => {
               tabBarGutter={4}
               tabPosition={'left'}
               items={[{
+                  key: 'base',
+                  label: '基本配置',
+                  children: <Flex gap="middle" vertical>
+                      <Flex vertical={false}>
+                          <Select
+                          defaultValue={['en']}
+                          onChange={(value, option) => {
+                              console.log(value, option);
+                          }}
+                          options={nameSpaceOptions}
+                      />
+                      </Flex>
+                  </Flex>
+
+
+              }, {
                   key: 'connectVariable',
                   label: '连接变量',
                   children: <EditableProTable
@@ -155,23 +172,18 @@ const SettingModal = () => {
               }, {
                   key: 'namespace',
                   label: '命名空间',
-                  children: <Select
-                      style={{ width: '100%' }}
-                      placeholder="select one namespace"
-                      defaultValue={['default']}
-                      onChange={(value, option) => {
-                          console.log(value, option);
-                      }}
-                      options={nameSpaceOptions}
-                      // optionRender={(option) => (
-                      //     <Space>
-                      //       <span role="img" aria-label={option.data.label}>
-                      //         {option.data.emoji}
-                      //       </span>
-                      //         {option.data.desc}
-                      //     </Space>
-                      // )}
-                  />
+                  children: <>
+                      <Select
+                          style={{width: '100%'}}
+                          placeholder="select one namespace"
+                          defaultValue={['default']}
+                          onChange={(value, option) => {
+                              console.log(value, option);
+                          }}
+                          options={nameSpaceOptions}
+                      />
+                      <Button><FormattedMessage id={'navBar.lang'}/></Button>
+                  </>
               }]}
         />
     </ModalForm>
