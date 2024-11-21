@@ -5,7 +5,7 @@ import {
 import React, {useState, useEffect} from 'react';
 import util, {getUUid, showMessage} from "@/util";
 import {request} from "@@/plugin-request/request";
-import {message, Input, Tabs, Select, Form, Button, Flex} from 'antd';
+import {message, Input, Tabs, Select, Form, Button} from 'antd';
 import {FormattedMessage} from "@@/plugin-locale/localeExports";
 
 const columns = [
@@ -131,19 +131,15 @@ const SettingModal = () => {
               items={[{
                   key: 'base',
                   label: '基本配置',
-                  children: <Flex gap="middle" vertical>
-                      <Flex vertical={false}>
-                          <Select
+                  children: <>
+                      <Select
                           defaultValue={['en']}
                           onChange={(value, option) => {
                               console.log(value, option);
                           }}
                           options={nameSpaceOptions}
                       />
-                      </Flex>
-                  </Flex>
-
-
+                  </>
               }, {
                   key: 'connectVariable',
                   label: '连接变量',
