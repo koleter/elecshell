@@ -20,6 +20,8 @@ if (fs.existsSync(windowsReleasePath)) {
   fs.copyFileSync(srcPath, destPath)
 }
 
+fs.copyFileSync("../xterm/xterm.js", '../node_modules/xterm/lib/xterm.js');
+
 // WORKAROUND: electron-builder downloads the wrong prebuilt architecture on macOS and the reason is unknown.
 //   For now, we rebuild all native libraries from source.
 const keytarPath = path.resolve(__dirname, '../node_modules/keytar')
