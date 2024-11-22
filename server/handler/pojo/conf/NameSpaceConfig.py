@@ -12,3 +12,14 @@ class NameSpaceConfig(CachableConfig):
         return dict({
             "namespace": "default"
         })
+
+    def post(self, args):
+        '''
+        switch namespace
+        :param args:
+        :return:
+        '''
+        result = super().post(args)
+        from handler.ConfigHandler import initialize_confs
+        initialize_confs()
+        return result

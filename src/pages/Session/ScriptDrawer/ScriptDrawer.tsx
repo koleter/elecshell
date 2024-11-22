@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useContext, useEffect, useState} from "react";
 import {Button, Drawer, Form, Input, message, Modal, Radio, Select} from "antd";
 import { PythonOutlined, FileTextOutlined } from '@ant-design/icons';
 
@@ -9,6 +9,7 @@ import util, {showMessage} from "@/util";
 import {sessionIdMapFileName, sessionIdRef} from "@/pages/Session/main/Main";
 import ScriptOwner from "@/pages/Session/ScriptDrawer/ScriptOwner";
 import UploadInFormItem from "../components/upload/Upload";
+import {AppContext} from "@/pages/context/AppContextProvider";
 
 const TYPE_RUN_PYTHON_SCRIPT = 1;
 const TYPE_SEND_STRING = 2;
@@ -18,28 +19,17 @@ const ScriptDrawer: React.FC = (props) => {
     const {activeKey, drawerOpen, setDrawerOpen} = props;
     const [editScriptForm] = Form.useForm();
 
-    const [scriptData, setScriptData] = useState([]);
     const [scriptSearchValue, setScriptSearchValue] = useState("");
     const [editScriptModalVisiable, setEditScriptModalVisiable] = useState(false);
-    const [refreshScriptData, setRefreshScriptData] = useState(0);
+
     const [addScriptModalVisiable, setAddScriptModalVisiable] = useState(false);
     const [addScriptForm] = Form.useForm();
 
     const [scriptType, setScriptType] = useState(TYPE_RUN_PYTHON_SCRIPT);
 
-    useEffect(() => {
-        util.request('conf', {
-            method: 'GET',
-            params: {
-                type: 'ScriptConfig',
-            },
-        }).then(res => {
-            if (res.status !== 'success') {
-                message[res.status](res.msg);
-            }
-            setScriptData(res.scriptData);
-        })
-    }, [refreshScriptData])
+    const {
+        scriptData, setScriptData, refreshScriptData, setRefreshScriptData
+    } = useContext(AppContext);
 
     function genScriptFormProperties() {
         return <>
@@ -101,7 +91,6 @@ const ScriptDrawer: React.FC = (props) => {
         >
 
             <ProList
-                rowKey="name"
                 dataSource={scriptData.filter(item => {
                     return (item.scriptOwner.isCommon || item.scriptOwner.owners.includes(sessionIdMapFileName[activeKey])) && item.title.name.indexOf(scriptSearchValue) > -1;
                 })}

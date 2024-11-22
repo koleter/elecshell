@@ -20,6 +20,13 @@ exports.template = [
                     var curWindow = BrowserWindow.getFocusedWindow();
                     curWindow.webContents.send("openGlobalSetting");
                 }
+            },
+            {
+                label: '管理命名空间',
+                click() {
+                    var curWindow = BrowserWindow.getFocusedWindow();
+                    curWindow.webContents.send("openManagerNameSpaceModal");
+                }
             }
         ]
     },

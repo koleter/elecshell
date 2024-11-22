@@ -45,8 +45,8 @@ export function getUUid(): string {
 
 export function showMessage(res) {
   message[res.status]({
-    content: res.content
-  })
+    content: res.content || res.msg
+  });
 }
 
 export function defineValidatorWithErrMessage(msg) {

@@ -73,6 +73,41 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
             setTreeData(res.defaultTreeData);
         })
     }, [refreshTreeData])
+
+    const [connectVariable, setConnectVariable] = useState([]);
+    const [refreshConfigableGlobalConfig, setRefreshConfigableGlobalConfig] = useState(0);
+
+    useEffect(() => {
+        util.request('conf', {
+            method: 'GET',
+            params: {
+                type: 'ConfigableGlobalConfig',
+            }
+        }).then(res => {
+            if (res.status == 'success') {
+                setConnectVariable(res?.data?.strVariableSetting || []);
+            } else {
+                message[res.status](res.msg);
+            }
+        })
+    }, [refreshConfigableGlobalConfig])
+
+    const [scriptData, setScriptData] = useState([]);
+    const [refreshScriptData, setRefreshScriptData] = useState(0);
+    useEffect(() => {
+        util.request('conf', {
+            method: 'GET',
+            params: {
+                type: 'ScriptConfig',
+            },
+        }).then(res => {
+            if (res.status !== 'success') {
+                message[res.status](res.msg);
+            }
+            setScriptData(res.scriptData);
+        })
+    }, [refreshScriptData])
+
     return (
         <AppContext.Provider value={{
             xshListWindowWidth,
@@ -97,7 +132,13 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
             // session
             activeKey, setActiveKey,
             // menu
-            selectedMenuKey, setSelectedMenuKey
+            selectedMenuKey, setSelectedMenuKey,
+            // global config
+            connectVariable, setConnectVariable,
+            // refresh global config
+            refreshConfigableGlobalConfig, setRefreshConfigableGlobalConfig,
+            // scriptData
+            scriptData, setScriptData, refreshScriptData, setRefreshScriptData
         }}>{/** value就是可在<AppContextProvider>组件的子组件中使用useContext() hook函数所获取的对象 */}
             {props.children}
         </AppContext.Provider>

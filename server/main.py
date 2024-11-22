@@ -53,7 +53,7 @@ def make_handlers(loop, options):
         (r'/ws', WsockHandler, dict(loop=loop)),
         (r'/conf', ConfigHandler, dict(loop=loop)),
         (r'/ping', PingHandler, dict(loop=loop)),
-        (r'/query_namespace', NameSpaceHandler, dict(loop=loop)),
+        (r'/namespace', NameSpaceHandler, dict(loop=loop)),
     ]
     return handlers
 

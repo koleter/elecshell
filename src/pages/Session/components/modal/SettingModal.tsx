@@ -2,11 +2,12 @@ import {
     ModalForm,
     EditableProTable
 } from '@ant-design/pro-components';
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useContext} from 'react';
 import util, {getUUid, showMessage} from "@/util";
 import {request} from "@@/plugin-request/request";
 import {message, Input, Tabs, Select, Form, Button} from 'antd';
 import {FormattedMessage} from "@@/plugin-locale/localeExports";
+import {AppContext} from "@/pages/context/AppContextProvider";
 
 const columns = [
     {
@@ -35,40 +36,17 @@ const columns = [
 
 const SettingModal = () => {
     const [modalVisit, setModalVisit] = useState(false);
-    const [dataSource, setDataSource] = useState([]);
-    const [refresh, setRefresh] = useState(0);
 
-    const [nameSpaceOptions, setNameSpaceOptions] = useState([]);
-
-    useEffect(() => {
-        util.request('query_namespace', {
-            method: 'GET',
-        }).then(res => {
-            setNameSpaceOptions(res);
-        })
-    }, [])
-
-    useEffect(() => {
-        util.request('conf', {
-            method: 'GET',
-            params: {
-                type: 'ConfigableGlobalConfig',
-            }
-        }).then(res => {
-            if (res.status == 'success') {
-                setDataSource(res?.data?.strVariableSetting || []);
-            } else {
-                message[res.status](res.msg);
-            }
-        })
-    }, [refresh])
+    const {
+        connectVariable, setConnectVariable, refreshConfigableGlobalConfig, setRefreshConfigableGlobalConfig
+    } = useContext(AppContext);
 
     electronAPI.ipcRenderer.on('openGlobalSetting', (event, arg) => {
         setModalVisit(true);
     });
 
     electronAPI.ipcRenderer.on('refreshConfigableGlobalConfig', (event, arg) => {
-        setRefresh(n => n + 1);
+        setRefreshConfigableGlobalConfig(n => n + 1);
     });
 
     return <ModalForm
@@ -76,8 +54,8 @@ const SettingModal = () => {
         open={modalVisit}
         onFinish={async () => {
             const formData = {};
-            for (let i = 0; i < dataSource.length; i++) {
-                const item = dataSource[i];
+            for (let i = 0; i < connectVariable.length; i++) {
+                const item = connectVariable[i];
                 if (!item.name) {
                     showMessage({
                         status: "error",
@@ -87,11 +65,11 @@ const SettingModal = () => {
                 }
                 formData[item.name] = item;
             }
-            if (Object.keys(formData).length != dataSource.length) {
+            if (Object.keys(formData).length != connectVariable.length) {
                 // has repeat data, this is not allowed
                 const counter = {}
-                for (let i = 0; i < dataSource.length; i++) {
-                    counter[dataSource[i].name]++;
+                for (let i = 0; i < connectVariable.length; i++) {
+                    counter[connectVariable[i].name]++;
                 }
                 const result = []
                 for (let key in counter) {
@@ -110,7 +88,7 @@ const SettingModal = () => {
                 body: JSON.stringify({
                     type: 'ConfigableGlobalConfig',
                     args: {
-                        strVariableSetting: dataSource
+                        strVariableSetting: connectVariable
                     }
                 })
             }).then(res => {
@@ -132,13 +110,7 @@ const SettingModal = () => {
                   key: 'base',
                   label: '基本配置',
                   children: <>
-                      <Select
-                          defaultValue={['en']}
-                          onChange={(value, option) => {
-                              console.log(value, option);
-                          }}
-                          options={nameSpaceOptions}
-                      />
+
                   </>
               }, {
                   key: 'connectVariable',
@@ -146,8 +118,8 @@ const SettingModal = () => {
                   children: <EditableProTable
                       columns={columns}
                       rowKey="id"
-                      value={dataSource}
-                      onChange={setDataSource}
+                      value={connectVariable}
+                      onChange={setConnectVariable}
                       recordCreatorProps={{
                           newRecordType: 'dataSource',
                           record: () => ({
@@ -156,30 +128,15 @@ const SettingModal = () => {
                       }}
                       editable={{
                           type: 'multiple',
-                          editableKeys: dataSource.map(item => item.id),
+                          editableKeys: connectVariable.map(item => item.id),
                           actionRender: (row, config, defaultDoms) => {
                               return [defaultDoms.delete];
                           },
                           onValuesChange: (record, recordList) => {
-                              setDataSource(recordList);
+                              setConnectVariable(recordList);
                           },
                       }}
                   />
-              }, {
-                  key: 'namespace',
-                  label: '命名空间',
-                  children: <>
-                      <Select
-                          style={{width: '100%'}}
-                          placeholder="select one namespace"
-                          defaultValue={['default']}
-                          onChange={(value, option) => {
-                              console.log(value, option);
-                          }}
-                          options={nameSpaceOptions}
-                      />
-                      <Button><FormattedMessage id={'navBar.lang'}/></Button>
-                  </>
               }]}
         />
     </ModalForm>
