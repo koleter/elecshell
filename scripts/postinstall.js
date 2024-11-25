@@ -4,7 +4,7 @@ const path = require('path')
 
 // WORKAROUND: Fix slow startup time on Windows due to blocking powershell call(s) in windows-release.
 //   Replace the problematic file with our "fixed" version.
-const windowsReleasePath = path.resolve(__dirname, '../node_modules/windows-release')
+const windowsReleasePath = path.resolve(__dirname, 'node_modules/windows-release')
 if (fs.existsSync(windowsReleasePath)) {
   const windowsReleaseJson = path.join(windowsReleasePath, 'package.json')
   const packageJson = JSON.parse(fs.readFileSync(windowsReleaseJson, { encoding : 'utf-8' }))
@@ -20,11 +20,11 @@ if (fs.existsSync(windowsReleasePath)) {
   fs.copyFileSync(srcPath, destPath)
 }
 
-fs.copyFileSync("../xterm/xterm.js", '../node_modules/xterm/lib/xterm.js');
+fs.copyFileSync("xterm/xterm.js", 'node_modules/xterm/lib/xterm.js');
 
 // WORKAROUND: electron-builder downloads the wrong prebuilt architecture on macOS and the reason is unknown.
 //   For now, we rebuild all native libraries from source.
-const keytarPath = path.resolve(__dirname, '../node_modules/keytar')
+const keytarPath = path.resolve(__dirname, 'node_modules/keytar')
 if (process.platform === 'darwin' && fs.existsSync(keytarPath)) {
   const keytarPackageJsonPath = path.join(keytarPath, 'package.json')
   let packageText = fs.readFileSync(keytarPackageJsonPath, { encoding : 'utf-8' })

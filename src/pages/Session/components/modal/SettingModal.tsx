@@ -1,12 +1,7 @@
-import {
-    ModalForm,
-    EditableProTable
-} from '@ant-design/pro-components';
-import React, {useState, useEffect, useContext} from 'react';
+import {EditableProTable, ModalForm} from '@ant-design/pro-components';
+import React, {useContext, useState} from 'react';
 import util, {getUUid, showMessage} from "@/util";
-import {request} from "@@/plugin-request/request";
-import {message, Input, Tabs, Select, Form, Button} from 'antd';
-import {FormattedMessage} from "@@/plugin-locale/localeExports";
+import {Input, message, Tabs, Radio} from 'antd';
 import {AppContext} from "@/pages/context/AppContextProvider";
 
 const columns = [
@@ -38,7 +33,12 @@ const SettingModal = () => {
     const [modalVisit, setModalVisit] = useState(false);
 
     const {
-        connectVariable, setConnectVariable, refreshConfigableGlobalConfig, setRefreshConfigableGlobalConfig
+        connectVariable,
+        setConnectVariable,
+        refreshConfigableGlobalConfig,
+        setRefreshConfigableGlobalConfig,
+        language,
+        setLanguage
     } = useContext(AppContext);
 
     electronAPI.ipcRenderer.on('openGlobalSetting', (event, arg) => {
@@ -110,7 +110,12 @@ const SettingModal = () => {
                   key: 'base',
                   label: '基本配置',
                   children: <>
-
+                      language: <Radio.Group onChange={(e) => {
+                      setLanguage(e.target.value);
+                  }} value={language}>
+                      <Radio value={"en"}>English</Radio>
+                      <Radio value={"zn"}>简体中文</Radio>
+                  </Radio.Group>
                   </>
               }, {
                   key: 'connectVariable',
