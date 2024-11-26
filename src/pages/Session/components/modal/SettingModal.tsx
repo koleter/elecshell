@@ -1,44 +1,45 @@
 import {EditableProTable, ModalForm} from '@ant-design/pro-components';
 import React, {useContext, useState} from 'react';
 import util, {getUUid, showMessage} from "@/util";
-import {Input, message, Tabs, Radio} from 'antd';
+import {Input, message, Tabs} from 'antd';
 import {AppContext} from "@/pages/context/AppContextProvider";
-
-const columns = [
-    {
-        title: '变量名',
-        dataIndex: 'name'
-    },
-    {
-        title: '变量值',
-        renderFormItem: (_, {isEditable}) => {
-            return <Input.Password/>;
-        },
-        render: (text, record, _, action) => [
-            <Input.Password placeholder="input password" defaultValue={text}/>
-        ],
-        dataIndex: 'value'
-    },
-    {
-        title: '操作',
-        valueType: 'option',
-        width: 50,
-        render: () => {
-            return null;
-        },
-    },
-];
+import {useIntl} from '@@/plugin-locale/localeExports';
+import {capitalizeFirstLetter} from "@/pages/util/string";
 
 const SettingModal = () => {
     const [modalVisit, setModalVisit] = useState(false);
+    const intl = useIntl();
+
+    const columns = [
+        {
+            title: intl.formatMessage({id: 'Variable Name'}),
+            dataIndex: 'name'
+        },
+        {
+            title: intl.formatMessage({id: 'Variable Value'}),
+            renderFormItem: (_, {isEditable}) => {
+                return <Input.Password/>;
+            },
+            render: (text, record, _, action) => [
+                <Input.Password placeholder="input password" defaultValue={text}/>
+            ],
+            dataIndex: 'value'
+        },
+        {
+            title: capitalizeFirstLetter(intl.formatMessage({id: 'operation'})),
+            valueType: 'option',
+            width: 100,
+            render: () => {
+                return null;
+            },
+        },
+    ];
 
     const {
         connectVariable,
         setConnectVariable,
         refreshConfigableGlobalConfig,
         setRefreshConfigableGlobalConfig,
-        language,
-        setLanguage
     } = useContext(AppContext);
 
     electronAPI.ipcRenderer.on('openGlobalSetting', (event, arg) => {
@@ -50,7 +51,7 @@ const SettingModal = () => {
     });
 
     return <ModalForm
-        title="设置"
+        title={capitalizeFirstLetter(intl.formatMessage({id: "settings"}))}
         open={modalVisit}
         onFinish={async () => {
             const formData = {};
@@ -59,7 +60,7 @@ const SettingModal = () => {
                 if (!item.name) {
                     showMessage({
                         status: "error",
-                        content: "变量名不能为空"
+                        content: intl.formatMessage({id: 'Variable name cannot be empty'})
                     });
                     return;
                 }
@@ -106,43 +107,38 @@ const SettingModal = () => {
         }}
               tabBarGutter={4}
               tabPosition={'left'}
-              items={[{
-                  key: 'base',
-                  label: '基本配置',
-                  children: <>
-                      language: <Radio.Group onChange={(e) => {
-                      setLanguage(e.target.value);
-                  }} value={language}>
-                      <Radio value={"en"}>English</Radio>
-                      <Radio value={"zn"}>简体中文</Radio>
-                  </Radio.Group>
-                  </>
-              }, {
-                  key: 'connectVariable',
-                  label: '连接变量',
-                  children: <EditableProTable
-                      columns={columns}
-                      rowKey="id"
-                      value={connectVariable}
-                      onChange={setConnectVariable}
-                      recordCreatorProps={{
-                          newRecordType: 'dataSource',
-                          record: () => ({
-                              id: getUUid(),
-                          }),
-                      }}
-                      editable={{
-                          type: 'multiple',
-                          editableKeys: connectVariable.map(item => item.id),
-                          actionRender: (row, config, defaultDoms) => {
-                              return [defaultDoms.delete];
-                          },
-                          onValuesChange: (record, recordList) => {
-                              setConnectVariable(recordList);
-                          },
-                      }}
-                  />
-              }]}
+              items={[
+                  //     {
+                  //     key: 'general',
+                  //     label: intl.formatMessage({id: 'SettingModal.Setting.general'}),
+                  //     children: <></>
+                  // },
+                  {
+                      key: 'variable',
+                      label: capitalizeFirstLetter(intl.formatMessage({id: 'variable'})),
+                      children: <EditableProTable
+                          columns={columns}
+                          rowKey="id"
+                          value={connectVariable}
+                          onChange={setConnectVariable}
+                          recordCreatorProps={{
+                              newRecordType: 'dataSource',
+                              record: () => ({
+                                  id: getUUid(),
+                              }),
+                          }}
+                          editable={{
+                              type: 'multiple',
+                              editableKeys: connectVariable.map(item => item.id),
+                              actionRender: (row, config, defaultDoms) => {
+                                  return [defaultDoms.delete];
+                              },
+                              onValuesChange: (record, recordList) => {
+                                  setConnectVariable(recordList);
+                              },
+                          }}
+                      />
+                  }]}
         />
     </ModalForm>
 }

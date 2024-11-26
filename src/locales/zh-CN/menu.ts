@@ -1,5 +1,5 @@
 export default {
-  'menu.session': 'session',
+  'menu.session': '会话',
   'menu.welcome': '欢迎',
   'menu.more-blocks': '更多区块',
   'menu.home': '首页',

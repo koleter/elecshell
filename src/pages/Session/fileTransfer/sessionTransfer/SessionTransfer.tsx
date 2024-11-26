@@ -96,7 +96,7 @@ const SessionTransfer: React.FC = (props) => {
     return <>
         <Space className={'sftpFileListSpace'} direction="vertical" size="middle">
             <div style={{display: "flex", flexDirection: "row"}}>
-                <Search placeholder="input search text" onSearch={getFileList} enterButton value={searchValue}
+                <Search onSearch={getFileList} enterButton value={searchValue}
                         onChange={(e) => {
                             setSearchValue(e.target.value);
                         }}/>

@@ -1,21 +1,16 @@
-import {useEffect, useRef, useContext, useState} from "react";
-import React from "react";
+import React, {useContext, useEffect, useRef, useState} from "react";
 import {Terminal} from "xterm"
 import "xterm/css/xterm.css"
-import util, {sleep, callbackMap, sessionStatusMap, showMessage, getUUid} from "../../../../util"
-import {DISCONNECTED, CONNECTING, CONNECTED, HEADER_HEIGHT} from "../../../../const"
-import {sessionIdRef, sessionIdMapFileName, sessionInit} from "../../main/Main"
+import util, {callbackMap, getUUid, sessionStatusMap, showMessage} from "../../../../util"
+import {CONNECTED, CONNECTING} from "../../../../const"
+import {sessionIdMapFileName, sessionIdRef, sessionInit} from "../../main/Main"
 import {SearchAddon} from 'xterm-addon-search'
 import {FitAddon} from 'xterm-addon-fit'
-import {request} from 'umi';
 import "./SessionWindow.less"
 import {sessionConfInfo} from "@/pages/Session/SessionList/SessionList";
 import {AppContext} from "@/pages/context/AppContextProvider";
-import {Input, Button, Tooltip} from 'antd';
-import {
-    ArrowUpOutlined,
-    ArrowDownOutlined
-} from '@ant-design/icons';
+import {Button, Input, Tooltip} from 'antd';
+import {ArrowDownOutlined, ArrowUpOutlined} from '@ant-design/icons';
 import {getTermHeight} from "@/pages/util/style";
 
 // 查询框中所有元素的高度

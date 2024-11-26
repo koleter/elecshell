@@ -1,9 +1,9 @@
 import {createContext, useEffect, useState, useRef} from 'react';
-import {request} from "@@/plugin-request/request";
 import util from "@/util";
 import {message} from "antd";
 import {sessionConfInfo} from "@/pages/Session/SessionList/SessionList";
 import {NENU_SESSIONS} from "@/const";
+import {setLocale} from "@@/plugin-locale/localeExports";
 
 //根据定义创建Context
 export const AppContext = createContext(null);
@@ -77,8 +77,6 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
     const [connectVariable, setConnectVariable] = useState([]);
     const [refreshConfigableGlobalConfig, setRefreshConfigableGlobalConfig] = useState(0);
 
-    const [language, setLanguage] = useState("en");
-
     useEffect(() => {
         util.request('conf', {
             method: 'GET',
@@ -88,7 +86,6 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
         }).then(res => {
             if (res.status == 'success') {
                 setConnectVariable(res?.data?.strVariableSetting || []);
-                setLanguage(res?.data?.language || "en");
             } else {
                 message[res.status](res.msg);
             }
@@ -142,7 +139,6 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
             refreshConfigableGlobalConfig, setRefreshConfigableGlobalConfig,
             // scriptData
             scriptData, setScriptData, refreshScriptData, setRefreshScriptData,
-            language, setLanguage
         }}>{/** value就是可在<AppContextProvider>组件的子组件中使用useContext() hook函数所获取的对象 */}
             {props.children}
         </AppContext.Provider>

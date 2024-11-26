@@ -3,13 +3,14 @@ import {Button, Drawer, Form, Input, message, Modal, Radio, Select} from "antd";
 import { PythonOutlined, FileTextOutlined } from '@ant-design/icons';
 
 import {ProList} from "@ant-design/pro-components";
-import {FormattedMessage} from "@@/plugin-locale/localeExports";
+import {FormattedMessage, useIntl} from "@@/plugin-locale/localeExports";
 import {request} from "@@/plugin-request/request";
 import util, {showMessage} from "@/util";
 import {sessionIdMapFileName, sessionIdRef} from "@/pages/Session/main/Main";
 import ScriptOwner from "@/pages/Session/ScriptDrawer/ScriptOwner";
 import UploadInFormItem from "../components/upload/Upload";
 import {AppContext} from "@/pages/context/AppContextProvider";
+import {capitalizeFirstLetter} from "@/pages/util/string";
 
 const TYPE_RUN_PYTHON_SCRIPT = 1;
 const TYPE_SEND_STRING = 2;
@@ -26,6 +27,7 @@ const ScriptDrawer: React.FC = (props) => {
     const [addScriptForm] = Form.useForm();
 
     const [scriptType, setScriptType] = useState(TYPE_RUN_PYTHON_SCRIPT);
+    const intl = useIntl();
 
     const {
         scriptData, setScriptData, refreshScriptData, setRefreshScriptData
@@ -34,10 +36,10 @@ const ScriptDrawer: React.FC = (props) => {
     function genScriptFormProperties() {
         return <>
             <Form.Item
-                label="标签"
+                label={capitalizeFirstLetter(intl.formatMessage({id: 'label'}))}
                 name="name"
                 initialValue={""}
-                rules={[{required: true, message: '请输入标签!'}]}
+                rules={[{required: true, message: capitalizeFirstLetter(intl.formatMessage({id: 'please input label'}))}]}
             >
                 <Input/>
             </Form.Item>
@@ -45,32 +47,32 @@ const ScriptDrawer: React.FC = (props) => {
             <Form.Item
                 initialValue={TYPE_RUN_PYTHON_SCRIPT}
                 name="scriptType"
-                rules={[{required: true, message: '请选择按钮类型!'}]}
-                label="类型">
+                rules={[{required: true, message: intl.formatMessage({id: 'Please select button type'})}]}
+                label={capitalizeFirstLetter(intl.formatMessage({id: 'type'}))}>
                 <Radio.Group onChange={(e) => {
                     setScriptType(e.target.value);
                 }}>
-                    <Radio value={TYPE_RUN_PYTHON_SCRIPT}>运行python脚本</Radio>
-                    <Radio value={TYPE_SEND_STRING}>发送字符串</Radio>
+                    <Radio value={TYPE_RUN_PYTHON_SCRIPT}><FormattedMessage id={'Run Python Script'}/></Radio>
+                    <Radio value={TYPE_SEND_STRING}><FormattedMessage id={'Sending string'}/></Radio>
                 </Radio.Group>
             </Form.Item>
 
             {scriptType === TYPE_RUN_PYTHON_SCRIPT ?
                 <Form.Item
-                    label="python脚本文件路径"
+                    label={intl.formatMessage({id: 'Python file path'})}
                     name="scriptPath"
                     getValueFromEvent={(args) => {
                         return args.path
                     }}
-                    rules={[{required: true, message: '请选择python脚本文件!'}]}
+                    rules={[{required: true, message: intl.formatMessage({id: 'Please select the python file'})}]}
                 >
-                    <UploadInFormItem/>
+                    <UploadInFormItem accept={".py"}/>
                 </Form.Item>
                 :
                 <Form.Item
-                    label="字符串"
+                    label={capitalizeFirstLetter(intl.formatMessage({id: 'strings'}))}
                     name="strings"
-                    rules={[{required: true, message: '请输入要发送的字符串!'}]}
+                    rules={[{required: true, message: intl.formatMessage({id: 'Please enter the string to send'})}]}
                 >
                     <Input.TextArea rows={4}/>
                 </Form.Item>
@@ -81,7 +83,7 @@ const ScriptDrawer: React.FC = (props) => {
 
     return <>
         <Drawer
-            title={`脚本`}
+            title={capitalizeFirstLetter(intl.formatMessage({id: 'script'}))}
             placement="right"
             onClose={() => {
                 setDrawerOpen(false);
@@ -107,7 +109,7 @@ const ScriptDrawer: React.FC = (props) => {
                                 if (!sessionIdRef[activeKey]) {
                                     showMessage({
                                         status: 'error',
-                                        content: 'scripts cannot be executed in a closed session'
+                                        content: intl.formatMessage({id: 'scripts cannot be executed in a closed session'})
                                     });
                                     return;
                                 }
@@ -139,11 +141,7 @@ const ScriptDrawer: React.FC = (props) => {
                                     setEditScriptModalVisiable(true);
                                 }}
                             >
-                                <FormattedMessage
-                                    key="loginWith"
-                                    id="pages.session.edit"
-                                    defaultMessage="编辑"
-                                />
+                                <FormattedMessage id="edit"/>
                             </a>,
                             <a
                                 key="view"
@@ -165,11 +163,7 @@ const ScriptDrawer: React.FC = (props) => {
                                     })
                                 }}
                             >
-                                <FormattedMessage
-                                    key="pages.session.delete"
-                                    id="pages.session.delete"
-                                    defaultMessage="删除"
-                                />
+                                <FormattedMessage id="delete"/>
                             </a>,
                         ],
                     },
@@ -177,11 +171,7 @@ const ScriptDrawer: React.FC = (props) => {
                 toolBarRender={() => {
                     return [
                         <Form.Item
-                            label={<FormattedMessage
-                                key="loginWith"
-                                id="pages.session.search"
-                                defaultMessage="查询"
-                            />}
+                            label={<FormattedMessage id="search"/>}
                         >
                             <Input style={{float: 'left'}} onChange={(e) => {
                                 const {value: inputValue} = e.target;
@@ -195,11 +185,7 @@ const ScriptDrawer: React.FC = (props) => {
                                 addScriptForm.resetFields();
                                 setAddScriptModalVisiable(true);
                             }}>
-                                <FormattedMessage
-                                    key="loginWith"
-                                    id="pages.session.add"
-                                    defaultMessage="添加"
-                                />
+                                <FormattedMessage id="add"/>
                             </Button>
                         </Form.Item>
                     ];

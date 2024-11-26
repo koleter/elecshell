@@ -22,7 +22,7 @@ exports.template = [
                 }
             },
             {
-                label: '管理命名空间',
+                label: '全局配置',
                 click() {
                     var curWindow = BrowserWindow.getFocusedWindow();
                     curWindow.webContents.send("openManagerNameSpaceModal");

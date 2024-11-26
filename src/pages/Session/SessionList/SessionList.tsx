@@ -1,5 +1,5 @@
 import React, {useContext, useEffect, useRef, useState} from "react";
-import {Dropdown, Form, Input, message, Modal, Tabs, Tree, Button} from "antd";
+import {Dropdown, Form, Input, message, Modal, Tabs, Tree, Button, Menu} from "antd";
 import {
     EditableProTable
 } from '@ant-design/pro-components';
@@ -12,6 +12,8 @@ import {AppContext} from "@/pages/context/AppContextProvider";
 import "./SessionList.less"
 import {NENU_SESSIONS} from "@/const";
 import {fileSep} from "@/pages/util/path";
+import {FormattedMessage, useIntl} from "@@/plugin-locale/localeExports";
+import {capitalizeFirstLetter} from "@/pages/util/string";
 
 const path = require('path');
 
@@ -31,8 +33,16 @@ const SessionList: React.FC = (props) => {
     const [editSessionModalVisiable, setEditSessionModalVisiable] = useState(false);
     const [dataSource, setDataSource] = useState([]);
     const [sessionPropertyActiveKey, setSessionPropertyActiveKey] = useState(defaultSessionPropertyActiveKey);
+    const intl = useIntl();
 
-    const {prompt, treeData, setRefreshTreeData, sessionRootKey, selectedMenuKey, xshListWindowWidth} = useContext(AppContext);
+    const {
+        prompt,
+        treeData,
+        setRefreshTreeData,
+        sessionRootKey,
+        selectedMenuKey,
+        xshListWindowWidth
+    } = useContext(AppContext);
 
     useEffect(() => {
         document.addEventListener("copy", e => {
@@ -48,49 +58,49 @@ const SessionList: React.FC = (props) => {
                     label="key"
                     name="key"
                     initialValue={""}
-                    rules={[{required: true, message: 'please enter key!'}]}
+                    rules={[{required: true}]}
                 >
                     <Input disabled={true}/>
                 </Form.Item>
             }
             < Form.Item
-                label="会话名"
+                label={intl.formatMessage({id: 'sessionName'})}
                 name="sessionName"
                 initialValue={""}
-                rules={defineValidatorWithErrMessage('请输入会话名!')}
+                rules={defineValidatorWithErrMessage(intl.formatMessage({id: 'Please enter session name'}))}
             >
                 <Input/>
             </Form.Item>
 
             <Form.Item
-                label="主机"
+                label={intl.formatMessage({id: 'hostname'})}
                 name="hostname"
                 initialValue={""}
-                rules={defineValidatorWithErrMessage('请输入主机!')}
+                rules={defineValidatorWithErrMessage(intl.formatMessage({id: 'Please enter the hostname'}))}
             >
                 <Input/>
             </Form.Item>
 
             <Form.Item
-                label="端口"
+                label={intl.formatMessage({id: 'port'})}
                 name="port"
                 initialValue={22}
-                rules={defineValidatorWithErrMessage('请输入端口!')}
+                rules={defineValidatorWithErrMessage(intl.formatMessage({id: 'Please enter the port'}))}
             >
                 <Input/>
             </Form.Item>
 
             <Form.Item
-                label="用户名"
+                label={intl.formatMessage({id: 'username'})}
                 name="username"
                 initialValue={""}
-                rules={defineValidatorWithErrMessage('请输入用户名!')}
+                rules={defineValidatorWithErrMessage(intl.formatMessage({id: 'Please enter username'}))}
             >
                 <Input/>
             </Form.Item>
 
             <Form.Item
-                label="密码"
+                label={intl.formatMessage({id: 'password'})}
                 name="password"
                 initialValue={""}
             >
@@ -98,7 +108,7 @@ const SessionList: React.FC = (props) => {
             </Form.Item>
 
             <Form.Item
-                label="密钥文件路径"
+                label={intl.formatMessage({id: 'SessionList.privateKey.label'})}
                 name="privatekey"
                 getValueFromEvent={(args) => {
                     return args.path
@@ -108,7 +118,7 @@ const SessionList: React.FC = (props) => {
             </Form.Item>
 
             <Form.Item
-                label="密钥密码"
+                label={intl.formatMessage({id: 'SessionList.passphrase.label'})}
                 name="passphrase"
                 initialValue={""}
             >
@@ -127,33 +137,33 @@ const SessionList: React.FC = (props) => {
 
     const columns = [
         {
-            title: '预期字符串',
+            title: intl.formatMessage({id: 'Expected string'}),
             dataIndex: 'expect',
             formItemProps: {
                 rules: [
                     {
                         required: true,
                         whitespace: true,
-                        message: '此项是必填项',
+                        message: intl.formatMessage({id: 'This item is required'}),
                     }
                 ],
             },
         },
         {
-            title: '发送的命令',
+            title: intl.formatMessage({id: 'Send Command'}),
             dataIndex: 'command',
             formItemProps: {
                 rules: [
                     {
                         required: true,
                         whitespace: true,
-                        message: '此项是必填项',
+                        message: intl.formatMessage({id: 'This item is required'}),
                     }
                 ],
             },
         },
         {
-            title: '操作',
+            title: intl.formatMessage({id: 'operation'}),
             valueType: 'option',
             width: 50,
             render: () => {
@@ -199,12 +209,12 @@ const SessionList: React.FC = (props) => {
                      }}
                      items={[{
                          key: 'baseInfo',
-                         label: '基本信息',
+                         label: intl.formatMessage({id: 'Basic Information'}),
                          forceRender: true,
                          children: genSessionBaseInfo(showType)
                      }, {
                          key: 'loginScript',
-                         label: '登录脚本',
+                         label: intl.formatMessage({id: 'Login Scripts'}),
                          forceRender: true,
                          children: genLoginScript()
                      }]}
@@ -282,42 +292,49 @@ const SessionList: React.FC = (props) => {
         // 非session节点
         if (!node.isLeaf) {
             items.push({
-                label: (
-                    <div onClick={(e) => {
-                        prompt("请输入文件夹名", function (dirName) {
-                            if (!dirName) {
-                                return;
-                            }
-                            util.request('conf', {
-                                method: 'POST',
-                                body: JSON.stringify({
-                                    type: 'SessionConfig',
-                                    args: {
-                                        type: 'createDir',
-                                        path: node.path ? node.path + '/' + dirName : dirName
-                                    }
-                                }),
-                            }).then(res => {
-                                message[res.status](res.msg);
-                                if (res.status == 'success') {
-                                    setRefreshTreeData(e => e + 1)
-                                }
-                            })
-                        });
-                    }}>新增文件夹</div>
-                ),
-                key: 'addFolder',
-            }, {
-                label: (
-                    <div onClick={(e) => {
-                        form.resetFields();
-                        setDataSource([]);
-                        setModalNode(node);
-                        setAddSessionModalVisiable(true);
-                    }}>新增会话</div>
-                ),
-                key: 'addSession',
-            });
+                    label: capitalizeFirstLetter(intl.formatMessage({id: 'new'})),
+                    key: 'new',
+                    children: [
+                        {
+                            label: (
+                                <div onClick={(e) => {
+                                    prompt(intl.formatMessage({id: 'Please enter a folder name'}), function (dirName) {
+                                        if (!dirName) {
+                                            return;
+                                        }
+                                        util.request('conf', {
+                                            method: 'POST',
+                                            body: JSON.stringify({
+                                                type: 'SessionConfig',
+                                                args: {
+                                                    type: 'createDir',
+                                                    path: node.path ? node.path + '/' + dirName : dirName
+                                                }
+                                            }),
+                                        }).then(res => {
+                                            message[res.status](res.msg);
+                                            if (res.status == 'success') {
+                                                setRefreshTreeData(e => e + 1)
+                                            }
+                                        })
+                                    });
+                                }}><FormattedMessage id={'folder'}/></div>
+                            ),
+                            key: 'addFolder',
+                        }, {
+                            label: (
+                                <div onClick={(e) => {
+                                    form.resetFields();
+                                    setDataSource([]);
+                                    setModalNode(node);
+                                    setAddSessionModalVisiable(true);
+                                }}><FormattedMessage id={'session'}/></div>
+                            ),
+                            key: 'addSession',
+                        }
+                    ]
+                },
+            );
         } else {
             // session节点可以复制某个session配置
             items.push({
@@ -338,7 +355,7 @@ const SessionList: React.FC = (props) => {
                                 setRefreshTreeData(e => e + 1)
                             }
                         })
-                    }}>复制</div>
+                    }}><FormattedMessage id={'copy'}/></div>
                 ),
                 key: 'duplicateSession',
             });
@@ -375,7 +392,7 @@ const SessionList: React.FC = (props) => {
                             editForm.setFieldsValue(node);
                             setEditSessionModalVisiable(true);
                         }
-                    }}>编辑</div>
+                    }}><FormattedMessage id={'edit'}/></div>
                 ),
                 key: 'edit',
             }, {
@@ -396,7 +413,7 @@ const SessionList: React.FC = (props) => {
                                 setRefreshTreeData(e => e + 1);
                             }
                         })
-                    }}>删除</div>
+                    }}><FormattedMessage id={'delete'}/></div>
                 ),
                 key: 'delete',
             });
@@ -438,7 +455,7 @@ const SessionList: React.FC = (props) => {
     }
 
     const onDrop: TreeProps['onDrop'] = (info) => {
-        console.log(info, "path.sep: " + fileSep());
+        // console.log(info, "path.sep: " + fileSep());
         const dropKey = info.node.path;
         const dragKey = info.dragNode.path;
         let srcDir = dragKey;
@@ -474,7 +491,11 @@ const SessionList: React.FC = (props) => {
             titleRender={titleRender}
             onDrop={onDrop}
             treeData={treeData}
-            style={{height: `calc(100vh - 18px)`, overflow: 'auto', display: selectedMenuKey == NENU_SESSIONS ? 'block' : 'none'}}
+            style={{
+                height: `calc(100vh - 18px)`,
+                overflow: 'auto',
+                display: selectedMenuKey == NENU_SESSIONS ? 'block' : 'none'
+            }}
         />
 
         <Modal

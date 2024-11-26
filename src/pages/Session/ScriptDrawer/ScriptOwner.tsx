@@ -2,6 +2,7 @@ import React, {useState, useContext, useEffect} from 'react';
 import {Form, TreeSelect, Checkbox} from 'antd';
 import {AppContext} from "@/pages/context/AppContextProvider";
 import './scriptOwner.less'
+import {FormattedMessage, useIntl} from "@@/plugin-locale/localeExports";
 
 
 const Owner: React.FC = ({value = {}, onChange}) => {
@@ -45,7 +46,7 @@ const Owner: React.FC = ({value = {}, onChange}) => {
                     console.log(`checked = ${e.target.checked}`);
                     setIsCommon(e.target.checked);
                     triggerChange({isCommon: e.target.checked})
-                }}>公共</Checkbox>
+                }}><FormattedMessage id={'common'}/></Checkbox>
             </div>
 
             <TreeSelect disabled={isCommon} {...tProps}/>
@@ -54,11 +55,12 @@ const Owner: React.FC = ({value = {}, onChange}) => {
 };
 
 const ScriptOwner: React.FC = () => {
+    const intl = useIntl();
     return (
         <Form.Item
             name="scriptOwner"
-            rules={[{required: true, message: '脚本归属不能为空!'}]}
-            label="脚本归属"
+            rules={[{required: true, message: intl.formatMessage({id: 'ScriptOwner.scriptOwner can not be empty'})}]}
+            label={intl.formatMessage({id: "ScriptOwner.scriptOwner"})}
         >
             <Owner/>
         </Form.Item>

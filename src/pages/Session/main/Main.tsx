@@ -9,12 +9,13 @@ import ScriptDrawer from "@/pages/Session/ScriptDrawer/ScriptDrawer";
 import SessionList from "@/pages/Session/SessionList/SessionList";
 import util, {showMessage} from "@/util";
 import {AppContext} from "@/pages/context/AppContextProvider";
-import {request} from "@@/plugin-request/request";
 import DragLine from "@/pages/Session/components/dragline/DragLine";
 import FileTransfer from "@/pages/Session/fileTransfer/FileTransfer";
 
 import {CodeOutlined, DesktopOutlined,} from '@ant-design/icons';
 import {MENU_FILETRANSFER, NENU_SESSIONS} from "@/const";
+import {FormattedMessage, useIntl} from "@@/plugin-locale/localeExports";
+import {capitalizeFirstLetter} from "@/pages/util/string";
 
 const {Content, Sider} = Layout;
 type TargetKey = React.MouseEvent | React.KeyboardEvent | string;
@@ -55,6 +56,7 @@ const loop = (
 const SessionMain: React.FC = () => {
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [sessions, setSessions] = useState([]);
+    const intl = useIntl();
 
     const {
         setShowPrompt,
@@ -223,11 +225,11 @@ const SessionMain: React.FC = () => {
                                                         {
                                                             label: (
                                                                 <div onClick={() => {
-                                                                    prompt("重命名", (name) => {
+                                                                    prompt(capitalizeFirstLetter(intl.formatMessage({id: "rename"})), (name) => {
                                                                         if (!name.trim()) {
                                                                             showMessage({
                                                                                 status: "error",
-                                                                                content: "name can not be empty"
+                                                                                content: intl.formatMessage({id: "input can not be empty"})
                                                                             });
                                                                             return;
                                                                         }
@@ -243,7 +245,7 @@ const SessionMain: React.FC = () => {
                                                                         });
                                                                     });
 
-                                                                }}>重命名</div>
+                                                                }}>{capitalizeFirstLetter(intl.formatMessage({id: "rename"}))}</div>
                                                             ),
                                                             key: 'rename'
                                                         },
@@ -262,7 +264,7 @@ const SessionMain: React.FC = () => {
                                                                             return data;
                                                                         });
                                                                     }}>
-                                                                        关闭日志
+                                                                        <FormattedMessage id={'Close Logging'}></FormattedMessage>
                                                                     </div> : <div onClick={() => {
                                                                         window.electronAPI.ipcRenderer.send('save-file-dialog', item.key);
                                                                         window.electronAPI.ipcRenderer.on('selected-file', function (event, result, sessionId) {
@@ -282,7 +284,7 @@ const SessionMain: React.FC = () => {
                                                                             });
                                                                         });
                                                                     }}>
-                                                                        启动日志
+                                                                        <FormattedMessage id={'Startup Logging'}></FormattedMessage>
                                                                     </div>
                                                                     }
                                                                 </>
@@ -294,7 +296,7 @@ const SessionMain: React.FC = () => {
                                                                 <div onClick={() => {
                                                                     setSessions(sessions.filter(session => session.key === item.key));
                                                                     closeSessions(sessions.filter(session => session.key !== item.key));
-                                                                }}>关闭其他选项卡</div>
+                                                                }}><FormattedMessage id={'Close other tabs'}></FormattedMessage></div>
                                                             ),
                                                             key: 'closeOtherTabs'
                                                         },
@@ -303,7 +305,7 @@ const SessionMain: React.FC = () => {
                                                                 <div onClick={() => {
                                                                     closeSessions(sessions);
                                                                     setSessions([]);
-                                                                }}>关闭所有选项卡</div>
+                                                                }}><FormattedMessage id={'Close all tabs'}></FormattedMessage></div>
                                                             ),
                                                             key: 'closeAllTabs'
                                                         }

@@ -3,7 +3,7 @@ import {Button, Upload} from "antd";
 import {UploadOutlined} from '@ant-design/icons';
 
 const UploadInFormItem = (props) => {
-  const {value, onChange} = props;
+  const {value, onChange, accept} = props;
   // console.log("value", value)
 
   const [fileList, setFileList] = useState(value ? [{
@@ -20,7 +20,8 @@ const UploadInFormItem = (props) => {
     }]);
   }, [value]);
 
-  return <Upload maxCount={1}
+  return <Upload accept={accept}
+                 maxCount={1}
                  onPreview={(file) => {
                      // console.log("onPreview", file);
                      electronAPI.ipcRenderer.send('switchFileInExploer', file.name);
