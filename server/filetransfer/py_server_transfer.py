@@ -122,7 +122,6 @@ def list_directory_contents(path):
     return _list_contents(path)
 
 
-
 class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     # 设置根目录，默认为当前目录
     def __init__(self, *args, **kwargs):
