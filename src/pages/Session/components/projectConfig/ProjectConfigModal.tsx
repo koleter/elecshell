@@ -23,6 +23,11 @@ const ProjectConfigModal = () => {
         setRefreshScriptData
     } = useContext(AppContext);
 
+    electronAPI.ipcRenderer.on('switchLanguage', (event, language) => {
+        setLocale(language, false);
+        setLanguage(language);
+    });
+
     useEffect(() => {
         util.request('conf', {
             method: 'GET',
@@ -189,8 +194,7 @@ const ProjectConfigModal = () => {
                       children: <>
                           <FormattedMessage id={'language'}/>: <Radio.Group onChange={(e) => {
                           oldLanguage.current = language;
-                          setLocale(e.target.value, false);
-                          setLanguage(e.target.value);
+                          electronAPI.ipcRenderer.send('switchLanguage', e.target.value);
                       }} value={language}>
                           <Radio value={"en-US"}>English</Radio>
                           <Radio value={"zh-CN"}>简体中文</Radio>

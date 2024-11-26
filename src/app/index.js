@@ -3,7 +3,7 @@ const path = require('path');
 const request = require('request');
 const {exec, spawn} = require('child_process');
 const {Platform} = require('./platform/platform');
-const {template} = require('./lib/menu');
+const {ZN_template, EN_template} = require('./lib/menu');
 const {createWindow} = require('./lib/window');
 const {sleep} = require("./lib/util");
 const fetch = require('node-fetch');
@@ -11,7 +11,7 @@ const {platform} = require("os");
 const {getServerPort} = require("./lib/server");
 
 
-const menu = Menu.buildFromTemplate(template);
+const menu = Menu.buildFromTemplate(ZN_template);
 Menu.setApplicationMenu(menu);
 
 const basePath = Platform.getUserBasePath();
@@ -21,6 +21,37 @@ app.whenReady().then(() => {
 
     });
 });
+
+function switchLanguage(lang) {
+    let menu;
+    if (lang === "en-US") {
+        menu = Menu.buildFromTemplate(EN_template);
+    } else if (lang === "zh-CN") {
+        menu = Menu.buildFromTemplate(ZN_template);
+    }
+    Menu.setApplicationMenu(menu);
+}
+
+ipcMain.on("switchLanguage", (event, arg) => {
+    switchLanguage(arg);
+    const allWindows = BrowserWindow.getAllWindows();
+    allWindows.forEach((win) => {
+        win.webContents.send("switchLanguage", arg);
+    });
+});
+
+async function getLanguage() {
+    return await fetch(`http://localhost:${await getServerPort()}/conf?type=ProjectConfig`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    }).then(res => {
+        return res.json();
+    }).then(data => {
+        return data.data.language;
+    });
+}
 
 // 检测系统中是否存在 `python` 或 `python3` 命令
 function detectPythonCommand(callback) {
@@ -162,6 +193,8 @@ async function start() {
     if (process.env.NODE_ENV !== 'development') {
         startServer();
         await waitForServerStart();
+        const language = await getLanguage();
+        switchLanguage(language);
         app.on('ready', () => {
             setTimeout(() => {
                 createWindow();
@@ -169,6 +202,8 @@ async function start() {
         });
     } else {
         app.on('ready', createWindow);
+        const language = await getLanguage();
+        switchLanguage(language);
     }
 }
 
