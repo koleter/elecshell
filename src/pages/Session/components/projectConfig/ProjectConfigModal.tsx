@@ -52,6 +52,7 @@ const ProjectConfigModal = () => {
     }
 
     electronAPI.ipcRenderer.on('openManagerNameSpaceModal', (event, arg) => {
+        oldLanguage.current = language;
         setModalVisit(true);
     });
 
@@ -193,7 +194,6 @@ const ProjectConfigModal = () => {
                       label: capitalizeFirstLetter(intl.formatMessage({id: "language"})),
                       children: <>
                           <FormattedMessage id={'language'}/>: <Radio.Group onChange={(e) => {
-                          oldLanguage.current = language;
                           electronAPI.ipcRenderer.send('switchLanguage', e.target.value);
                       }} value={language}>
                           <Radio value={"en-US"}>English</Radio>
