@@ -227,12 +227,13 @@ const SessionWindow: React.FC = (props) => {
         if (e.shiftKey && e.ctrlKey && e.keyCode == 70) {
             setShowSearch((b) => {
                 if (!b) {
-                    setSearchValue("");
+                    setSearchValue(term.getSelection());
                     setTimeout(() => {
                         searchInputRef?.current?.focus();
                     }, 100);
                 } else {
                     term._searchAddon.clearDecorations();
+                    term.focus();
                 }
                 return !b;
             });
