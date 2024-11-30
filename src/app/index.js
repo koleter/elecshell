@@ -12,8 +12,8 @@ const {platform} = require("os");
 const {getServerPort} = require("./lib/server");
 
 
-const menu = Menu.buildFromTemplate(ZN_template);
-Menu.setApplicationMenu(menu);
+// const menu = Menu.buildFromTemplate(ZN_template);
+// Menu.setApplicationMenu(menu);
 
 const basePath = Platform.getUserBasePath();
 
@@ -99,7 +99,7 @@ async function startPythonScript(pythonCommand) {
     const pythonProcess = spawn(pythonCommand, [`main.py`, `--port=${await getServerPort()}`], {
         detached: false, // 子进程依赖于父进程
         stdio: ['inherit', 'inherit', 'inherit'], // 继承父进程的标准输入输出错误流
-        cwd: process.env.NODE_ENV === 'test_production' ? `${path.join(__dirname, "../../server")}` : `${path.join(__dirname, "../../../server")}`
+        cwd: process.env.NODE_ENV === 'test_production' ? path.join(__dirname, "../../server") : path.join(__dirname, "../../../server")
     });
 
     // 监听子进程的退出事件
@@ -194,18 +194,10 @@ async function start() {
     if (process.env.NODE_ENV !== 'development') {
         startServer();
         await waitForServerStart();
-        const language = await getLanguage();
-        switchLanguage(language);
-        app.on('ready', () => {
-            setTimeout(() => {
-                createWindow();
-            }, 500);
-        });
-    } else {
-        app.on('ready', createWindow);
-        const language = await getLanguage();
-        switchLanguage(language);
     }
+    const language = await getLanguage();
+    switchLanguage(language);
+    createWindow();
 }
 
 start();
