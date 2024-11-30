@@ -70,9 +70,6 @@ exports.createWindow = () => {
         });
     });
 
-    console.log(process.env.NODE_ENV);
-    console.log(process.cwd());
-
     // Open the DevTools.
     if (process.env.NODE_ENV === 'development') {
         win.loadURL("http://localhost:8000/session");
@@ -87,5 +84,8 @@ exports.createWindow = () => {
     } else {
         // win.loadURL("http://localhost:8888/session")
         win.loadFile(path.join(__dirname, "../../antdBuild/index.html"));
+        // win.webContents.on('did-finish-load', () => {
+        //     win.webContents.openDevTools();
+        // });
     }
 };

@@ -10,10 +10,17 @@ const {sleep} = require("./lib/util");
 const fetch = require('node-fetch');
 const {platform} = require("os");
 const {getServerPort} = require("./lib/server");
+const fs = require('fs');
 
 
-// const menu = Menu.buildFromTemplate(ZN_template);
-// Menu.setApplicationMenu(menu);
+
+const logStream = fs.createWriteStream("/Users/a58/Desktop/app.txt", { flags: 'a' });
+
+console.log = function(...args) {
+    args.forEach(arg => {
+        logStream.write(arg + '\n');
+    });
+};
 
 const basePath = Platform.getUserBasePath();
 
@@ -42,16 +49,25 @@ ipcMain.on("switchLanguage", (event, arg) => {
 });
 
 async function getLanguage() {
-    return await fetch(`http://localhost:${await getServerPort()}/conf?type=ProjectConfig`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    }).then(res => {
-        return res.json();
-    }).then(data => {
-        return data.data.language;
-    });
+    while (true) {
+        try {
+            const response = await fetch(`http://localhost:${await getServerPort()}/conf?type=ProjectConfig`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            return data.data.language;
+        } catch (e) {
+            console.log(e);
+            await sleep(100);
+        }
+    }
 }
 
 // 检测系统中是否存在 `python` 或 `python3` 命令
@@ -68,11 +84,11 @@ function detectPythonCommand(callback) {
         });
     };
 
-    checkCommand('python3', (python3Command) => {
+    checkCommand('python', (python3Command) => {
         if (python3Command) {
             callback(python3Command);
         } else {
-            checkCommand('python', (pythonCommand) => {
+            checkCommand('python3', (pythonCommand) => {
                 callback(pythonCommand);
             });
         }
@@ -158,33 +174,6 @@ function startServer() {
     });
 }
 
-async function waitForServerStart() {
-    try {
-        while (true) {
-            const response = await fetch(`http://localhost:${await getServerPort()}/ping`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                await sleep(1000);
-                continue;
-            }
-
-            const data = await response.text();
-            if (data === "pong") {
-                return;
-            } else {
-                throw new Error(`HTTP error! response: ${data}`);
-            }
-        }
-    } catch (error) {
-        console.error('Error:', error.message);
-    }
-}
-
 async function start() {
     // Quit when all windows are closed, except on macOS. There, it's common
     // for applications and their menu bar to stay active until the user quits
@@ -206,11 +195,21 @@ async function start() {
     // 开发模式自行启动main.py,生产模式创建子进程自动执行
     if (process.env.NODE_ENV !== 'development') {
         startServer();
-        await waitForServerStart();
     }
-    const language = await getLanguage();
-    switchLanguage(language);
-    createWindow();
+    fs.readFile(path.join(basePath, "config", "projectConfig.json") , 'utf8', (err, data) => {
+        let language = "zh-CN";
+        if (!err) {
+            try {
+                // 解析 JSON 数据
+                const jsonData = JSON.parse(data);
+                language = jsonData.language;
+            } catch (parseErr) {
+                throw new Error(`Error parsing JSON: ${parseErr}`);
+            }
+        }
+        switchLanguage(language);
+        createWindow();
+    });
 }
 
 start();
