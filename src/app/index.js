@@ -103,7 +103,16 @@ async function startPythonScript(pythonCommand) {
     });
 
     pythonProcess.stderr.on("data", (chunk) => {
-        throw new Error(chunk.toString());
+        var msg = chunk.toString();
+        console.log(msg);
+        if (msg.indexOf("ModuleNotFoundError") > -1) {
+            const lines = msg.split("\n");
+            for (let line of lines) {
+                if (line.indexOf("ModuleNotFoundError") > -1) {
+                    throw new Error(`python ${line}`);
+                }
+            }
+        }
     });
 
     // 监听子进程的退出事件
