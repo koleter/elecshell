@@ -17,6 +17,8 @@ import {MENU_FILETRANSFER, NENU_SESSIONS} from "@/const";
 import {FormattedMessage, useIntl} from "@@/plugin-locale/localeExports";
 import {capitalizeFirstLetter} from "@/pages/util/string";
 import DraggableTabs from "@/pages/Session/components/DraggableTabs/DraggableTabs";
+import type {DragEndEvent} from "@dnd-kit/core";
+import {arrayMove} from "@dnd-kit/sortable";
 
 const {Content, Sider} = Layout;
 type TargetKey = React.MouseEvent | React.KeyboardEvent | string;
@@ -205,6 +207,15 @@ const SessionMain: React.FC = () => {
                                 activeKey={activeKey}
                                 style={{height: '100px'}}
                                 hideAdd
+                                onDragEnd={({ active, over }: DragEndEvent) => {
+                                    if (active.id !== over?.id) {
+                                        setSessions((prev) => {
+                                            const activeIndex = prev.findIndex((i) => i.key === active.id);
+                                            const overIndex = prev.findIndex((i) => i.key === over?.id);
+                                            return arrayMove(prev, activeIndex, overIndex);
+                                        });
+                                    }
+                                }}
                                 items={sessions.map(item => {
                                     function closeSessions(sessions) {
                                         sessions.forEach(session => {

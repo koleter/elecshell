@@ -36,33 +36,16 @@ const DraggableTabNode = ({ className, ...props }: DraggableTabPaneProps) => {
 };
 
 const DraggableTabs = (props) => {
-    const {items} = props;
-    const [sortedItems, setSortedItems] = useState(items);
-
-    useEffect(() => {
-        setSortedItems(items);
-    }, [items]);
-
+    const {items, onDragEnd} = props;
 
     const sensor = useSensor(PointerSensor, { activationConstraint: { distance: 10 } });
-
-    const onDragEnd = ({ active, over }: DragEndEvent) => {
-        if (active.id !== over?.id) {
-            setSortedItems((prev) => {
-                const activeIndex = prev.findIndex((i) => i.key === active.id);
-                const overIndex = prev.findIndex((i) => i.key === over?.id);
-                return arrayMove(prev, activeIndex, overIndex);
-            });
-        }
-    };
 
     return (
         <Tabs
             {...props}
-            items={sortedItems}
             renderTabBar={(tabBarProps, DefaultTabBar) => (
                 <DndContext sensors={[sensor]} onDragEnd={onDragEnd} collisionDetection={closestCenter}>
-                    <SortableContext items={sortedItems.map((i) => i.key)} strategy={horizontalListSortingStrategy}>
+                    <SortableContext items={items.map((i) => i.key)} strategy={horizontalListSortingStrategy}>
                         <DefaultTabBar {...tabBarProps}>
                             {(node) => (
                                 <DraggableTabNode {...node.props} key={node.key}>
