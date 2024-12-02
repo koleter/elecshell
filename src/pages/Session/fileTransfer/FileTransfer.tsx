@@ -5,12 +5,12 @@ import {MENU_FILETRANSFER} from "@/const";
 
 const FileTransfer: React.FC = (props) => {
     const {sessions} = props;
-    const {activeKey} = useContext(AppContext);
+    const {activeKey, selectedMenuKey} = useContext(AppContext);
 
     return <>
         {
             sessions.map((session) => {
-                return <div key={session.key} style={{display: activeKey === session.key ? 'block' : 'none'}}>
+                return <div key={session.key} style={{display: selectedMenuKey == MENU_FILETRANSFER && activeKey === session.key ? 'block' : 'none'}}>
                     <SessionTransfer session={session}/>
                 </div>
             })

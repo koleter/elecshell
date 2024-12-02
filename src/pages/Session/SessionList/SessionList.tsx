@@ -490,7 +490,6 @@ const SessionList: React.FC = (props) => {
             onDrop={onDrop}
             treeData={treeData}
             style={{
-                height: '100%',
                 display: selectedMenuKey == NENU_SESSIONS ? 'block' : 'none'
             }}
         />

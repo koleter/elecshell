@@ -86,13 +86,6 @@ const SessionTransfer: React.FC = (props) => {
 
     }, [searchValue]);
 
-    function dirWinHeightStyleStr() {
-        if (process.platform === 'darwin') {
-            return `calc(100vh - 50px - ${HEADER_HEIGHT}px)`;
-        }
-        return `calc(100vh - 50px)`;
-    }
-
     return <>
         <Space className={'sftpFileListSpace'} direction="vertical" size="small">
             <div style={{display: "flex", flexDirection: "row"}}>
@@ -122,7 +115,7 @@ const SessionTransfer: React.FC = (props) => {
             >
                 <DirectoryTree
                     className={'sftpFileList'}
-                    style={{height: dirWinHeightStyleStr()}}
+                    style={{height: "100%"}}
                     multiple
                     draggable={true}
                     treeData={treeData}

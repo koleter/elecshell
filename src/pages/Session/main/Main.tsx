@@ -128,7 +128,7 @@ const SessionMain: React.FC = () => {
               promptTitle,
               setPromptUserInput,
           }) => {
-            return <div style={{height: '100%'}}>
+            return <div id={"Main"} style={{position: 'relative', height: '100%'}}>
                 <Modal width={800}
                        title={promptTitle}
                        open={showPrompt}
@@ -150,10 +150,10 @@ const SessionMain: React.FC = () => {
                            }} value={promptUserInput}/>
                 </Modal>
 
-                <Layout style={{display: 'flex', height: '100%'}}>
-                    <Layout hasSider style={{display: 'flex', height: '100%'}}>
+                <Layout id={"outerLayout"} style={{display: 'flex', height: '100%'}}>
+                    <Layout id={"innerLayout"} hasSider style={{display: 'flex', height: '100%'}}>
                         <Menu
-                            style={{width: '36px'}}
+                            style={{width: '36px', flexShrink: 0}}
                             mode="inline"
                             inlineCollapsed={true}
                             onClick={function ({item, key, keyPath, domEvent}) {
@@ -166,8 +166,7 @@ const SessionMain: React.FC = () => {
                             ]}
                         />
 
-                        <div
-                            style={{backgroundColor: 'white', flexShrink: 0, width: xshListWindowWidth, height: '100%', overflowY: 'auto', overflowX: 'hidden'}}>
+                        <div style={{backgroundColor: 'white', flexShrink: 0, width: xshListWindowWidth, maxHeight: "100%", overflowY: 'auto', overflowX: 'hidden'}}>
                             <SessionList
                                 setSessions={setSessions}
                                 setActiveKey={setActiveKey}
