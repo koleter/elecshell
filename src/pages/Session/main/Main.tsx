@@ -16,6 +16,7 @@ import {CodeOutlined, DesktopOutlined,} from '@ant-design/icons';
 import {MENU_FILETRANSFER, NENU_SESSIONS} from "@/const";
 import {FormattedMessage, useIntl} from "@@/plugin-locale/localeExports";
 import {capitalizeFirstLetter} from "@/pages/util/string";
+import DraggableTabs from "@/pages/Session/components/DraggableTabs/DraggableTabs";
 
 const {Content, Sider} = Layout;
 type TargetKey = React.MouseEvent | React.KeyboardEvent | string;
@@ -198,7 +199,7 @@ const SessionMain: React.FC = () => {
 
 
                         <Content style={{width: '100%', overflow: 'hidden'}}>
-                            <Tabs
+                            <DraggableTabs
                                 id={"sessionTabs"}
                                 type="editable-card"
                                 activeKey={activeKey}
