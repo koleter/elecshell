@@ -1,6 +1,6 @@
 const {app, BrowserWindow, screen, ipcMain, Menu, globalShortcut, remote, dialog} = require('electron');
 const path = require('path');
-const request = require('request');
+const axios = require('axios');
 const {exec, spawn} = require('child_process');
 const {Platform} = require('./platform/platform');
 const {ZN_template} = require('./locales/menu/zh-CN');
@@ -13,14 +13,19 @@ const {getServerPort} = require("./lib/server");
 const fs = require('fs');
 
 
-
-const logStream = fs.createWriteStream("/Users/a58/Desktop/app.txt", { flags: 'a' });
-
-console.log = function(...args) {
-    args.forEach(arg => {
-        logStream.write(arg + '\n');
-    });
-};
+// const logStream = fs.createWriteStream("/Users/a58/Desktop/app.txt", {flags: 'a'});
+//
+// console.log = function (...args) {
+//     args.forEach(arg => {
+//         logStream.write("[INFO] " + arg + '\n');
+//     });
+// };
+//
+// console.error = function (...args) {
+//     args.forEach(arg => {
+//         logStream.write("[ERROR] " + arg + '\n');
+//     });
+// };
 
 const basePath = Platform.getUserBasePath();
 
@@ -51,20 +56,18 @@ ipcMain.on("switchLanguage", (event, arg) => {
 async function getLanguage() {
     while (true) {
         try {
-            const response = await fetch(`http://localhost:${await getServerPort()}/conf?type=ProjectConfig`, {
-                method: 'GET',
+            const response = await axios.get(`http://localhost:${await getServerPort()}/conf?type=ProjectConfig`, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
             });
 
-            if (!response.ok) {
+            if (response.status !== 200) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            const data = await response.json();
-            return data.data.language;
+            return response.data.data.language;
         } catch (e) {
-            console.log(e);
+            console.log("getLanguage error: ", e);
             await sleep(100);
         }
     }
@@ -196,20 +199,9 @@ async function start() {
     if (process.env.NODE_ENV !== 'development') {
         startServer();
     }
-    fs.readFile(path.join(basePath, "config", "projectConfig.json") , 'utf8', (err, data) => {
-        let language = "zh-CN";
-        if (!err) {
-            try {
-                // 解析 JSON 数据
-                const jsonData = JSON.parse(data);
-                language = jsonData.language;
-            } catch (parseErr) {
-                throw new Error(`Error parsing JSON: ${parseErr}`);
-            }
-        }
-        switchLanguage(language);
-        createWindow();
-    });
+    const language = await getLanguage();
+    switchLanguage(language);
+    createWindow();
 }
 
 start();

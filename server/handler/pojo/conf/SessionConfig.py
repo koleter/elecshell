@@ -39,7 +39,7 @@ class SessionConfig(BaseConfig):
 
     def get(self):
         default_root_dir = {
-            'title': "默认文件夹",
+            'title': "root",
             'key': '',
             'path': "",
             'isLeaf': False
