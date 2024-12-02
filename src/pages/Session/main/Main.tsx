@@ -158,8 +158,8 @@ const SessionMain: React.FC = () => {
                                 setSelectedMenuKey(key);
                             }}
                             items={[
-                                {key: NENU_SESSIONS, icon: <CodeOutlined/>, label: NENU_SESSIONS},
-                                {key: MENU_FILETRANSFER, icon: <DesktopOutlined/>, label: MENU_FILETRANSFER},
+                                {key: NENU_SESSIONS, icon: <CodeOutlined/>, label: intl.formatMessage({id: NENU_SESSIONS})},
+                                {key: MENU_FILETRANSFER, icon: <DesktopOutlined/>, label: intl.formatMessage({id: MENU_FILETRANSFER})},
                             ]}
                         />
 

@@ -59,5 +59,7 @@ export default {
     new: 'new',
     folder: 'folder',
     'session': 'session',
+    'sessions': 'sessions',
     copy: 'copy',
+    'fileTransfer': "fileTransfer",
 };

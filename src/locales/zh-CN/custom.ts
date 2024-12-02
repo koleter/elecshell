@@ -59,5 +59,7 @@ export default {
     new: '新建',
     folder: '文件夹',
     'session': '会话',
+    'sessions': '会话',
     copy: '复制',
+    'fileTransfer': "文件传输",
 };
