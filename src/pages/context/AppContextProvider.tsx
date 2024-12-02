@@ -52,6 +52,7 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
                 return;
             }
             if (res.data.xshListWindowWidth) {
+                console.log(`xshListWindowWidth: ${res.data.xshListWindowWidth}`);
                 setXshListWindowWidth(res.data.xshListWindowWidth);
             }
         })

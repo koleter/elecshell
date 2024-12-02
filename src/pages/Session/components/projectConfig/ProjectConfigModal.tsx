@@ -35,7 +35,7 @@ const ProjectConfigModal = () => {
                 type: 'ProjectConfig',
             },
         }).then(res => {
-            console.log(res);
+            // console.log(res);
             setCurNameSpace(res.data.namespace);
             setLanguage(res?.data?.language || "en-US");
             setLocale(res?.data?.language || "en-US", false);

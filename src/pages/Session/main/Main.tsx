@@ -1,7 +1,7 @@
-import type {MenuProps} from 'antd';
+import {MenuProps, Space} from 'antd';
 import {Dropdown, Input, Layout, Menu, Modal, Tabs} from 'antd';
 import type {DataNode} from 'antd/es/tree';
-import React, {useContext, useState} from 'react';
+import React, {useContext, useRef, useState} from 'react';
 import "./Main.less"
 import "xterm/css/xterm.css"
 import SessionWindow from "@/pages/Session/SessionTab/Xterminal/sessionWindow";
@@ -150,8 +150,8 @@ const SessionMain: React.FC = () => {
                            }} value={promptUserInput}/>
                 </Modal>
 
-                <Layout style={{display: 'flex', height: '100%', width: '100%'}}>
-                    <Layout hasSider style={{display: 'flex'}}>
+                <Layout style={{display: 'flex', height: '100%'}}>
+                    <Layout hasSider style={{display: 'flex', height: '100%'}}>
                         <Menu
                             style={{width: '36px'}}
                             mode="inline"
@@ -167,7 +167,8 @@ const SessionMain: React.FC = () => {
                         />
 
                         <div
-                            style={{height: "100vh", backgroundColor: 'white'}}>
+                            // style={{width: xshListWindowWidth}}
+                            style={{backgroundColor: 'white', height: '100%', width: xshListWindowWidth, overflowY: 'auto', overflowX: 'hidden'}}>
                             <SessionList
                                 setSessions={setSessions}
                                 setActiveKey={setActiveKey}

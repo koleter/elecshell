@@ -94,7 +94,7 @@ const SessionTransfer: React.FC = (props) => {
     }
 
     return <>
-        <Space className={'sftpFileListSpace'} direction="vertical" size="middle">
+        <Space className={'sftpFileListSpace'} direction="vertical" size="small">
             <div style={{display: "flex", flexDirection: "row"}}>
                 <Search onSearch={getFileList} enterButton value={searchValue}
                         onChange={(e) => {

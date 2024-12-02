@@ -479,9 +479,7 @@ const SessionList: React.FC = (props) => {
         setSessionPropertyActiveKey(defaultSessionPropertyActiveKey);
     }
 
-    return <div
-        style={{width: xshListWindowWidth}}
-    >
+    return <div>
         <DirectoryTree
             rootClassName="sessionList"
             className="draggable-tree"
@@ -492,8 +490,7 @@ const SessionList: React.FC = (props) => {
             onDrop={onDrop}
             treeData={treeData}
             style={{
-                height: `calc(100vh - 18px)`,
-                overflow: 'auto',
+                height: '100%',
                 display: selectedMenuKey == NENU_SESSIONS ? 'block' : 'none'
             }}
         />
