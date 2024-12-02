@@ -167,8 +167,7 @@ const SessionMain: React.FC = () => {
                         />
 
                         <div
-                            // style={{width: xshListWindowWidth}}
-                            style={{backgroundColor: 'white', height: '100%', width: xshListWindowWidth, overflowY: 'auto', overflowX: 'hidden'}}>
+                            style={{backgroundColor: 'white', flexShrink: 0, width: xshListWindowWidth, height: '100%', overflowY: 'auto', overflowX: 'hidden'}}>
                             <SessionList
                                 setSessions={setSessions}
                                 setActiveKey={setActiveKey}
@@ -180,13 +179,13 @@ const SessionMain: React.FC = () => {
                         <DragLine
                             startPos={xshListWindowWidth}
                             moveFunc={setXshListWindowWidth}
-                            moveEndFunc={(startX) => {
+                            moveEndFunc={(endPos) => {
                                 util.request('conf', {
                                     method: 'POST',
                                     body: JSON.stringify({
                                         type: 'GlobalAutoConfig',
                                         args: {
-                                            xshListWindowWidth: startX
+                                            xshListWindowWidth: endPos
                                         }
                                     })
                                 })
