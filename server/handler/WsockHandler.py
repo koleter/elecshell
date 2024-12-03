@@ -147,10 +147,10 @@ class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
                 with callback_map_lock:
                     callback_map.pop(requestId, None)
 
-    def on_close(self):
+    async def on_close(self):
         if not self.close_reason:
             logging.info('close_reason is {}'.format(self.close_reason))
         worker = self.worker_ref if self.worker_ref else None
         if worker:
             clear_worker(worker)
-            worker.close(reason=self.close_reason)
+            await worker.close(reason=self.close_reason)

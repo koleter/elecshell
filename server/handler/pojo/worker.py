@@ -9,6 +9,7 @@ import threading
 import traceback
 import types
 import uuid
+from asyncio import Queue
 
 import paramiko
 from filetransfer.py_server_transfer import py_server_sftp_file_transfer
@@ -97,11 +98,11 @@ def clear_worker(worker):
         workers.pop(worker.id)
 
 
-def recycle_worker(worker):
+async def recycle_worker(worker):
     if worker.handler:
         return
     logging.warning('Recycling worker {}'.format(worker.id))
-    worker.close(reason='worker recycled')
+    await worker.close(reason='worker recycled')
 
 
 class Worker(object):
@@ -208,7 +209,8 @@ class Worker(object):
 
     def execute_implicit_command(self, cmd, callback=None, extra_args=[], sleep=0, pattern: re.Pattern[bytes] = None):
         if pattern:
-            return self.recv_util_match_exp(f'({cmd}; builtin history -d $((HISTCMD-1)))', pattern, callback, extra_args,
+            return self.recv_util_match_exp(f'({cmd}; builtin history -d $((HISTCMD-1)))', pattern, callback,
+                                            extra_args,
                                             show_on_term=False)
         else:
             return self.recv(f'({cmd}; builtin history -d $((HISTCMD-1)))', callback, extra_args, sleep,
@@ -463,13 +465,16 @@ class Worker(object):
 
         return warp
 
-    def close(self, reason=None):
+    async def close(self, reason=None):
         if self.closed:
             return
         self.closed = True
 
+        logging.info(f"worker ${self.id} is closing")
+
         if self.file_transfer is not None:
             self.file_transfer.close()
+        await self.file_transfer_queue.put(None)
 
         logging.info(
             'Closing worker {} with reason: {}'.format(self.id, reason)

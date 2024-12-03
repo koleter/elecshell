@@ -13,6 +13,7 @@ import {DataNode, TreeProps} from "antd/es/tree";
 import {HEADER_HEIGHT, MENU_FILETRANSFER} from "@/const";
 import {AimOutlined} from "@ant-design/icons";
 import {spiltResponseWithLine} from "@/pages/util/terminal_util";
+import SessionTransferProgress from "@/pages/Session/fileTransfer/progress/SessionTransferProgress";
 const path = require('path');
 
 const SessionTransfer: React.FC = (props) => {
@@ -115,7 +116,6 @@ const SessionTransfer: React.FC = (props) => {
             >
                 <DirectoryTree
                     className={'sftpFileList'}
-                    style={{height: "100%"}}
                     multiple
                     draggable={true}
                     treeData={treeData}
@@ -162,6 +162,9 @@ const SessionTransfer: React.FC = (props) => {
                         event.dataTransfer.setData('downloadURL', `text/plain:${fileName}:${url}`);
                     }}
                 />
+            </div>
+            <div className={'SessionTransferProgress'}>
+                <SessionTransferProgress session={session}></SessionTransferProgress>
             </div>
         </Space>
     </>
