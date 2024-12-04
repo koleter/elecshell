@@ -19,4 +19,4 @@ const FileTransfer: React.FC = (props) => {
     </>
 }
 
-export default FileTransfer;
+export default React.memo(FileTransfer);

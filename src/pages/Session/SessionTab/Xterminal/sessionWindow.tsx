@@ -12,6 +12,7 @@ import {AppContext} from "@/pages/context/AppContextProvider";
 import {Button, Input, Tooltip} from 'antd';
 import {ArrowDownOutlined, ArrowUpOutlined} from '@ant-design/icons';
 import {getTermHeight} from "@/pages/util/style";
+import {debounce} from "@/pages/util/event";
 
 // 查询框中所有元素的高度
 const searchPanelHeight = '34px';
@@ -223,14 +224,18 @@ const SessionWindow: React.FC = (props) => {
         }
     };
 
-    const closeSearchPanel = (e) => {
+    const toggleSearchPanel = (e) => {
         if (e.shiftKey && e.ctrlKey && e.keyCode == 70) {
             setShowSearch((b) => {
                 if (!b) {
-                    setSearchValue(term.getSelection());
-                    setTimeout(() => {
-                        searchInputRef?.current?.focus();
-                    }, 100);
+                    const selection = term.getSelection();
+                    if (selection) {
+                        setSearchValue(selection);
+                        term._searchAddon.findPrevious(selection, calcSearchOption(matchCase, words, regexp));
+                        setTimeout(() => {
+                            searchInputRef?.current?.focus();
+                        }, 100);
+                    }
                 } else {
                     term._searchAddon.clearDecorations();
                     term.focus();
@@ -250,21 +255,16 @@ const SessionWindow: React.FC = (props) => {
             term.loadAddon(fitAddon);
             term._fitAddon = fitAddon;
 
-            const resizeHandle = () => {
-                console.log("resizing....")
-                fitAddon.fit();
-            };
-            window.addEventListener("resize", resizeHandle);
-
             if (terminalRef.current) {
-                terminalRef.current.addEventListener('keydown', closeSearchPanel);
-                const resizeObserver = new ResizeObserver(entries => {
+                terminalRef.current.addEventListener('keydown', toggleSearchPanel);
+                const resizeObserver = new ResizeObserver(debounce(entries => {
+                    // console.log("term resizing....");
                     fitAddon.fit();
-                });
+                }, 300));
                 resizeObserver.observe(terminalRef.current);
             }
 
-            var raw_url = await util.getUrl();
+            let raw_url = await util.getUrl();
             const ws_url = raw_url.split(/\?|#/, 1)[0].replace('http', 'ws'),
                 join = (ws_url[ws_url.length - 1] === '/' ? '' : '/'),
                 url = ws_url + join + 'ws?id=' + id,
@@ -490,7 +490,7 @@ const SessionWindow: React.FC = (props) => {
                                 onChange={(newVal) => {
                                     term._searchAddon.findNext(newVal.target.value, calcSearchOption(matchCase, words, regexp));
                                     setSearchValue(newVal.target.value);
-                                }} onKeyDown={closeSearchPanel}/>
+                                }} onKeyDown={toggleSearchPanel}/>
                 <div style={{backgroundColor: 'white'}}>
                     {
                         matchButtons.map((item, index) => {

@@ -617,4 +617,4 @@ const SessionList: React.FC = (props) => {
     </div>
 }
 
-export default SessionList;
+export default React.memo(SessionList);
