@@ -163,9 +163,7 @@ const SessionTransfer: React.FC = (props) => {
                     }}
                 />
             </div>
-            <div className={'SessionTransferProgress'}>
-                <SessionTransferProgress session={session}></SessionTransferProgress>
-            </div>
+            <SessionTransferProgress session={session}></SessionTransferProgress>
         </Space>
     </>
 };

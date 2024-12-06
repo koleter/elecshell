@@ -2,12 +2,14 @@ import asyncio
 import logging
 import os
 import re
+import socket
 import uuid
 
 import requests
 from filetransfer.base_transfer import BaseTransfer
 from util.error import b_is_error
 from util.local_server import start_local_server
+from utils import gen_id
 
 port_pattern = re.compile(b'Port (\\d+) is unavailable')
 py_version_pattern = re.compile(b'Python (\\d)\\.')
@@ -69,28 +71,40 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
             self.send_error(404)
             return
 
-        # 检查路径是否指向一个有效的文件
-        if os.path.isfile(file_path):
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-
+        type = query_params.get('type')
+        if type == 'getFileSize':
             try:
-                # 打开文件并读取内容
-                with open(file_path, 'rb') as file:
-                    self.wfile.write(file.read())
-            except IOError as e:
-                self.send_error(500, 'Internal Server Error')
-                print 'Error opening file:', e
-        elif os.path.isdir(file_path):
-            self.send_response(202)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-
-            self.wfile.write(json.dumps(list_directory_contents(file_path)))
+                self.send_response(200)
+                self.send_header('Content-type', 'text/plain')
+                self.end_headers()
+                file_size = os.path.getsize(file_path)
+                self.wfile.write(str(file_size))
+            except FileNotFoundError:
+                self.send_response(500)
+                self.wfile.write('0')
         else:
-            # 如果文件不存在，则返回404错误
-            self.send_error(404)
+            # 检查路径是否指向一个有效的文件
+            if os.path.isfile(file_path):
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                try:
+                    # 打开文件并读取内容
+                    with open(file_path, 'rb') as file:
+                        self.wfile.write(file.read())
+                except IOError as e:
+                    self.send_error(500, 'Internal Server Error')
+                    print 'Error opening file:', e
+            elif os.path.isdir(file_path):
+                self.send_response(202)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                self.wfile.write(json.dumps(list_directory_contents(file_path)))
+            else:
+                # 如果文件不存在，则返回404错误
+                self.send_error(404)
 
 # 创建一个简单的 HTTP 服务器
 httpd = SocketServer.TCPServer(('0.0.0.0', {port}), MyHTTPRequestHandler)
@@ -158,25 +172,37 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(404, 'File Not Found')
             return
 
-        # 检查路径是否指向一个有效的文件
-        if os.path.isfile(file_path):
-            # 设置响应头
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-
-            # 打开文件并读取内容
-            with open(file_path, 'rb') as file:
-                self.wfile.write(file.read())
-        elif os.path.isdir(file_path):
-            self.send_response(202)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-
-            self.wfile.write(json.dumps(list_directory_contents(file_path)).encode('utf-8'))
+        type = query_params.get('type')
+        if type == 'getFileSize':
+            try:
+                self.send_response(200)
+                self.send_header('Content-type', 'text/plain')
+                self.end_headers()
+                file_size = os.path.getsize(file_path)
+                self.wfile.write(str(file_size))
+            except FileNotFoundError:
+                self.send_response(500)
+                self.wfile.write('0')
         else:
-            # 如果文件不存在，则返回404错误
-            self.send_error(404, 'File Not Found')
+            # 检查路径是否指向一个有效的文件
+            if os.path.isfile(file_path):
+                # 设置响应头
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                # 打开文件并读取内容
+                with open(file_path, 'rb') as file:
+                    self.wfile.write(file.read())
+            elif os.path.isdir(file_path):
+                self.send_response(202)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                self.wfile.write(json.dumps(list_directory_contents(file_path)).encode('utf-8'))
+            else:
+                # 如果文件不存在，则返回404错误
+                self.send_error(404, 'File Not Found')
 
 # 创建一个简单的 HTTP 服务器
 httpd = socketserver.TCPServer(('0.0.0.0', {port}), MyHTTPRequestHandler)
@@ -192,8 +218,11 @@ class py_server_sftp_file_transfer(BaseTransfer):
 
     def __init__(self, worker):
         super().__init__(worker)
-        self.local_server = None
         self.remote_server = None
+
+        self._start_remote_http_server()
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((self.remote_server['host'], self.remote_server['port']))
 
     def _get_remote_host(self):
         cmd = r"hostname -I | tr ' ' '\\n' | grep -v '^172\.' | xargs"
@@ -215,8 +244,6 @@ finally:
     sock.close()
 \'\'\''''
         match = self.worker.execute_implicit_command(cmd, pattern=port_pattern)
-        # output = self.worker.recv(f'{cmd}; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
-        # match = port_pattern.search(output)
         return int(match.group(1))
 
     def _handle_python_cmd_and_version(self):
@@ -266,19 +293,38 @@ finally:
         self.remote_server['port'] = port
         self.remote_server['host'] = self._get_remote_host()
 
-    def _start_local_http_server(self):
-        if self.local_server is None:
-            token = str(uuid.uuid1())
-            httpd, local_ip, port = start_local_server(token)
-            self.local_server = {
-                'httpd': httpd,
-                'local_ip': local_ip,
-                'port': port,
-                'token': token
-            }
+    async def _upload_progress(self, upload_local_path, remote_path):
+        file_size = os.path.getsize(upload_local_path)
+        last_uoloaded_size = 0
+        id = gen_id()
+        while True:
+            url = "http://{}:{}/{}?token={}&type={}".format(self.remote_server["host"], self.remote_server["port"],
+                                                            remote_path, self.remote_server["token"], "getFileSize")
+            response = requests.get(url)
+            uploaded_size = int(response.text)
+
+            if last_uoloaded_size > uploaded_size == 0:
+                self.worker.handler.write_message({
+                    "type": "message",
+                    "status": "error",
+                    "content": "maybe remote file is deleted"
+                })
+                break
+            self.worker.handler.write_message({
+                'type': 'execSessionMethod',
+                'method': 'refreshFileProgressInfo',
+                'args': {
+                    'id': id,
+                    'filePath': remote_path,
+                    'percent': file_size * 100 / uploaded_size
+                },
+            })
+            if uploaded_size == file_size:
+                break
+            await asyncio.sleep(0.1)
 
     def _upload_single_file(self, upload_local_path, remote_path):
-        local_server = self.local_server
+        local_server = start_local_server()
         download_url = f'http://{local_server["local_ip"]}:{local_server["port"]}/{upload_local_path}?token={local_server["token"]}'
         out = self.worker.execute_implicit_command(f'wget -O {remote_path} {download_url} || rm -f {remote_path}')
         if b_is_error(out):
@@ -290,9 +336,10 @@ finally:
                 "status": "error",
                 "content": msg
             })
+        else:
+            asyncio.create_task(self._upload_progress(upload_local_path, remote_path))
 
     def upload_files_by_server(self, file_info_list, remote_path):
-        self._start_local_http_server()
         for file_info in file_info_list:
             local_path = file_info["path"]
             if os.path.isdir(local_path):
@@ -309,16 +356,6 @@ finally:
 
     def upload_files(self, files, remote_path):
         self.upload_files_by_server(files, remote_path)
-
-    def get_file_from_remote_server(self, remote_file_path, local_root_dir):
-        try:
-            self.sftp.get(remote_file_path, local_root_dir)
-        except Exception as e:
-            self.worker.handler.write_message({
-                "type": "message",
-                "status": "error",
-                "content": f'Failed to download file {remote_file_path} from remote server: {str(e)}'
-            })
 
     def _download_directories(self, local_root_dir, dir_name, remote_dir, tree, tasks=[]):
         cur_dir_path = os.path.join(local_root_dir, dir_name)
@@ -355,7 +392,6 @@ finally:
             })
 
     async def _download_files(self, local_root_dir, files, remoteDir):
-        self._start_remote_http_server()
         tasks = [self.download_single_file(local_root_dir, file, remoteDir) for file in files]
         await asyncio.gather(*tasks)
 

@@ -1,15 +1,32 @@
 # 导入 http.server 模块
-import concurrent
 import http.server
-import socketserver
 import os
+import socketserver
 import threading
+import uuid
 
-from util.port import get_unused_port
 from util.net import get_local_host_ip
+from util.port import get_unused_port
+
+_local_server = None
 
 
-def start_local_server(token):
+def start_local_server():
+    global _local_server
+    if _local_server:
+        return _local_server
+    token = str(uuid.uuid1())
+    httpd, local_ip, port = _start_local_server(token)
+    _local_server = {
+        'httpd': httpd,
+        'local_ip': local_ip,
+        'port': port,
+        'token': token
+    }
+    return _local_server
+
+
+def _start_local_server(token):
     port = get_unused_port()
     local_ip = get_local_host_ip()
 
@@ -62,7 +79,6 @@ def start_local_server(token):
             else:
                 # 如果文件不存在，则返回404错误
                 self.send_error(404, "File Not Found")
-
 
     # 创建一个简单的 HTTP 服务器
     httpd = socketserver.TCPServer(("0.0.0.0", port), MyHTTPRequestHandler)

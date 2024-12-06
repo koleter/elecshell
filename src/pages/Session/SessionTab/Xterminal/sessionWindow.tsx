@@ -257,10 +257,10 @@ const SessionWindow: React.FC = (props) => {
 
             if (terminalRef.current) {
                 terminalRef.current.addEventListener('keydown', toggleSearchPanel);
-                const resizeObserver = new ResizeObserver(debounce(entries => {
+                const resizeObserver = new ResizeObserver(entries => {
                     // console.log("term resizing....");
                     fitAddon.fit();
-                }, 300));
+                });
                 resizeObserver.observe(terminalRef.current);
             }
 
@@ -424,8 +424,6 @@ const SessionWindow: React.FC = (props) => {
             }
 
             sessionIdRef[id].sock.onclose = function (e) {
-                // console.log(`sock: ${id} closed`, e);
-                window.removeEventListener('resize', resizeHandle);
                 try {
                     sessionIdRef[id].term.write("\nthis session is closed.....");
                 } catch (e) {
@@ -517,5 +515,4 @@ const SessionWindow: React.FC = (props) => {
     )
 }
 
-// export default React.memo(Xterminal);
-export default SessionWindow;
+export default React.memo(SessionWindow);
