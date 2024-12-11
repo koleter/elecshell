@@ -46,6 +46,15 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         # 不执行任何操作，从而禁用日志
         pass
 
+    def send_error_response(self, code, message=None):
+        if message:
+            self.send_response(code)
+            self.send_header('Content-Type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(message.encode('utf-8'))
+        else:
+            self.send_error(code)
+
     def do_GET(self):
         # 获取请求的路径
         path = self.path
@@ -97,6 +106,9 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                     self.send_error(500, 'Internal Server Error')
                     print 'Error opening file:', e
             elif os.path.isdir(file_path):
+                if os.path.islink(file_path):
+                    self.send_error_response(500, 'cannot download %s, it is a link to directory' % (file_path))
+                    return
                 self.send_response(202)
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
@@ -144,6 +156,15 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format, *args):
         # 不执行任何操作，从而禁用日志
         pass
+
+    def send_error_response(self, code, message=None):
+        if message:
+            self.send_response(code)
+            self.send_header('Content-Type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(message.encode('utf-8'))
+        else:
+            self.send_error(code)
 
     def do_GET(self):
         ip = self.client_address
@@ -195,6 +216,9 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 with open(file_path, 'rb') as file:
                     self.wfile.write(file.read())
             elif os.path.isdir(file_path):
+                if os.path.islink(file_path):
+                    self.send_error_response(500, 'cannot download %s, it is a link to directory' % (file_path))
+                    return
                 self.send_response(202)
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
@@ -249,18 +273,24 @@ finally:
     def _handle_python_cmd_and_version(self):
         if self.remote_py_version > 0:
             return
-        output = self.worker.recv(f'python -V; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
+        def check(data):
+            if b'command not found' in data:
+                return True
+            if py_version_pattern.search(data):
+                return True
+            return False
+        output = self.worker.execute_implicit_command('python -V', func=check)
         if b'command not found' not in output:
             self.remote_py_cmd = 'python'
             match = py_version_pattern.search(output)
             self.remote_py_version = int(match.group(1))
             return
-        output = self.worker.recv(f'python3 -V; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
+        output = self.worker.execute_implicit_command('python3 -V', func=check)
         if b'command not found' not in output:
             self.remote_py_cmd = 'python3'
             self.remote_py_version = 3
             return
-        output = self.worker.recv(f'python2 -V; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
+        output = self.worker.execute_implicit_command('python2 -V', func=check)
         if b'command not found' not in output:
             self.remote_py_cmd = 'python2'
             self.remote_py_version = 2
@@ -295,7 +325,7 @@ finally:
 
     async def _upload_progress(self, upload_local_path, remote_path):
         file_size = os.path.getsize(upload_local_path)
-        last_uoloaded_size = 0
+        last_uploaded_size = 0
         id = gen_id()
         while True:
             url = "http://{}:{}/{}?token={}&type={}".format(self.remote_server["host"], self.remote_server["port"],
@@ -303,7 +333,7 @@ finally:
             response = requests.get(url)
             uploaded_size = int(response.text)
 
-            if last_uoloaded_size > uploaded_size == 0:
+            if last_uploaded_size > uploaded_size == 0:
                 self.worker.handler.write_message({
                     "type": "message",
                     "status": "error",
@@ -316,17 +346,18 @@ finally:
                 'args': {
                     'id': id,
                     'filePath': remote_path,
-                    'percent': file_size * 100 / uploaded_size
+                    'percent': uploaded_size * 100 / file_size
                 },
             })
             if uploaded_size == file_size:
                 break
+            last_uploaded_size = uploaded_size
             await asyncio.sleep(0.1)
 
     def _upload_single_file(self, upload_local_path, remote_path):
         local_server = start_local_server()
         download_url = f'http://{local_server["local_ip"]}:{local_server["port"]}/{upload_local_path}?token={local_server["token"]}'
-        out = self.worker.execute_implicit_command(f'wget -O {remote_path} {download_url} || rm -f {remote_path}')
+        out = self.worker.execute_implicit_command(f'wget -q -O {remote_path} {download_url} || rm -f {remote_path}')
         if b_is_error(out):
             lines = out.decode(self.worker.encoding).split('\n')
             msg_lines = lines[1:-1]
@@ -370,6 +401,38 @@ finally:
                 self._download_directories(cur_dir_path, entry[1], cur_remote_dir_path, entry[2], tasks)
         return tasks
 
+    async def _download_progress(self, local_path, remote_path):
+        url = "http://{}:{}/{}?token={}&type={}".format(self.remote_server["host"], self.remote_server["port"],
+                                                        remote_path, self.remote_server["token"], "getFileSize")
+        response = requests.get(url)
+        file_size = int(response.text)
+
+        last_download_size = 0
+        id = gen_id()
+        while True:
+            download_size = os.path.getsize(local_path)
+
+            if last_download_size > download_size == 0:
+                self.worker.handler.write_message({
+                    "type": "message",
+                    "status": "error",
+                    "content": "maybe download file is deleted"
+                })
+                break
+            self.worker.handler.write_message({
+                'type': 'execSessionMethod',
+                'method': 'refreshFileProgressInfo',
+                'args': {
+                    'id': id,
+                    'filePath': local_path,
+                    'percent': download_size * 100 / file_size
+                },
+            })
+            if download_size == file_size:
+                break
+            last_download_size = download_size
+            await asyncio.sleep(0.1)
+
     async def download_single_file(self, local_root_dir, file, remoteDir):
         url = "http://{}:{}/{}/{}?token={}".format(self.remote_server["host"], self.remote_server["port"], remoteDir,
                                                    file, self.remote_server["token"])
@@ -377,9 +440,11 @@ finally:
         if response.status_code == 200:
             # 打开文件以二进制模式写入
             with open(local_root_dir + "/" + file, 'wb') as f:
+                asyncio.create_task(self._download_progress(os.path.join(local_root_dir, file), remoteDir + "/" + file))
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
+                        await asyncio.sleep(0.1)
         elif response.status_code == 202:
             tree = response.json()
             tasks = self._download_directories(local_root_dir, file, remoteDir, tree)

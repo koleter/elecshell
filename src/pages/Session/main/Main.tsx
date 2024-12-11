@@ -166,7 +166,7 @@ const SessionMain: React.FC = () => {
                             ]}
                         />
 
-                        <div style={{backgroundColor: 'white', flexShrink: 0, width: xshListWindowWidth, maxHeight: "100%", overflowY: 'auto', overflowX: 'hidden'}}>
+                        <div style={{backgroundColor: 'white', flexShrink: 0, position: "relative", width: xshListWindowWidth, maxHeight: "100%", overflowY: 'auto', overflowX: 'hidden'}}>
                             <SessionList
                                 setSessions={setSessions}
                                 setActiveKey={setActiveKey}

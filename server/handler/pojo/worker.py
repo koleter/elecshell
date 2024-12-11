@@ -10,9 +10,11 @@ import traceback
 import types
 import uuid
 from asyncio import Queue
+from typing import Callable
 
 import paramiko
 from filetransfer.py_server_transfer import py_server_sftp_file_transfer
+from filetransfer.sftp_transfer import sftp_file_transfer
 from handler.pojo.SessionContext import SessionContext
 from utils import gen_id
 
@@ -128,11 +130,11 @@ class Worker(object):
     def init_file_transfer(self):
         if self.file_transfer is not None:
             return
-        # try:
-        #     self.file_transfer = sftp_file_transfer(self)
-        #     return
-        # except Exception as e:
-        #     logging.error(f"Failed to initialize file transfer: {str(e)}")
+        try:
+            self.file_transfer = sftp_file_transfer(self)
+            return
+        except Exception as e:
+            logging.error(f"Failed to initialize file transfer: {str(e)}")
 
         try:
             self.file_transfer = py_server_sftp_file_transfer(self)
@@ -207,11 +209,13 @@ class Worker(object):
             except tornado.websocket.WebSocketClosedError:
                 self.close(reason='websocket closed')
 
-    def execute_implicit_command(self, cmd, callback=None, extra_args=[], sleep=0, pattern: re.Pattern[bytes] = None):
+    def execute_implicit_command(self, cmd, callback=None, func: Callable[[list[bytes]], bool]=None, extra_args=[], sleep=0, pattern: re.Pattern[bytes] = None):
         if pattern:
             return self.recv_util_match_exp(f'({cmd}; builtin history -d $((HISTCMD-1)))', pattern, callback,
                                             extra_args,
                                             show_on_term=False)
+        elif func:
+            return self.recv_func(f'({cmd}; builtin history -d $((HISTCMD-1)))', func, callback, extra_args, False)
         else:
             return self.recv(f'({cmd}; builtin history -d $((HISTCMD-1)))', callback, extra_args, sleep,
                              show_on_term=False)
@@ -261,6 +265,49 @@ class Worker(object):
             self.handler.write_message(res, binary=False)
             # self.update_handler(IOLoop.READ)
             return matches
+        except tornado.websocket.WebSocketClosedError:
+            self.close(reason='websocket closed')
+
+    def recv_func(self, cmd, f: Callable[[list[bytes]], bool], callback=None, extra_args=[], show_on_term=True):
+        # logging.info('worker {} on read'.format(self.id))
+        if not (cmd.endswith('\r') or cmd.endswith('\n')):
+            cmd += "\r"
+        # self.update_handler(IOLoop.WRITE)
+        self.data_to_dst += cmd
+        self.recv_lock.acquire()
+        try:
+            self._on_write()
+            data = b""
+
+            while not f(data):
+                try:
+                    while not self.chan.recv_ready():
+                        time.sleep(0.1)
+                    data += self.chan.recv(BUF_SIZE)
+                except (OSError, IOError) as e:
+                    traceback.print_exc()
+                    if self.chan.closed or errno_from_exception(e) in _ERRNO_CONNRESET:
+                        self.close(reason='chan error on reading')
+                        return
+        finally:
+            self.recv_lock.release()
+
+        if not data:
+            self.close(reason='chan closed')
+            return
+        try:
+            if not callback and not show_on_term:
+                return data
+            res = {
+                'val': base64.b64encode(data).decode(self.encoding),
+                'type': 'data',
+                "showOnTerm": show_on_term
+            }
+            if callback:
+                self.set_callback_message(callback, res, extra_args)
+            self.handler.write_message(res, binary=False)
+            # self.update_handler(IOLoop.READ)
+            return data
         except tornado.websocket.WebSocketClosedError:
             self.close(reason='websocket closed')
 

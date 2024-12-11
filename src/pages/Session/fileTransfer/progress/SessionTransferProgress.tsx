@@ -3,6 +3,7 @@ import {Progress, Space, Tooltip} from "antd";
 import {sessionIdRef, sessionInit} from "@/pages/Session/main/Main";
 import {AppContext} from "@/pages/context/AppContextProvider";
 import './SessionTransferProgress.less'
+const path = require('path');
 
 const SessionTransferProgress: React.FC = (props) => {
     const {session} = props;
@@ -49,23 +50,24 @@ const SessionTransferProgress: React.FC = (props) => {
     //     return 0;
     // });
 
-    return <>
-        <Space style={{display: fileProgressInfo.length ? 'block' : "none", height: '30%'}} direction="vertical" size="small">
-            {
-                Array.from(fileProgressInfo.values()).map(info => {
-                    return <div className={'fileTransferProgress'}>
-                        <Tooltip title={`${info.filePath} ${info.percent}%`}>
-                            <Progress
-                                key={info.id}
-                                percent={info.percent}
-                            />
-                            {/*<span className={'fileTransferProgressPath'}>{info.filePath}</span>*/}
-                        </Tooltip>
-                    </div>
-                })
-            }
-        </Space>
-    </>
+    return <Space
+        style={{display: fileProgressInfo.length ? 'block' : "none", position: 'relative', flex: '0 0 30%', overflowY: 'auto'}}
+        direction="vertical"
+        size="small"
+    >
+        {
+            Array.from(fileProgressInfo.values()).map(info => {
+                return <div key={info.id} className={'fileTransferProgress'}>
+                    <Tooltip className={'SessionTransferProgressTooltip'} title={`${info.filePath} ${info.percent}%`}>
+                        <Progress
+                            percent={info.percent}
+                        />
+                        <span className={'fileTransferProgressPath'}>{path.basename(info.filePath)}</span>
+                    </Tooltip>
+                </div>
+            })
+        }
+    </Space>
 };
 
 export default React.memo(SessionTransferProgress);

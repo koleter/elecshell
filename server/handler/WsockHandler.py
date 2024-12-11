@@ -70,82 +70,89 @@ class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
         if not isinstance(msg, dict):
             return
 
-        type = msg.get('type')
-        if type == 'resize':
-            resize = msg.get('resize')
-            if resize and len(resize) == 2:
-                try:
-                    worker.chan.resize_pty(*resize)
-                except (TypeError, struct.error, paramiko.SSHException):
-                    pass
-        elif type == 'data':
-            data = msg.get('data')
-            if data and isinstance(data, UnicodeType):
-                worker.send(data)
-        elif type == 'exec_worker_method':
-            method = getattr(worker, msg.get("methodName"))
-            if inspect.iscoroutinefunction(method):
-                await method(*msg.get("args"))
-            else:
-                method(*msg.get("args"))
-
-        # exec a command and recv the result
-        elif type == 'sendRecv':
-            data = msg.get('data')
-            requestId = msg.get('requestId')
-
-            recv = worker.execute_implicit_command(data)
-
-            worker.handler.write_message({
-                'requestId': requestId,
-                'val': base64.b64encode(recv).decode(worker.encoding),
-                'type': 'response'
-            }, binary=False)
-        elif type == 'exec':
-            path = msg.get('path')
-
-            try:
-                module = imp.load_source(path, path)
-                if inspect.iscoroutinefunction(module.Main):
-                    await module.Main(SessionContext(worker))
+        try:
+            type = msg.get('type')
+            if type == 'resize':
+                resize = msg.get('resize')
+                if resize and len(resize) == 2:
+                    try:
+                        worker.chan.resize_pty(*resize)
+                    except (TypeError, struct.error, paramiko.SSHException):
+                        pass
+            elif type == 'data':
+                data = msg.get('data')
+                if data and isinstance(data, UnicodeType):
+                    worker.send(data)
+            elif type == 'exec_worker_method':
+                method = getattr(worker, msg.get("methodName"))
+                if inspect.iscoroutinefunction(method):
+                    await method(*msg.get("args"))
                 else:
-                    module.Main(SessionContext(worker))
+                    method(*msg.get("args"))
+
+            # exec a command and recv the result
+            elif type == 'sendRecv':
+                data = msg.get('data')
+                requestId = msg.get('requestId')
+
+                recv = worker.execute_implicit_command(data)
+
                 worker.handler.write_message({
-                    'type': 'message',
-                    'status': 'success',
-                    'content': 'execute script success'
-                })
-            except FileNotFoundError as e:
-                worker.handler.write_message({
-                    'type': 'message',
-                    'status': 'error',
-                    "content": 'No such file: {}'.format(path)
-                })
-            except Exception as e:
-                traceback.print_exc()
-                worker.handler.write_message({
-                    'type': 'message',
-                    'status': 'error',
-                    "content": str(e)
-                })
-        elif type == 'callback':
-            requestId = msg.get('requestId')
-            with callback_map_lock:
-                t = callback_map.get(requestId)
-            if not t:
-                worker.handler.write_message({
-                    'type': 'message',
-                    'status': 'error',
-                    "content": 'server error'
-                })
-            try:
-                t[0](SessionContext(worker), msg.get('args'), *t[1])
-            except Exception as e:
-                traceback.print_exc()
-                pass
-            finally:
+                    'requestId': requestId,
+                    'val': base64.b64encode(recv).decode(worker.encoding),
+                    'type': 'response'
+                }, binary=False)
+            elif type == 'exec':
+                path = msg.get('path')
+
+                try:
+                    module = imp.load_source(path, path)
+                    if inspect.iscoroutinefunction(module.Main):
+                        await module.Main(SessionContext(worker))
+                    else:
+                        module.Main(SessionContext(worker))
+                    worker.handler.write_message({
+                        'type': 'message',
+                        'status': 'success',
+                        'content': 'execute script success'
+                    })
+                except FileNotFoundError as e:
+                    worker.handler.write_message({
+                        'type': 'message',
+                        'status': 'error',
+                        "content": 'No such file: {}'.format(path)
+                    })
+                except Exception as e:
+                    traceback.print_exc()
+                    worker.handler.write_message({
+                        'type': 'message',
+                        'status': 'error',
+                        "content": str(e)
+                    })
+            elif type == 'callback':
+                requestId = msg.get('requestId')
                 with callback_map_lock:
-                    callback_map.pop(requestId, None)
+                    t = callback_map.get(requestId)
+                if not t:
+                    worker.handler.write_message({
+                        'type': 'message',
+                        'status': 'error',
+                        "content": 'server error'
+                    })
+                try:
+                    t[0](SessionContext(worker), msg.get('args'), *t[1])
+                except Exception as e:
+                    traceback.print_exc()
+                    pass
+                finally:
+                    with callback_map_lock:
+                        callback_map.pop(requestId, None)
+        except Exception as e:
+            worker.handler.write_message({
+                'type': 'message',
+                'status': 'error',
+                "content": str(e)
+            })
 
     async def on_close(self):
         if not self.close_reason:

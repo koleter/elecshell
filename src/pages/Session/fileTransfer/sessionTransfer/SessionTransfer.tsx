@@ -88,7 +88,7 @@ const SessionTransfer: React.FC = (props) => {
     }, [searchValue]);
 
     return <>
-        <Space className={'sftpFileListSpace'} direction="vertical" size="small">
+        <div className={'sftpFileListSpace'}>
             <div style={{display: "flex", flexDirection: "row"}}>
                 <Search onSearch={getFileList} enterButton value={searchValue}
                         onChange={(e) => {
@@ -125,7 +125,7 @@ const SessionTransfer: React.FC = (props) => {
                         setSelectedKeys(selectedKeys);
                     }}
                     titleRender={(nodeData: DataNode) => {
-                        return <div style={{display: 'inline-block', width: '100%'}} onDoubleClick={(e) => {
+                        return <div key={nodeData.key} style={{display: 'inline-block', width: '100%'}} onDoubleClick={(e) => {
                             if (nodeData.isLeaf) {
                                 return;
                             }
@@ -164,7 +164,7 @@ const SessionTransfer: React.FC = (props) => {
                 />
             </div>
             <SessionTransferProgress session={session}></SessionTransferProgress>
-        </Space>
+        </div>
     </>
 };
 
