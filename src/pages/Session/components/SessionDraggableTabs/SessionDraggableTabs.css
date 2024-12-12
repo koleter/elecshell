@@ -1,0 +1,7 @@
+.ant-tabs-editable > .ant-tabs-nav .ant-tabs-tab {
+    transition: none;
+}
+
+.ant-tabs-tab.ant-tabs-tab-with-remove{
+    padding: 0 16px 0 0!important;
+}

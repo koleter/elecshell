@@ -19,6 +19,7 @@ import {capitalizeFirstLetter} from "@/pages/util/string";
 import DraggableTabs from "@/pages/Session/components/DraggableTabs/DraggableTabs";
 import type {DragEndEvent} from "@dnd-kit/core";
 import {arrayMove} from "@dnd-kit/sortable";
+import SessionDraggableTabs from "@/pages/Session/components/SessionDraggableTabs/SessionDraggableTabs";
 
 const {Content, Sider} = Layout;
 type TargetKey = React.MouseEvent | React.KeyboardEvent | string;
@@ -200,7 +201,7 @@ const SessionMain: React.FC = () => {
 
 
                         <Content style={{width: '100%', overflow: 'hidden'}}>
-                            <DraggableTabs
+                            <SessionDraggableTabs
                                 id={"sessionTabs"}
                                 type="editable-card"
                                 activeKey={activeKey}
@@ -322,7 +323,7 @@ const SessionMain: React.FC = () => {
                                                         }
                                                     ]
                                                 }} trigger={['contextMenu']}>
-                  <span>
+                  <span style={{display: 'inline-block', padding: '8px 0 8px 16px'}}>
                     {item.label}
                       <div style={{
                           display: 'inline-block',
