@@ -134,11 +134,13 @@ const SessionTransfer: React.FC = (props) => {
                                 const normalize = path.normalize(parentDirectory);
                                 setSearchValue(normalize);
                                 getFileListWithSpcifiedPath(normalize);
+                                setSelectedKeys([]);
                                 return;
                             }
                             const normalize = path.normalize(searchValue + "/" + nodeData.title);
                             setSearchValue(normalize);
                             getFileListWithSpcifiedPath(normalize);
+                            setSelectedKeys([]);
                         }}>
                             {nodeData.title}
                         </div>
@@ -160,6 +162,7 @@ const SessionTransfer: React.FC = (props) => {
                         // 使用 dataTransfer.setData 设置下载链接
                         // event.dataTransfer.setData('text/uri-list', url);
                         event.dataTransfer.setData('downloadURL', `text/plain:${fileName}:${url}`);
+                        setSelectedKeys([]);
                     }}
                 />
             </div>

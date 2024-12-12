@@ -134,13 +134,13 @@ class Worker(object):
             self.file_transfer = sftp_file_transfer(self)
             return
         except Exception as e:
-            logging.error(f"Failed to initialize file transfer: {str(e)}")
+            logging.warning(f"Failed to initialize sftp file transfer: {str(e)}")
 
         try:
             self.file_transfer = py_server_sftp_file_transfer(self)
             return
         except Exception as e:
-            logging.error(f"Failed to initialize file transfer: {str(e)}")
+            logging.warning(f"Failed to initialize py server file transfer: {str(e)}")
 
     def upload_files(self, files, remote_dir):
         self.init_file_transfer()
@@ -312,6 +312,8 @@ class Worker(object):
             self.close(reason='websocket closed')
 
     def recv_util(self, cmd, expect_list: list[bytes], callback=None, extra_args=[], show_on_term=True):
+        if not isinstance(expect_list, list):
+            raise Exception('expect_list should be a list')
         # logging.info('worker {} on read'.format(self.id))
         if not (cmd.endswith('\r') or cmd.endswith('\n')):
             cmd += "\r"

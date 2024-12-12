@@ -36,9 +36,14 @@ class BaseTransfer:
                     'method': 'refreshRemoteFileList',
                     'type': 'execSessionMethod'
                 }, binary=False)
+        # def handle(data):
+        #     # if b'total' in data:
+        #     if b'\x1b]0;' in data:
+        #         return True
+        #     return False
 
         # 获取远程路径下的文件和文件夹属性列表
-        self.worker.recv(f'ls -al {remote_path}; builtin history -d $((HISTCMD-1))', h, [self.worker],
+        self.worker.recv_util(f'ls -al {remote_path}; builtin history -d $((HISTCMD-1))', expect_list=[b'\x1b]0;'], callback=h, extra_args=[self.worker],
                          show_on_term=False)
 
     def get_remote_path(self, dir, file_name):

@@ -17,8 +17,8 @@ host_pattern = re.compile(br'((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-
 
 python2_start_server_str = '''"""
 # -*- coding: utf-8 -*-
+from SocketServer import ThreadingMixIn, TCPServer
 import SimpleHTTPServer
-import SocketServer
 import os
 import urlparse
 import json
@@ -118,8 +118,10 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                 # 如果文件不存在，则返回404错误
                 self.send_error(404)
 
+class ThreadedHTTPServer(ThreadingMixIn, TCPServer):
+    pass
 # 创建一个简单的 HTTP 服务器
-httpd = SocketServer.TCPServer(('0.0.0.0', {port}), MyHTTPRequestHandler)
+httpd = ThreadedHTTPServer(('0.0.0.0', {port}), MyHTTPRequestHandler)
 print 'Start server success'
 httpd.serve_forever()
 """'''
@@ -127,7 +129,7 @@ httpd.serve_forever()
 python3_start_server_str = '''"""
 # -*- coding: utf-8 -*-
 import http.server
-import socketserver
+from socketserver import ThreadingMixIn, TCPServer
 import os
 import json
 
@@ -227,9 +229,10 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 # 如果文件不存在，则返回404错误
                 self.send_error(404, 'File Not Found')
-
+class ThreadedHTTPServer(ThreadingMixIn, TCPServer):
+    pass
 # 创建一个简单的 HTTP 服务器
-httpd = socketserver.TCPServer(('0.0.0.0', {port}), MyHTTPRequestHandler)
+httpd = ThreadedHTTPServer(('0.0.0.0', {port}), MyHTTPRequestHandler)
 print('Start server success')
 httpd.serve_forever()
 """'''
@@ -388,18 +391,17 @@ finally:
     def upload_files(self, files, remote_path):
         self.upload_files_by_server(files, remote_path)
 
-    def _download_directories(self, local_root_dir, dir_name, remote_dir, tree, tasks=[]):
+    def _download_directories(self, local_root_dir, dir_name, remote_dir, tree):
         cur_dir_path = os.path.join(local_root_dir, dir_name)
         os.makedirs(cur_dir_path, exist_ok=True)
         cur_remote_dir_path = os.path.join(remote_dir, dir_name)
         for entry in tree:
             if entry[0] == 'F':
                 # file
-                tasks.append(self.download_single_file(cur_dir_path, entry[1], cur_remote_dir_path))
+                self.download_single_file(cur_dir_path, entry[1], cur_remote_dir_path)
             elif entry[0] == 'D':
                 # directory
-                self._download_directories(cur_dir_path, entry[1], cur_remote_dir_path, entry[2], tasks)
-        return tasks
+                self._download_directories(cur_dir_path, entry[1], cur_remote_dir_path, entry[2])
 
     async def _download_progress(self, local_path, remote_path):
         url = "http://{}:{}/{}?token={}&type={}".format(self.remote_server["host"], self.remote_server["port"],
@@ -425,7 +427,7 @@ finally:
                 'args': {
                     'id': id,
                     'filePath': local_path,
-                    'percent': download_size * 100 / file_size
+                    'percent': int(download_size * 100 / file_size)
                 },
             })
             if download_size == file_size:
@@ -433,22 +435,27 @@ finally:
             last_download_size = download_size
             await asyncio.sleep(0.1)
 
-    async def download_single_file(self, local_root_dir, file, remoteDir):
+    async def download_single_file_chunk(self, response, local_file_path):
+        with open(local_file_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=10 * 1024 * 1024):
+                if chunk:
+                    f.write(chunk)
+                    await asyncio.sleep(0.1)
+
+    def download_single_file(self, local_root_dir, file, remoteDir):
         url = "http://{}:{}/{}/{}?token={}".format(self.remote_server["host"], self.remote_server["port"], remoteDir,
                                                    file, self.remote_server["token"])
         response = requests.get(url, stream=True)
         if response.status_code == 200:
             # 打开文件以二进制模式写入
-            with open(local_root_dir + "/" + file, 'wb') as f:
-                asyncio.create_task(self._download_progress(os.path.join(local_root_dir, file), remoteDir + "/" + file))
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-                        await asyncio.sleep(0.1)
+            with open(os.path.join(local_root_dir, file), 'wb') as f:
+                pass
+            asyncio.create_task(self.download_single_file_chunk(response, os.path.join(local_root_dir, file)))
+            asyncio.create_task(self._download_progress(os.path.join(local_root_dir, file), remoteDir + "/" + file))
+                # await asyncio.sleep(0.1)
         elif response.status_code == 202:
             tree = response.json()
-            tasks = self._download_directories(local_root_dir, file, remoteDir, tree)
-            await asyncio.gather(*tasks)
+            self._download_directories(local_root_dir, file, remoteDir, tree)
         else:
             self.worker.handler.write_message({
                 "type": "message",
@@ -456,12 +463,12 @@ finally:
                 "content": response.text
             })
 
-    async def _download_files(self, local_root_dir, files, remoteDir):
-        tasks = [self.download_single_file(local_root_dir, file, remoteDir) for file in files]
-        await asyncio.gather(*tasks)
+    def _download_files(self, local_root_dir, files, remoteDir):
+        for file in files:
+            self.download_single_file(local_root_dir, file, remoteDir)
 
     def download_files(self, local_root_dir, files, remoteDir):
-        asyncio.create_task(self._download_files(local_root_dir, files, remoteDir))
+        self._download_files(local_root_dir, files, remoteDir)
 
     def close(self):
         pass

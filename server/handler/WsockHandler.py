@@ -148,6 +148,7 @@ class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
                     with callback_map_lock:
                         callback_map.pop(requestId, None)
         except Exception as e:
+            logging.error(str(e))
             worker.handler.write_message({
                 'type': 'message',
                 'status': 'error',
