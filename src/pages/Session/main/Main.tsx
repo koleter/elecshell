@@ -1,7 +1,7 @@
 import {MenuProps, Space} from 'antd';
 import {Dropdown, Input, Layout, Menu, Modal, Tabs} from 'antd';
 import type {DataNode} from 'antd/es/tree';
-import React, {useContext, useRef, useState} from 'react';
+import React, {useContext, useEffect, useRef, useState} from 'react';
 import "./Main.less"
 import "xterm/css/xterm.css"
 import SessionWindow from "@/pages/Session/SessionTab/Xterminal/sessionWindow";
@@ -73,6 +73,19 @@ const SessionMain: React.FC = () => {
         selectedMenuKey,
         setSelectedMenuKey
     } = useContext(AppContext);
+
+    useEffect(() => {
+        if (!activeKey) {
+            return;
+        }
+        for (const session of sessions) {
+            if (session.key === activeKey) {
+                window.electronAPI.ipcRenderer.send('update-title', session.label);
+                return;
+            }
+        }
+    }, [activeKey]);
+
 
     const onChange = (newActiveKey: string) => {
         setActiveKey(newActiveKey);

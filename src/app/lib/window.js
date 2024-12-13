@@ -13,6 +13,11 @@ ipcMain.on("switchFileInExploer", (event, filePath) => {
     switchFileInExploer(filePath);
 });
 
+ipcMain.on('update-title', (event, title) => {
+    const curWindow = BrowserWindow.getFocusedWindow();
+    curWindow.setTitle(title);
+});
+
 exports.createWindow = () => {
     const {width, height} = screen.getPrimaryDisplay().workAreaSize;//获取到屏幕的宽度和高度
     // Create the browser window.
@@ -45,7 +50,8 @@ exports.createWindow = () => {
         movable: true, // 可否移动
         allowRunningInsecureContent: true, // 允许一个 https 页面运行 http url 里的资源
     };
-    if (process.platform == "darwin") {
+    // mac上需要设置titleBarStyle = 'hidden'否则不会出现最大化最小化按钮
+    if (process.platform === "darwin") {
         option.titleBarStyle = 'hidden';
     }
     const win = new BrowserWindow(option);
