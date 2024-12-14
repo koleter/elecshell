@@ -75,7 +75,10 @@ const SessionMain: React.FC = () => {
     } = useContext(AppContext);
 
     useEffect(() => {
+        console.log("change title", activeKey);
         if (!activeKey) {
+            console.log("change title", activeKey);
+            window.electronAPI.ipcRenderer.send('update-title', "elecshell");
             return;
         }
         for (const session of sessions) {
@@ -119,6 +122,9 @@ const SessionMain: React.FC = () => {
         }
         setSessions(newPanes);
         delete sessionIdRef[targetKey];
+        if (!newPanes.length) {
+            newActiveKey = "";
+        }
         setActiveKey(newActiveKey);
     };
 
