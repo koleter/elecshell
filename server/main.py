@@ -1,5 +1,6 @@
 import logging
 import os
+import signal
 
 import tornado.ioloop
 import tornado.web
@@ -19,6 +20,7 @@ from settings import (
     get_app_settings, get_host_keys_settings, get_policy_setting,
     get_ssl_context, get_server_settings, check_encoding_setting
 )
+import faulthandler
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -27,9 +29,10 @@ logger.setLevel(logging.INFO)
 log_file_dir = os.path.join(base_dir, 'logs')
 if not os.path.exists(log_file_dir):
     os.makedirs(log_file_dir)
-file_handler = RotatingFileHandler(os.path.join(log_file_dir, "server.log"), maxBytes=5*1024*1024, backupCount=5)
+file_handler = RotatingFileHandler(os.path.join(log_file_dir, "server.log"), maxBytes=5 * 1024 * 1024, backupCount=5)
 file_handler.setLevel(logging.DEBUG)  # 设置文件handler的日志级别
-file_formatter = logging.Formatter("%(asctime)s - %(threadName)s - %(filename)s:%(lineno)d - %(levelname)s: %(message)s")
+file_formatter = logging.Formatter(
+    "%(asctime)s - %(threadName)s - %(filename)s:%(lineno)d - %(levelname)s: %(message)s")
 file_handler.setFormatter(file_formatter)
 
 # 设置将日志输出到控制台
@@ -42,6 +45,19 @@ controlshow.setFormatter(formatter)
 logger.addHandler(file_handler)
 logger.addHandler(controlshow)
 
+faulthandler.enable()
+
+
+# 自定义信号处理器
+def handle_sigusr1(signum, frame):
+    print(f"Received signal: {signum} (SIGUSR1)")
+    # 触发 faulthandler 打印堆栈信息
+    faulthandler.dump_traceback()
+
+
+# 将 SIGUSR1 绑定到自定义处理函数
+signal.signal(signal.SIGUSR1, handle_sigusr1)
+
 
 def make_handlers(loop, options):
     host_keys_settings = get_host_keys_settings(options)
@@ -49,7 +65,7 @@ def make_handlers(loop, options):
 
     handlers = [
         (r'/session', IndexHandler, dict(loop=loop, policy=policy,
-                                                host_keys_settings=host_keys_settings)),
+                                         host_keys_settings=host_keys_settings)),
         (r'/ws', WsockHandler, dict(loop=loop)),
         (r'/conf', ConfigHandler, dict(loop=loop)),
         (r'/ping', PingHandler, dict(loop=loop)),
