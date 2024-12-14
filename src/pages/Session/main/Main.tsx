@@ -75,9 +75,7 @@ const SessionMain: React.FC = () => {
     } = useContext(AppContext);
 
     useEffect(() => {
-        console.log("change title", activeKey);
         if (!activeKey) {
-            console.log("change title", activeKey);
             window.electronAPI.ipcRenderer.send('update-title', "elecshell");
             return;
         }
