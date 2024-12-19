@@ -15,7 +15,9 @@ ipcMain.on("switchFileInExploer", (event, filePath) => {
 
 ipcMain.on('update-title', (event, title) => {
     const curWindow = BrowserWindow.getFocusedWindow();
-    curWindow.setTitle(title);
+    if (curWindow) {
+        curWindow.setTitle(title);
+    }
 });
 
 exports.createWindow = () => {
