@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import socket
+import time
 import uuid
 
 import requests
@@ -248,6 +249,7 @@ class py_server_sftp_file_transfer(BaseTransfer):
         self.remote_server = None
 
         self._start_remote_http_server()
+        time.sleep(1)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((self.remote_server['host'], self.remote_server['port']))
 
