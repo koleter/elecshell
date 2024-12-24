@@ -249,9 +249,6 @@ class py_server_sftp_file_transfer(BaseTransfer):
         self.remote_server = None
 
         self._start_remote_http_server()
-        time.sleep(1)
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((self.remote_server['host'], self.remote_server['port']))
 
     def _get_remote_host(self):
         cmd = r"hostname -I | tr ' ' '\\n' | grep -v '^172\.' | xargs"
