@@ -80,7 +80,9 @@ def _start_local_server(token):
                 # 如果文件不存在，则返回404错误
                 self.send_error(404, "File Not Found")
 
-    # 创建一个简单的 HTTP 服务器
-    httpd = socketserver.TCPServer(("0.0.0.0", port), MyHTTPRequestHandler)
+    class ThreadedHTTPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+        pass
+    # 创建一个简单的多线程 HTTP 服务器
+    httpd = ThreadedHTTPServer(('0.0.0.0', port), MyHTTPRequestHandler)
     threading.Thread(target=httpd.serve_forever).start()
     return httpd, local_ip, port

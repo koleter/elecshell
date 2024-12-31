@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 
 from handler.pojo.conf.BaseConfig import BaseConfig
 from handler.pojo.status import status_success
@@ -61,20 +62,30 @@ class SessionConfig(BaseConfig):
             with open(src, 'w') as f:
                 f.write(json.dumps(session_info))
             return status_success('opration success')
-        elif type == 'duplicateSession':
+        elif type == 'duplicate':
             origin_file = os.path.join(self.path, args['path'])
-            with open(origin_file, 'r') as f:
-                data = json.loads(f.read())
-            data['sessionName'] += ' - 副本'
-            file_name = gen_id()
-            data['key'] = file_name
-            login_script_list = data.get('login_script')
-            if login_script_list:
-                for entry in login_script_list:
-                    entry['id'] = gen_id()
-            new_file_path = os.path.join(os.path.dirname(origin_file), file_name)
-            with open(new_file_path, 'w') as f:
-                f.write(json.dumps(data))
-            return status_success('opration success')
+            if os.path.isdir(origin_file):
+                new_dir_name = origin_file + ' - copy'
+                while True:
+                    if os.path.exists(new_dir_name):
+                        new_dir_name += ' - copy'
+                        continue
+                    break
+                shutil.copytree(origin_file, new_dir_name)
+                return status_success('opration success')
+            else:
+                with open(origin_file, 'r') as f:
+                    data = json.loads(f.read())
+                data['sessionName'] += ' - copy'
+                file_name = gen_id()
+                data['key'] = file_name
+                login_script_list = data.get('login_script')
+                if login_script_list:
+                    for entry in login_script_list:
+                        entry['id'] = gen_id()
+                new_file_path = os.path.join(os.path.dirname(origin_file), file_name)
+                with open(new_file_path, 'w') as f:
+                    f.write(json.dumps(data))
+                return status_success('opration success')
 
         return super().post(args)

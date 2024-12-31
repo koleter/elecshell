@@ -335,31 +335,31 @@ const SessionList: React.FC = (props) => {
                     ]
                 },
             );
-        } else {
-            // session节点可以复制某个session配置
-            items.push({
-                label: (
-                    <div onClick={(e) => {
-                        util.request('conf', {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                type: 'SessionConfig',
-                                args: {
-                                    type: 'duplicateSession',
-                                    path: node.path
-                                }
-                            }),
-                        }).then(res => {
-                            message[res.status](res.msg);
-                            if (res.status == 'success') {
-                                setRefreshTreeData(e => e + 1)
-                            }
-                        })
-                    }}><FormattedMessage id={'copy'}/></div>
-                ),
-                key: 'duplicateSession',
-            });
         }
+
+        // 复制文件夹或者某个session文件
+        items.push({
+            label: (
+                <div onClick={(e) => {
+                    util.request('conf', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            type: 'SessionConfig',
+                            args: {
+                                type: 'duplicate',
+                                path: node.path
+                            }
+                        }),
+                    }).then(res => {
+                        message[res.status](res.msg);
+                        if (res.status == 'success') {
+                            setRefreshTreeData(e => e + 1)
+                        }
+                    })
+                }}><FormattedMessage id={'copy'}/></div>
+            ),
+            key: 'duplicateSession',
+        });
 
         // 非root节点
         if (sessionRootKey != node.key) {
