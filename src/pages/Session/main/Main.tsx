@@ -65,6 +65,7 @@ const SessionMain: React.FC = () => {
     const {
         setShowPrompt,
         promptOKCallback,
+        promptModalCancelRef,
         promptUserInput,
         prompt,
         promptInputRef,
@@ -155,6 +156,8 @@ const SessionMain: React.FC = () => {
                        onOk={promptOk}
                        onCancel={() => {
                            setShowPrompt(false);
+                           console.log("Modal onCancel");
+                           promptModalCancelRef.current && promptModalCancelRef.current();
                        }}>
                     <Input ref={promptInputRef}
                            allowClear={true}

@@ -129,6 +129,10 @@ class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
                         'status': 'error',
                         "content": str(e)
                     })
+            elif type == 'del_callback_map':
+                requestId = msg.get('requestId')
+                with callback_map_lock:
+                    callback_map.pop(requestId, None)
             elif type == 'callback':
                 requestId = msg.get('requestId')
                 with callback_map_lock:

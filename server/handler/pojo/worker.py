@@ -472,12 +472,6 @@ class Worker(object):
         with callback_map_lock:
             callback_map[req_id] = (callback, args)
 
-        def delete_callback():
-            with callback_map_lock:
-                callback_map.pop(req_id, None)
-
-        threading.Timer(30, delete_callback).start()
-
     def create_new_session(self, conf_list, callback, args):
         '''
         create new session

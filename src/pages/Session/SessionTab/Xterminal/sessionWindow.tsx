@@ -3,7 +3,7 @@ import {Terminal} from "xterm"
 import "xterm/css/xterm.css"
 import util, {callbackMap, getUUid, sessionStatusMap, showMessage} from "../../../../util"
 import {CONNECTED, CONNECTING} from "../../../../const"
-import {sessionIdMapFileName, sessionIdRef, sessionInit} from "../../main/Main"
+import {promptModalCancel, sessionIdMapFileName, sessionIdRef, sessionInit} from "../../main/Main"
 import {SearchAddon} from 'xterm-addon-search'
 import {FitAddon} from 'xterm-addon-fit'
 import "./SessionWindow.less"
@@ -45,7 +45,7 @@ const SessionWindow: React.FC = (props) => {
     const {id, sessionConfId, setSessions, isConnected, encoding, session} = props;
     const context = useContext(AppContext);
     const searchInputRef = useRef(null);
-    const {activeKey} = context;
+    const {activeKey, promptModalCancelRef} = context;
     // 展示搜索框
     const [showSearch, setShowSearch] = useState(false);
 
@@ -119,7 +119,8 @@ const SessionWindow: React.FC = (props) => {
     ]
 
     const globalMethodMap = {
-        prompt: (msg, callback) => {
+        prompt: (msg, callback, cancelCallback) => {
+            promptModalCancelRef.current = cancelCallback;
             context.prompt(msg, callback);
         },
         createNewSession: (sessionConfs, callback) => {
@@ -398,6 +399,11 @@ const SessionWindow: React.FC = (props) => {
                                     type: 'callback',
                                     requestId: res.requestId,
                                     args: callbackResponse
+                                })
+                            }, ()=> {
+                                sessionIdRef[id].send({
+                                    type: 'del_callback_map',
+                                    requestId: res.requestId
                                 })
                             })
                         } else {

@@ -4,6 +4,7 @@ import {message} from "antd";
 import {sessionConfInfo} from "@/pages/Session/SessionList/SessionList";
 import {NENU_SESSIONS} from "@/const";
 import {setLocale} from "@@/plugin-locale/localeExports";
+import {promptModalCancel} from "@/pages/Session/main/Main";
 
 //根据定义创建Context
 export const AppContext = createContext(null);
@@ -17,6 +18,8 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
     const [promptOKCallback, setPromptOKCallback] = useState("");
     const [promptUserInput, setPromptUserInput] = useState("");
     const promptInputRef = useRef(null);
+
+    const promptModalCancelRef = useRef(null);
 
     const [treeData, setTreeData] = useState([]);
     const [refreshTreeData, setRefreshTreeData] = useState(0);
@@ -36,7 +39,6 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
             }, 0)
             return true;
         });
-
     }
 
     useEffect(() => {
@@ -124,6 +126,7 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
             promptUserInput,
             setPromptUserInput,
             prompt,
+            promptModalCancelRef,
             // sessionList
             treeData,
             setTreeData,
