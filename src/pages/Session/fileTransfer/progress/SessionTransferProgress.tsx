@@ -19,7 +19,7 @@ const SessionTransferProgress: React.FC = (props) => {
         sessionInit[session.key].push(() => {
             if (sessionIdRef[activeKey]) {
                 sessionIdRef[activeKey].refreshFileProgressInfo = (result) => {
-                    console.log(result);
+                    // console.log(result);
                     setFileProgressInfo(fileProgressInfo => {
                         const data = [...fileProgressInfo];
                         for (const info of data) {
@@ -62,7 +62,7 @@ const SessionTransferProgress: React.FC = (props) => {
                         <Progress
                             percent={info.percent}
                         />
-                        <span className={'fileTransferProgressPath'}>{path.basename(info.filePath)}</span>
+                        {/*<span className={'fileTransferProgressPath'}>{path.basename(info.filePath)}</span>*/}
                     </Tooltip>
                 </div>
             })

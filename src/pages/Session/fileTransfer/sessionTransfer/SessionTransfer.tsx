@@ -146,7 +146,7 @@ const SessionTransfer: React.FC = (props) => {
                         </div>
                     }}
                     onDragStart={function ({event, node}) {
-                        console.log(event, node)
+                        // console.log(event, node)
                         const fileName = `\.elecshellTransfer_${getUUid()}`;
                         const files = new Set(selectedKeys);
                         files.add(node.key);
@@ -163,6 +163,20 @@ const SessionTransfer: React.FC = (props) => {
                         // event.dataTransfer.setData('text/uri-list', url);
                         event.dataTransfer.setData('downloadURL', `text/plain:${fileName}:${url}`);
                         setSelectedKeys([]);
+                    }}
+                    onDragLeave={({event, node}) => {
+                        const nodeElement = event.target;
+                        // 创建一个 DragEvent 对象
+                        const dragEndEvent = new DragEvent('dragend', {
+                            bubbles: true,
+                            cancelable: true,
+                            view: window,
+                            // 你可以在这里添加其他 DragEvent 属性，例如 dataTransfer
+                            dataTransfer: new DataTransfer()
+                        });
+
+                        // 分发事件到目标元素
+                        nodeElement.dispatchEvent(dragEndEvent);
                     }}
                 />
             </div>
