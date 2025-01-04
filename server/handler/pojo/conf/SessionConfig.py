@@ -54,6 +54,26 @@ class SessionConfig(BaseConfig):
             'sessionConfInfo': session_conf_info
         }
 
+    def _copy_session_dir(self, src_dir_path, dst_dir_path):
+        for file in os.listdir(src_dir_path):
+            file_path = os.path.join(src_dir_path, file)
+            if os.path.isdir(file_path):
+                new_dst_path = os.path.join(dst_dir_path, file)
+                os.mkdir(new_dst_path)
+                self._copy_session_dir(file_path, new_dst_path)
+            else:
+                with open(file_path, 'r') as f:
+                    data = json.loads(f.read())
+                file_name = gen_id()
+                data['key'] = file_name
+                login_script_list = data.get('login_script')
+                if login_script_list:
+                    for entry in login_script_list:
+                        entry['id'] = gen_id()
+                new_file_path = os.path.join(dst_dir_path, file_name)
+                with open(new_file_path, 'w') as f:
+                    f.write(json.dumps(data))
+
     def post(self, args):
         type = args['type']
         if type == 'editSession':
@@ -71,7 +91,8 @@ class SessionConfig(BaseConfig):
                         new_dir_name += ' - copy'
                         continue
                     break
-                shutil.copytree(origin_file, new_dir_name)
+                os.mkdir(new_dir_name)
+                self._copy_session_dir(origin_file, new_dir_name)
                 return status_success('opration success')
             else:
                 with open(origin_file, 'r') as f:
