@@ -8,7 +8,7 @@ const {DirectoryTree} = Tree;
 import "./SessionTransfer.less"
 import {sessionIdRef, sessionInit} from "@/pages/Session/main/Main";
 import {AppContext} from "@/pages/context/AppContextProvider";
-import util, {getUUid} from "@/util";
+import util, {getUUid, showMessage} from "@/util";
 import {DataNode, TreeProps} from "antd/es/tree";
 import {HEADER_HEIGHT, MENU_FILETRANSFER} from "@/const";
 import {AimOutlined} from "@ant-design/icons";
@@ -96,16 +96,18 @@ const SessionTransfer: React.FC = (props) => {
                         }}/>
                 <Button icon={<AimOutlined />} onClick={() => {
                     sessionIdRef[activeKey]?.sendRecv('pwd', function (val: string) {
-                        // console.log(val);
-                        const lines = spiltResponseWithLine(val);
-                        for (let i = 0; i < lines.length; i++) {
-                            const line = lines[i];
-                            if (line.startsWith("/")) {
-                                setSearchValue(line.trimEnd());
-                                return;
+                        sessionIdRef[activeKey]?.term.write(val, (raw) => {
+                            console.log(raw);
+                            const lines = spiltResponseWithLine(raw);
+                            for (let i = 0; i < lines.length; i++) {
+                                const line = lines[i];
+                                if (line.startsWith("/")) {
+                                    setSearchValue(line.trimEnd());
+                                    return;
+                                }
                             }
-                        }
-                        message.error('can not get pwd, error is ' + val);
+                            message.error('can not get pwd, error is ' + val);
+                        }, false);
                     })
                 }}></Button>
             </div>

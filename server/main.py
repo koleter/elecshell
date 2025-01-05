@@ -1,6 +1,5 @@
 import logging
 import os
-import signal
 
 import tornado.ioloop
 import tornado.web
@@ -15,6 +14,7 @@ from handler.WsockHandler import WsockHandler
 from logging.handlers import RotatingFileHandler
 
 from handler.PingHandler import PingHandler
+from handler import DumpHandler
 from settings import base_dir
 from settings import (
     get_app_settings, get_host_keys_settings, get_policy_setting,
@@ -48,17 +48,6 @@ logger.addHandler(controlshow)
 faulthandler.enable()
 
 
-# 自定义信号处理器
-def handle_sigusr1(signum, frame):
-    print(f"Received signal: {signum} (SIGUSR1)")
-    # 触发 faulthandler 打印堆栈信息
-    faulthandler.dump_traceback()
-
-
-# 将 SIGUSR1 绑定到自定义处理函数
-signal.signal(signal.SIGUSR1, handle_sigusr1)
-
-
 def make_handlers(loop, options):
     host_keys_settings = get_host_keys_settings(options)
     policy = get_policy_setting(options, host_keys_settings)
@@ -70,6 +59,7 @@ def make_handlers(loop, options):
         (r'/conf', ConfigHandler, dict(loop=loop)),
         (r'/ping', PingHandler, dict(loop=loop)),
         (r'/namespace', NameSpaceHandler, dict(loop=loop)),
+        (r'/dump', DumpHandler, dict(loop=loop))
     ]
     return handlers
 
