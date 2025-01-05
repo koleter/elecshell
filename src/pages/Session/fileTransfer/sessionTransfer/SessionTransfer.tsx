@@ -97,7 +97,7 @@ const SessionTransfer: React.FC = (props) => {
                 <Button icon={<AimOutlined />} onClick={() => {
                     sessionIdRef[activeKey]?.sendRecv('pwd', function (val: string) {
                         sessionIdRef[activeKey]?.term.write(val, (raw) => {
-                            console.log(raw);
+                            // console.log(raw);
                             const lines = spiltResponseWithLine(raw);
                             for (let i = 0; i < lines.length; i++) {
                                 const line = lines[i];

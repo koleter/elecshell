@@ -3,6 +3,7 @@ import os
 import stat
 
 from filetransfer.base_transfer import BaseTransfer
+from utils import gen_id
 
 
 class sftp_file_transfer(BaseTransfer):
@@ -44,11 +45,42 @@ class sftp_file_transfer(BaseTransfer):
             elif tail:
                 self.sftp.mkdir(tail)
 
+    async def _upload_file_by_sftp(self, local_path, remote_path):
+        self.sftp.put(local_path, remote_path)
 
-    async def _upload_single_file(self, local_path, remote_path):
+    async def _upload_progress(self, local_path, remote_path):
+        file_size = os.path.getsize(local_path)
+        last_uploaded_size = 0
+        id = gen_id()
+        while True:
+            file_info = self.sftp.stat(remote_path)
+            uploaded_size = file_info.st_size
+            if last_uploaded_size > uploaded_size == 0:
+                self.worker.handler.write_message({
+                    "type": "message",
+                    "status": "error",
+                    "content": "maybe remote file is deleted"
+                })
+                break
+            self.worker.handler.write_message({
+                'type': 'execSessionMethod',
+                'method': 'refreshFileProgressInfo',
+                'args': {
+                    'id': id,
+                    'filePath': remote_path,
+                    'percent': uploaded_size * 100 / file_size
+                },
+            })
+            if uploaded_size == file_size:
+                break
+            last_uploaded_size = uploaded_size
+            await asyncio.sleep(0.1)
+
+    def _upload_single_file(self, local_path, remote_path):
         self._create_remote_directory(remote_path)
         try:
-            self.sftp.put(local_path, remote_path)
+            asyncio.create_task(self._upload_file_by_sftp(local_path, remote_path))
+            asyncio.create_task(self._upload_progress(local_path, remote_path))
             print(f"Successfully uploaded {local_path} to {remote_path}")
         except Exception as e:
             print(f"Failed to upload {local_path} to {remote_path}: {str(e)}")
@@ -64,17 +96,12 @@ class sftp_file_transfer(BaseTransfer):
                     extra_dirname = root.removeprefix(local_path).replace(os.path.sep, "/")
                     for file_name in files:
                         upload_local_path = os.path.join(root, file_name)
-                        asyncio.create_task(self._upload_single_file(upload_local_path, remote_path + "/" + directory_name + "/" + extra_dirname + "/" + file_name))
+                        self._upload_single_file(upload_local_path, remote_path + "/" + directory_name + "/" + extra_dirname + "/" + file_name)
             else:
-                asyncio.create_task(self._upload_single_file(local_path, remote_path + "/" + file_info["name"]))
+                self._upload_single_file(local_path, remote_path + "/" + file_info["name"])
 
 
-    async def _download_progress(self, local_path, remote_path):
-        url = "http://{}:{}/{}?token={}&type={}".format(self.remote_server["host"], self.remote_server["port"],
-                                                        remote_path, self.remote_server["token"], "getFileSize")
-        response = requests.get(url)
-        file_size = int(response.text)
-
+    async def _download_progress(self, local_path, file_size):
         last_download_size = 0
         id = gen_id()
         while True:
@@ -101,10 +128,13 @@ class sftp_file_transfer(BaseTransfer):
             last_download_size = download_size
             await asyncio.sleep(0.1)
 
-    def get_file_from_remote_server(self, remote_file_path, local_root_dir):
+    async def _download_file_by_sftp(self, remote_file_path, local_file_path):
+        self.sftp.get(remote_file_path, local_file_path)
+
+    def get_file_from_remote_server(self, remote_file_path, local_file_path, file_size):
         try:
-            self.sftp.get(remote_file_path, local_root_dir)
-            asyncio.create_task(self._download_progress(os.path.join(local_root_dir, file), remoteDir + "/" + file))
+            asyncio.create_task(self._download_file_by_sftp(remote_file_path, local_file_path))
+            asyncio.create_task(self._download_progress(local_file_path, file_size))
         except Exception as e:
             self.worker.handler.write_message({
                 "type": "message",
@@ -120,7 +150,7 @@ class sftp_file_transfer(BaseTransfer):
                 os.mkdir(next_local_dir)
                 self._download_directories(next_local_dir, remote_file_path)
             else:
-                self.get_file_from_remote_server(remote_file_path, os.path.join(local_root_dir, file_info.filename))
+                self.get_file_from_remote_server(remote_file_path, os.path.join(local_root_dir, file_info.filename), file_info.st_size)
 
 
     def download_single_file_or_dir(self, local_root_dir, file, remoteDir):
@@ -133,7 +163,7 @@ class sftp_file_transfer(BaseTransfer):
                 os.mkdir(next_local_dir)
                 self._download_directories(next_local_dir, remoteDir + "/" + file)
             else:
-                self.get_file_from_remote_server(remoteDir + "/" + file, os.path.join(local_root_dir, file))
+                self.get_file_from_remote_server(remoteDir + "/" + file, os.path.join(local_root_dir, file), file_info.st_size)
             break
 
 
