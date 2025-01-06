@@ -2,8 +2,6 @@ import asyncio
 import logging
 import os
 import re
-import socket
-import time
 import uuid
 
 import requests
@@ -89,7 +87,7 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                 self.end_headers()
                 file_size = os.path.getsize(file_path)
                 self.wfile.write(str(file_size))
-            except FileNotFoundError:
+            except Exception:
                 self.send_response(500)
                 self.wfile.write('0')
         else:
