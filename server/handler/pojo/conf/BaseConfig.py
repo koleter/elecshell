@@ -35,12 +35,12 @@ class BaseConfig:
             absolute_path = os.path.join(self.path, dir, file_name)
             if os.path.exists(absolute_path):
                 return status_error("session {} already exists".format(file_name))
-            with open(absolute_path, 'w') as f:
+            with open(absolute_path, 'w', encoding='utf-8') as f:
                 f.write(args['content'])
             return status_success(OPERATION_SUCCESS)
         elif type == 'writeFile':
             path = self._get_real_path(args['path'])
-            with open(path, 'w') as f:
+            with open(path, 'w', encoding='utf-8') as f:
                 f.write(args['content'])
             return status_success(OPERATION_SUCCESS)
         elif type == 'deleteFile':

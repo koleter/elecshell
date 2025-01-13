@@ -9,6 +9,16 @@ ipcMain.on("sendAllWindowsIpcMessage", (event, arg) => {
     });
 });
 
+ipcMain.on("selectADirectory", async (event, nextChannel) => {
+    let result = await dialog.showOpenDialog({
+        properties: ['openDirectory']
+    });
+    if (result.canceled || !result.filePaths.length) {
+        return;
+    }
+    event.sender.send(nextChannel, result.filePaths[0]);
+});
+
 ipcMain.on("switchFileInExploer", (event, filePath) => {
     switchFileInExploer(filePath);
 });
@@ -17,6 +27,37 @@ ipcMain.on('update-title', (event, title) => {
     const curWindow = BrowserWindow.getFocusedWindow();
     if (curWindow) {
         curWindow.setTitle(title);
+    }
+});
+
+ipcMain.on('save-directory-dialog', function (event, arg) {
+    const curWindow = BrowserWindow.getFocusedWindow();
+    if (curWindow) {
+        dialog.showSaveDialog(curWindow, {
+            title: arg.title,
+            properties: ['openDirectory']
+        }).then(function (result) {
+            if (result.canceled) {
+                return;
+            }
+            console.log(result);
+            event.sender.send(arg.nextChannel, {
+                filePath: result.filePath,
+                arg: arg.arg
+            });
+        });
+    }
+});
+
+ipcMain.on('save-file-dialog', function (event, sessionId) {
+    const curWindow = BrowserWindow.getFocusedWindow();
+    if (curWindow) {
+        dialog.showSaveDialog(curWindow, {
+            title: '请选择保存日志的文件',
+            properties: ['showHiddenFiles']
+        }).then(function (files) {
+            if (files) event.sender.send('selected-file', files, sessionId);
+        });
     }
 });
 
@@ -67,15 +108,6 @@ exports.createWindow = () => {
         if (input.key === 'W' && (input.modifiers.includes('Control') || input.modifiers.includes('Command'))) {
             event.preventDefault(); // 阻止默认行为
         }
-    });
-
-    ipcMain.on('save-file-dialog', function (event, sessionId) {
-        dialog.showSaveDialog(win, {
-            title: '请选择保存日志的文件',
-            properties: ['showHiddenFiles']
-        }).then(function (files) {
-            if (files) event.sender.send('selected-file', files, sessionId);
-        });
     });
 
     // Open the DevTools.

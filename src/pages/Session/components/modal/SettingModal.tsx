@@ -1,5 +1,5 @@
 import {EditableProTable, ModalForm} from '@ant-design/pro-components';
-import React, {useContext, useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import util, {getUUid, showMessage} from "@/util";
 import {Input, message, Tabs} from 'antd';
 import {AppContext} from "@/pages/context/AppContextProvider";
@@ -42,13 +42,22 @@ const SettingModal = () => {
         setRefreshConfigableGlobalConfig,
     } = useContext(AppContext);
 
-    electronAPI.ipcRenderer.on('openGlobalSetting', (event, arg) => {
-        setModalVisit(true);
-    });
+    useEffect(() => {
+        const handleOpenGlobalSetting = (event, arg) => {
+            setModalVisit(true);
+        };
+        electronAPI.ipcRenderer.on('openGlobalSetting', handleOpenGlobalSetting);
 
-    electronAPI.ipcRenderer.on('refreshConfigableGlobalConfig', (event, arg) => {
-        setRefreshConfigableGlobalConfig(n => n + 1);
-    });
+        const handleRefreshConfigableGlobalConfig = (event, arg) => {
+            setRefreshConfigableGlobalConfig(n => n + 1);
+        };
+        electronAPI.ipcRenderer.on('refreshConfigableGlobalConfig', handleRefreshConfigableGlobalConfig);
+
+        return () => {
+            electronAPI.ipcRenderer.removeListener('openGlobalSetting', handleOpenGlobalSetting);
+            electronAPI.ipcRenderer.removeListener('refreshConfigableGlobalConfig', handleRefreshConfigableGlobalConfig);
+        }
+    }, []);
 
     return <ModalForm
         title={capitalizeFirstLetter(intl.formatMessage({id: "settings"}))}

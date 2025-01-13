@@ -1,4 +1,9 @@
-import {ProList} from '@ant-design/pro-components';
+import {ProList,
+    ModalForm,
+    ProForm,
+    ProFormCheckbox,
+    ProFormText
+} from '@ant-design/pro-components';
 import React, {useContext, useEffect, useRef, useState} from 'react';
 import util, {showMessage} from "@/util";
 import {Button, Form, Input, message, Modal, Popconfirm, Radio, Tabs} from 'antd';
@@ -6,6 +11,11 @@ import {FormattedMessage, setLocale} from "@@/plugin-locale/localeExports";
 import {AppContext} from "@/pages/context/AppContextProvider";
 import {capitalizeFirstLetter} from "@/pages/util/string";
 import {useIntl} from '@@/plugin-locale/localeExports';
+import { PlusOutlined } from '@ant-design/icons';
+import "./ProjectConfigModal.css"
+
+const IMPORT_NAMESPACE = "importNamespace";
+const EXPORT_NAMESPACE = "exportNamespace";
 
 const ProjectConfigModal = () => {
     const [modalVisit, setModalVisit] = useState(false);
@@ -23,11 +33,6 @@ const ProjectConfigModal = () => {
         setRefreshScriptData
     } = useContext(AppContext);
 
-    electronAPI.ipcRenderer.on('switchLanguage', (event, language) => {
-        setLocale(language, false);
-        setLanguage(language);
-    });
-
     useEffect(() => {
         util.request('conf', {
             method: 'GET',
@@ -40,7 +45,72 @@ const ProjectConfigModal = () => {
             setLanguage(res?.data?.language || "en-US");
             setLocale(res?.data?.language || "en-US", false);
         });
-        loadAllNameSpace()
+        loadAllNameSpace();
+
+        const handleSwitchLanguage = (event, language) => {
+            setLocale(language, false);
+            setLanguage(language);
+        }
+
+        electronAPI.ipcRenderer.on('switchLanguage', handleSwitchLanguage);
+
+        const handleImportNamespace = (event, directoryPath) => {
+            let title = intl.formatMessage({id: "Please input namespace"});
+            prompt(title, (input) => {
+                if (!input) {
+                    title = intl.formatMessage({id: 'namespace cannot be empty'});
+                    message.error(title);
+                    return;
+                }
+                util.request('namespace', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        type: "import",
+                        namespace: input,
+                        directoryPath,
+                        force: false
+                    })
+                }).then((res) => {
+                    loadAllNameSpace();
+                    showMessage(res);
+                })
+            })
+        }
+
+        electronAPI.ipcRenderer.on(IMPORT_NAMESPACE, handleImportNamespace);
+
+        const handleExportNamespace = (event, arg) => {
+            console.log(arg);
+            const filePath = arg.filePath;
+            const namespace = arg.arg.namespace;
+            util.request('namespace', {
+                method: 'POST',
+                body: JSON.stringify({
+                    type: "export",
+                    namespace,
+                    directoryPath: filePath
+                })
+            }).then((res) => {
+                loadAllNameSpace();
+                showMessage(res);
+            })
+        }
+
+        electronAPI.ipcRenderer.on(EXPORT_NAMESPACE, handleExportNamespace);
+
+        const handleOpenManagerNameSpaceModal = (event, arg) => {
+            oldLanguage.current = language;
+            setModalVisit(true);
+        };
+
+        electronAPI.ipcRenderer.on('openManagerNameSpaceModal', handleOpenManagerNameSpaceModal);
+        // 清理函数，确保在组件卸载时移除事件监听器
+        return () => {
+            electronAPI.ipcRenderer.removeListener('switchLanguage', handleSwitchLanguage);
+            electronAPI.ipcRenderer.removeListener(IMPORT_NAMESPACE, handleImportNamespace);
+            electronAPI.ipcRenderer.removeListener(EXPORT_NAMESPACE, handleExportNamespace);
+            electronAPI.ipcRenderer.removeListener('openManagerNameSpaceModal', handleOpenManagerNameSpaceModal);
+        };
     }, [])
 
     function loadAllNameSpace() {
@@ -50,11 +120,6 @@ const ProjectConfigModal = () => {
             setNameSpaceList(res);
         })
     }
-
-    electronAPI.ipcRenderer.on('openManagerNameSpaceModal', (event, arg) => {
-        oldLanguage.current = language;
-        setModalVisit(true);
-    });
 
     return <>
         <Modal
@@ -86,6 +151,7 @@ const ProjectConfigModal = () => {
                       key: 'namespace',
                       label: capitalizeFirstLetter(intl.formatMessage({id: "namespace"})),
                       children: <ProList
+                          className={"globalconfig-namespace"}
                           dataSource={nameSpaceList.filter(namespace => {
                               return namespace.indexOf(searchValue) > -1;
                           })}
@@ -101,6 +167,7 @@ const ProjectConfigModal = () => {
                               },
                               actions: {
                                   render: (text, namespace) => {
+                                      const res = [];
                                       if (curNameSpace === namespace) {
                                           return [];
                                       }
@@ -127,6 +194,20 @@ const ProjectConfigModal = () => {
                                               }}
                                           >
                                               <FormattedMessage id={'switch'}></FormattedMessage>
+                                          </a>,
+                                          <a
+                                              key="export"
+                                              onClick={() => {
+                                                  electronAPI.ipcRenderer.send('save-directory-dialog', {
+                                                      nextChannel: EXPORT_NAMESPACE,
+                                                      title: "请选择要保存的文件夹(如果文件夹已存在会被清空)",
+                                                      arg: {
+                                                          namespace
+                                                      }
+                                                  });
+                                              }}
+                                          >
+                                              <FormattedMessage id={'export'}></FormattedMessage>
                                           </a>,
                                           <Popconfirm
                                               title={intl.formatMessage({id: 'Are you sure you want to delete?'})}
@@ -175,6 +256,7 @@ const ProjectConfigModal = () => {
                                               util.request('namespace', {
                                                   method: 'POST',
                                                   body: JSON.stringify({
+                                                      type: "create",
                                                       namespace: input
                                                   })
                                               }).then((res) => {
@@ -184,6 +266,14 @@ const ProjectConfigModal = () => {
                                           })
                                       }}>
                                           {capitalizeFirstLetter(intl.formatMessage({id: "create"}))}
+                                      </Button>
+                                  </Form.Item>
+                                  ,
+                                  <Form.Item>
+                                      <Button type={'primary'} onClick={async () => {
+                                          electronAPI.ipcRenderer.send('selectADirectory', IMPORT_NAMESPACE);
+                                      }}>
+                                          {capitalizeFirstLetter(intl.formatMessage({id: "import"}))}
                                       </Button>
                                   </Form.Item>
                               ];

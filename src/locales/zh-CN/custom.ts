@@ -62,4 +62,7 @@ export default {
     'sessions': '会话',
     copy: '复制',
     'fileTransfer': "文件传输",
+    import: "导入",
+    export: "导出",
+    "Please input namespace": "请指定命名空间",
 };

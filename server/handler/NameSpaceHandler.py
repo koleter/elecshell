@@ -6,7 +6,7 @@ import tornado.web
 
 from handler.MixinHandler import MixinHandler
 from handler.ConfigHandler import conf_dir_path
-
+from settings import base_dir
 
 class NameSpaceHandler(MixinHandler, tornado.web.RequestHandler):
     def initialize(self, loop):
@@ -17,21 +17,56 @@ class NameSpaceHandler(MixinHandler, tornado.web.RequestHandler):
         # 过滤出目录
         directories = [entry for entry in entries if
                        os.path.isdir(os.path.join(conf_dir_path, entry))]
-        self.write(json.dumps(directories))
+        self.write(json.dumps(directories, ensure_ascii=False))
 
     def post(self):
-        '''
-        create a new namespace
-        :return:
-        '''
         data = json.loads(self.request.body)
-        namespace = data.get('namespace')
-        if not namespace:
-            self.set_status(400)  # Bad Request
-            self.write(json.dumps({"status": "error", "content": "Namespace is required"}))
-            return
-        os.mkdir(os.path.join(conf_dir_path, namespace))
-        self.write(json.dumps({"status": "success", "content": "创建命名空间成功"}))
+        action_type = data.get('type')
+        if action_type == "create":
+            namespace = data.get('namespace')
+            if not namespace:
+                self.set_status(400)  # Bad Request
+                self.write(json.dumps({"status": "error", "content": "Namespace is required"}))
+                return
+            os.mkdir(os.path.join(conf_dir_path, namespace))
+            self.write(json.dumps({"status": "success", "content": "create namespace success"}))
+        elif action_type == "import":
+            namespace = data.get('namespace')
+            namespace_path = os.path.join(base_dir, namespace)
+            if os.path.exists(namespace_path):
+                self.write(json.dumps({"status": "fail", "content": "namespace is already exist"}))
+            directoryPath = data.get('directoryPath')
+            shutil.copytree(directoryPath, namespace_path)
+        elif action_type == "export":
+            namespace = data.get('namespace')
+            directoryPath = data.get('directoryPath')
+            if os.path.exists(directoryPath):
+                shutil.rmtree(directoryPath)
+            os.mkdir(directoryPath)
+            namespace_path = os.path.join(conf_dir_path, namespace)
+            xsh_path = os.path.join(namespace_path, "xsh")
+            if not os.path.exists(xsh_path):
+                self.write(json.dumps({"status": "fail", "content": "empty namespace"}))
+                return
+            shutil.copytree(xsh_path, os.path.join(directoryPath, "xsh"))
+            script_path = os.path.join(namespace_path, "script")
+            if os.path.exists(script_path):
+                script_py_path = os.path.join(directoryPath, "py_script")
+                os.mkdir(script_py_path)
+                dst_script_path = os.path.join(directoryPath, "script")
+                os.mkdir(dst_script_path)
+                for root, dirs, files in os.walk(script_path):
+                    for file_name in files:
+                        src_file_path = os.path.join(root, file_name)
+                        with open(src_file_path, 'r') as f:
+                            data = json.loads(f.read())
+                        if data.get("scriptType") == 1:
+                            dst_py_file_path = os.path.join(script_py_path, data.get("name"))
+                            shutil.copy(data.get("scriptPath"), dst_py_file_path)
+                            data.update("scriptPath", dst_py_file_path)
+                        with open(os.path.join(dst_script_path, data.get("name")), 'w', encoding='utf-8') as f:
+                            json.dumps(data, ensure_ascii=False)
+
 
     def delete(self):
         '''

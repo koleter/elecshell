@@ -52,10 +52,10 @@ class ConfigHandler(MixinHandler, tornado.web.RequestHandler):
 
     def get(self):
         type = self.get_argument('type')
-        self.write(json.dumps(handler_map.get(type).get()))
+        self.write(json.dumps(handler_map.get(type).get(), ensure_ascii=False))
 
     def post(self):
         data = json.loads(self.request.body)
         type = data['type']
         args = data['args']
-        self.write(json.dumps(handler_map.get(type).post(args)))
+        self.write(json.dumps(handler_map.get(type).post(args), ensure_ascii=False))

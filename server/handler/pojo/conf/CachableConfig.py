@@ -35,8 +35,8 @@ class CachableConfig(BaseConfig):
     def post(self, args):
         with self.lock:
             self._update_conf(args)
-            with open(self.path, 'w') as f:
-                f.write(json.dumps(self.conf_cache))
+            with open(self.path, 'w', encoding='utf-8') as f:
+                f.write(json.dumps(self.conf_cache, ensure_ascii=False))
         return {
             'status': 'success',
             'msg': 'success'

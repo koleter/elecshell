@@ -71,16 +71,16 @@ class SessionConfig(BaseConfig):
                     for entry in login_script_list:
                         entry['id'] = gen_id()
                 new_file_path = os.path.join(dst_dir_path, file_name)
-                with open(new_file_path, 'w') as f:
-                    f.write(json.dumps(data))
+                with open(new_file_path, 'w', encoding='utf-8') as f:
+                    f.write(json.dumps(data, ensure_ascii=False))
 
     def post(self, args):
         type = args['type']
         if type == 'editSession':
             session_info = args['sessionInfo']
             src = self._get_real_path(args['src'])
-            with open(src, 'w') as f:
-                f.write(json.dumps(session_info))
+            with open(src, 'w', encoding='utf-8') as f:
+                f.write(json.dumps(session_info, ensure_ascii=False))
             return status_success('opration success')
         elif type == 'duplicate':
             origin_file = os.path.join(self.path, args['path'])
@@ -105,8 +105,8 @@ class SessionConfig(BaseConfig):
                     for entry in login_script_list:
                         entry['id'] = gen_id()
                 new_file_path = os.path.join(os.path.dirname(origin_file), file_name)
-                with open(new_file_path, 'w') as f:
-                    f.write(json.dumps(data))
+                with open(new_file_path, 'w', encoding='utf-8') as f:
+                    f.write(json.dumps(data, ensure_ascii=False))
                 return status_success('opration success')
 
         return super().post(args)

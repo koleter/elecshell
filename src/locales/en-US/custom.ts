@@ -62,4 +62,7 @@ export default {
     'sessions': 'sessions',
     copy: 'copy',
     'fileTransfer': "fileTransfer",
+    import: "import",
+    export: "export",
+    "Please input namespace": "Please input namespace",
 };

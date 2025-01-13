@@ -42,7 +42,7 @@ class ScriptConfig(BaseConfig):
             absolute_path = os.path.join(self.path, file_name)
             if os.path.exists(absolute_path):
                 return status_error("script {} already exists".format(file_name))
-            with open(absolute_path, 'w') as f:
+            with open(absolute_path, 'w', encoding='utf-8') as f:
                 f.write(args['content'])
             return status_success(OPERATION_SUCCESS)
         elif type == 'editScript':
@@ -58,7 +58,7 @@ class ScriptConfig(BaseConfig):
                     data[key] = args.get(key)
                 f.seek(0)
                 f.truncate()
-                f.write(json.dumps(data))
+                f.write(json.dumps(data, ensure_ascii=False))
             return status_success(OPERATION_SUCCESS)
 
         return super().post(args)
