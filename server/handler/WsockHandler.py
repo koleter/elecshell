@@ -159,10 +159,10 @@ class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
                 "content": str(e)
             })
 
-    async def on_close(self):
+    def on_close(self):
         if not self.close_reason:
             logging.info('close_reason is {}'.format(self.close_reason))
         worker = self.worker_ref if self.worker_ref else None
         if worker:
             clear_worker(worker)
-            await worker.close(reason=self.close_reason)
+            worker.close(reason=self.close_reason)

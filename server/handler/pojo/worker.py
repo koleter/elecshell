@@ -207,17 +207,17 @@ class Worker(object):
                     self.login_script = self.login_script[1:]
 
             except tornado.websocket.WebSocketClosedError:
-                self.close(reason='websocket closed')
+                asyncio.create_task(self.close(reason='websocket closed'))
 
     def execute_implicit_command(self, cmd, callback=None, func: Callable[[list[bytes]], bool]=None, extra_args=[], sleep=0, pattern: re.Pattern[bytes] = None):
         if pattern:
-            return self.recv_util_match_exp(f'({cmd}; builtin history -d $((HISTCMD-1)))', pattern, callback,
+            return self.recv_util_match_exp(f'{cmd}; builtin history -d $((HISTCMD-1))', pattern, callback,
                                             extra_args,
                                             show_on_term=False)
         elif func:
-            return self.recv_func(f'({cmd}; builtin history -d $((HISTCMD-1)))', func, callback, extra_args, False)
+            return self.recv_func(f'{cmd}; builtin history -d $((HISTCMD-1))', func, callback, extra_args, False)
         else:
-            return self.recv(f'({cmd}; builtin history -d $((HISTCMD-1)))', callback, extra_args, sleep,
+            return self.recv(f'{cmd}; builtin history -d $((HISTCMD-1))', callback, extra_args, sleep,
                              show_on_term=False)
 
     def recv_util_match_exp(self, data, pattern: re.Pattern[bytes], callback=None, extra_args=[], show_on_term=True):
@@ -508,7 +508,7 @@ class Worker(object):
 
         return warp
 
-    async def close(self, reason=None):
+    def close(self, reason=None):
         if self.closed:
             return
         self.closed = True
@@ -517,7 +517,6 @@ class Worker(object):
 
         if self.file_transfer is not None:
             self.file_transfer.close()
-        await self.file_transfer_queue.put(None)
 
         logging.info(
             'Closing worker {} with reason: {}'.format(self.id, reason)
