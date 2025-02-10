@@ -314,7 +314,7 @@ finally:
                 logging.debug("cannot find python cmd")
                 raise Exception("cannot find python cmd")
             match = self.worker.recv_util_match_exp(
-                f'{self.remote_py_cmd} -c {py_code} & builtin history -d $((HISTCMD-1))',
+                f'echo -e {py_code} | {self.remote_py_cmd} & builtin history -d $((HISTCMD-1))',
                 re.compile(b'(Address already in use)|(Start server success.*Start server success)',
                            flags=re.MULTILINE | re.DOTALL), show_on_term=False)
             if match.group(2) is not None:
