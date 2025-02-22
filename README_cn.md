@@ -1,7 +1,7 @@
 # elecshell
 
 
-### Introduction
+## 介绍
 
 用作 ssh 客户端以连接到 ssh 服务器的一个 Web 应用程序
 
@@ -12,17 +12,38 @@
 
 
 
-## Preview
+## 预览
 
-![webshell.jpg](./preview/webshell.jpg)
+![webshell.jpg](./preview/zn/webshell.jpg)
+
+## 环境
+需要安装python3且命令行中存在可用的python或者python3命令,建议python的版本在3.7以上
+之后需要安装一下python模块
+```text
+paramiko==3.0.0
+tornado==6.2.0
+```
+
+还需要安装node和yarn,之后在项目根目录下执行yarn命令等待执行完毕
+
+## 开发
+1. 在项目根目录/server 下运行 main.py 脚本
+2. 在项目根目录下执行 yarn run start
+3. 在项目根目录下执行 yarn run app
+
+## 打包部署
+1. 在项目根目录下执行 yarn run build
+2. 在项目根目录下执行 yarn run app:build
+
+之后会在项目根目录下生成build文件夹,里面有软件的安装程序
 
 ## script
 鼠标移动到窗口的最右侧可弹出脚本窗口
-![script.jpg](./preview/script.jpg)
+![script.jpg](./preview/zn/script.jpg)
 
 点击添加按钮显示如下界面
 
-![addScript.jpg](./preview/addScript.jpg)
+![addScript.jpg](./preview/zn/addScript.jpg)
 
 脚本名是显示在界面上的按钮名字,python文件路径为一个python文件的绝对路径,
 一个脚本按钮的类型分为两种,公共表示所有的会话都可以使用该按钮,当前会话表示只有当前的会话可以使用的按钮(其他的会话处于活跃状态时无法看到该按钮)
@@ -64,9 +85,9 @@ def Main(ctx):
 
 如果要打开一个其他的会话,可以在ctx.create_new_session的第一个函数中传入这个会话的配置文件的id,该id可以通过编辑的方式看到
 
-![edit.jpg](./preview/edit.jpg)
+![edit.jpg](./preview/zn/edit.jpg)
 
-![get_session_conf_key.jpg](./preview/get_session_conf_key.jpg)
+![get_session_conf_key.jpg](./preview/zn/get_session_conf_key.jpg)
 
 ## start
 运行main.py,浏览器打开http://localhost:8888

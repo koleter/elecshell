@@ -14,15 +14,15 @@
 
 ## Preview
 
-![webshell.jpg](./preview/webshell.jpg)
+![webshell.jpg](./preview/zn/webshell.jpg)
 
 ## script
 鼠标移动到窗口的最右侧可弹出脚本窗口
-![script.jpg](./preview/script.jpg)
+![script.jpg](./preview/zn/script.jpg)
 
 点击添加按钮显示如下界面
 
-![addScript.jpg](./preview/addScript.jpg)
+![addScript.jpg](./preview/zn/addScript.jpg)
 
 脚本名是显示在界面上的按钮名字,python文件路径为一个python文件的绝对路径,
 一个脚本按钮的类型分为两种,公共表示所有的会话都可以使用该按钮,当前会话表示只有当前的会话可以使用的按钮(其他的会话处于活跃状态时无法看到该按钮)
@@ -64,9 +64,9 @@ def Main(ctx):
 
 如果要打开一个其他的会话,可以在ctx.create_new_session的第一个函数中传入这个会话的配置文件的id,该id可以通过编辑的方式看到
 
-![edit.jpg](./preview/edit.jpg)
+![edit.jpg](./preview/zn/edit.jpg)
 
-![get_session_conf_key.jpg](./preview/get_session_conf_key.jpg)
+![get_session_conf_key.jpg](./preview/zn/get_session_conf_key.jpg)
 
 ## start
 运行main.py,浏览器打开http://localhost:8888
