@@ -1,5 +1,6 @@
 import React, {useContext, useEffect, useState, useRef} from "react";
-import {Dropdown, Form, Input, message, Modal, Space, Tree, Divider, Button} from "antd";
+import {Dropdown, Form, Input, message, Modal, Space, Tree, Divider, Button, Tooltip} from "antd";
+import {useIntl} from '@@/plugin-locale/localeExports';
 
 const {Search} = Input;
 
@@ -10,7 +11,6 @@ import {sessionIdRef, sessionInit} from "@/pages/Session/main/Main";
 import {AppContext} from "@/pages/context/AppContextProvider";
 import util, {getUUid, showMessage} from "@/util";
 import {DataNode, TreeProps} from "antd/es/tree";
-import {HEADER_HEIGHT, MENU_FILETRANSFER} from "@/const";
 import {AimOutlined} from "@ant-design/icons";
 import {spiltResponseWithLine} from "@/pages/util/terminal_util";
 import SessionTransferProgress from "@/pages/Session/fileTransfer/progress/SessionTransferProgress";
@@ -28,7 +28,12 @@ const SessionTransfer: React.FC = (props) => {
 
     const [selectedKeys, setSelectedKeys] = useState([]);
 
+    const intl = useIntl();
+
     function getFileListWithSpcifiedPath(remoteDirectory: string) {
+        if (!remoteDirectory.trim()) {
+            return;
+        }
         sessionIdRef[activeKey]?.send({
             type: 'exec_worker_method',
             methodName: "get_remote_file_list",
@@ -94,22 +99,25 @@ const SessionTransfer: React.FC = (props) => {
                         onChange={(e) => {
                             setSearchValue(e.target.value);
                         }}/>
-                <Button icon={<AimOutlined />} onClick={() => {
-                    sessionIdRef[activeKey]?.sendRecv('pwd', function (val: string) {
-                        sessionIdRef[activeKey]?.term.write(val, (raw) => {
-                            // console.log(raw);
-                            const lines = spiltResponseWithLine(raw);
-                            for (let i = 0; i < lines.length; i++) {
-                                const line = lines[i];
-                                if (line.startsWith("/")) {
-                                    setSearchValue(line.trimEnd());
-                                    return;
+                <Tooltip placement="top" title={intl.formatMessage({id: "Aim current directory"})}>
+                    <Button icon={<AimOutlined />} onClick={() => {
+                        sessionIdRef[activeKey]?.sendRecv('pwd', function (val: string) {
+                            sessionIdRef[activeKey]?.term.write(val, (raw) => {
+                                // console.log(raw);
+                                const lines = spiltResponseWithLine(raw);
+                                for (let i = 0; i < lines.length; i++) {
+                                    const line = lines[i];
+                                    if (line.startsWith("/")) {
+                                        setSearchValue(line.trimEnd());
+                                        return;
+                                    }
                                 }
-                            }
-                            message.error('can not get pwd, error is ' + val);
-                        }, false);
-                    })
-                }}></Button>
+                                message.error('can not get pwd, error is ' + val);
+                            }, false);
+                        })
+                    }}></Button>
+                </Tooltip>
+
             </div>
 
             <div ref={dragWindowRef} className={'dropDiv'}

@@ -1,2 +1,5 @@
 paramiko==3.0.0
 tornado==6.2.0
+appdirs==1.4.4
+requests==2.32.3
+watchdog==4.0.1

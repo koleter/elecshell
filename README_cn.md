@@ -1,7 +1,7 @@
 # elecshell
 
 
-## 介绍
+# 介绍
 
 用作 ssh 客户端以连接到 ssh 服务器的一个 Web 应用程序
 
@@ -10,51 +10,86 @@
 2. 可以创建新的会话,但是创建出来的会话用户不可控
 3. 可以发送命令但是无法接收命令执行后的返回结果
 
+elecshell支持上述功能
 
-
-## 预览
+# 预览
 
 ![webshell.jpg](./preview/zn/webshell.jpg)
 
-## 环境
+# 环境
 需要安装python3且命令行中存在可用的python或者python3命令,建议python的版本在3.7以上
 之后需要安装一下python模块
 ```text
 paramiko==3.0.0
 tornado==6.2.0
+appdirs==1.4.4
+requests==2.32.3
+watchdog==4.0.1
 ```
 
 还需要安装node和yarn,之后在项目根目录下执行yarn命令等待执行完毕
 
-## 开发
+# 开发
 1. 在项目根目录/server 下运行 main.py 脚本
 2. 在项目根目录下执行 yarn run start
 3. 在项目根目录下执行 yarn run app
 
-## 打包部署
+# 打包部署
 1. 在项目根目录下执行 yarn run build
 2. 在项目根目录下执行 yarn run app:build
 
 之后会在项目根目录下生成build文件夹,里面有软件的安装程序
 
-## script
-鼠标移动到窗口的最右侧可弹出脚本窗口
+# 特性
+## 文件上传与下载
+打开一个会话窗口后可以切换到文件传输页签
+
+![file_transfer_btn.jpg](./preview/zn/file_transfer_btn.jpg)
+
+可以查询服务器指定路径下的目录与文件名,并通过拖拽进行上传与下载
+
+首先会通过sftp的方式进行文件传输,若sftp不可用,那么会先在远程启动一个服务器进行文件传输
+
+## 登录脚本
+可以在会话创建时立即发送一些配置好的命令
+
+有时候一些服务器做了限制,只能通过堡垒机作为中转进行连接,登录堡垒机之后输入要连接的目标ip等信息进行连接,这时可以
+设置登录脚本,在登录堡垒机之后自动输入相关信息直接跳转到目标机器
+
+
+## 可设置变量
+公司可能会强制要求每个一段时间换一次使用的oa账号的密码,而所有的会话都是用这一个账号去登录的,该特性时为了防止更
+换密码时需要改动大量会话的配置,可在文件-设置中进行配置
+
+![file_setting_btn.jpg](./preview/zn/file_setting_btn.jpg)
+
+![variable_preview.jpg](./preview/zn/variable_preview.jpg)
+
+如图,设置了变量名为nrelayPassword,对应的变量值为2wsxZAQ!,使用时可以在会话基本信息中以两个大括号包裹变量的方式
+使用,如下图,实际用来连接的密码是2wsxZAQ!
+![var_used.jpg](./preview/zn/var_used.jpg)
+
+支持 主机名,用户名和密码
+
+## 脚本
+存在活跃的会话时鼠标移动到窗口的最右侧可弹出脚本窗口
 ![script.jpg](./preview/zn/script.jpg)
 
 点击添加按钮显示如下界面
 
 ![addScript.jpg](./preview/zn/addScript.jpg)
 
-脚本名是显示在界面上的按钮名字,python文件路径为一个python文件的绝对路径,
-一个脚本按钮的类型分为两种,公共表示所有的会话都可以使用该按钮,当前会话表示只有当前的会话可以使用的按钮(其他的会话处于活跃状态时无法看到该按钮)
+标签是显示在界面上的按钮名字
 
-python脚本的入口为Main函数,接受一个形参,该参数为handler.pojo.SessionContext.SessionContext类的一个实例对象,
-可以认为是代表了当前会话的一个对象,可用的接口可以参考该类的定义
+脚本类型分为以下两种,发送字符串的功能是记录一个命令,之后点击按钮时会向终端发送自己编写的命令,运行python脚本则需要你
+自行编写一个python脚本,点击按钮时会在本地执行该脚本
 
+脚本归属如果勾选公共,所有的会话都可以使用该按钮,包括以后新配置的会话;若不勾选则仅右侧选中的会话可以使用(其他的会话处于活跃状态时无法看到该按钮)
 
-handler.pojo.SessionContext.SessionContext类中有两个函数需要回调函数,一个是用于接收用户输入的prompt,另一个是用来创建新会话的create_new_session函数,
-回调函数需要至少两个参数,第一个参数代表当前会话的上下文对象,第二个参数为回调的结果,其余的参数为客户自行传入的参数
+python脚本的入口为Main函数,接受一个形参,可以认为是代表了当前会话的一个对象
 
+### API
+ctx.prompt: 弹窗接收用户输入
 ```python
 def prompt_callback(ctx, result, my_arg):
     print("自行传入的参数为: {}".format(my_arg))
@@ -89,8 +124,6 @@ def Main(ctx):
 
 ![get_session_conf_key.jpg](./preview/zn/get_session_conf_key.jpg)
 
-## start
-运行main.py,浏览器打开http://localhost:8888
 
 ## Hot key
 ctrl + insert: 复制

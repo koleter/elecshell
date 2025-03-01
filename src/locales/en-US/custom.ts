@@ -65,4 +65,5 @@ export default {
     import: "import",
     export: "export",
     "Please input namespace": "Please input namespace",
+    "Aim current directory": "Aim current directory",
 };

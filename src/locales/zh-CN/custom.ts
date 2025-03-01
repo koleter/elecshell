@@ -65,4 +65,5 @@ export default {
     import: "导入",
     export: "导出",
     "Please input namespace": "请指定命名空间",
+    "Aim current directory": "定位当前目录",
 };
