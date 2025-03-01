@@ -86,10 +86,26 @@ watchdog==4.0.1
 
 脚本归属如果勾选公共,所有的会话都可以使用该按钮,包括以后新配置的会话;若不勾选则仅右侧选中的会话可以使用(其他的会话处于活跃状态时无法看到该按钮)
 
-python脚本的入口为Main函数,接受一个形参,可以认为是代表了当前会话的一个对象
+python脚本的入口为Main函数,接受一个形参,可以认为是代表了当前会话的上下文对象,该对象中的函数不支持
+通过多线程进行调用,但是可以通过 asyncio 模块以多协程的方式进行调用
 
-### API
+## API
+
 ctx.prompt: 弹窗接收用户输入
+
+第一个参数为一个字符串,展示弹窗的标题
+
+第二个参数是一个回调函数
+
+之后的参数自行传递,会以相同的顺序传递给回调函数
+
+回调函数: 对输入的结果进行处理
+
+第一个参数代表当前会话上下文
+
+第二个参数为用户的输入
+
+其余为调用 ctx.prompt 时自行传递的参数
 ```python
 def prompt_callback(ctx, result, my_arg):
     print("自行传入的参数为: {}".format(my_arg))
@@ -103,10 +119,38 @@ def Main(ctx):
     ctx.prompt("请输入要执行的命令:", prompt_callback, 4)
 ```
 
+ctx.send: 发送执行的命令
+
+```python
+def Main(ctx):
+    ctx.send("pwd")
+```
+
+ctx.recv: 发送执行的命令并获取返回结果
+
+
+
+
+ctx.create_new_session: 打开新的会话
+
+第一个参数: 是一个会话配置文件id的列表
+
+第二个参数: 回调函数
+
+之后的参数自行传递,会以相同的顺序传递给回调函数
+
+回调函数: 可以继续对新创建的会话进行相应操作
+
+第一个参数: 当前会话上下文
+
+第二个参数: 是一个列表,代表所有创建的会话的上下文
+
+其余为调用 ctx.create_new_session 时自行传递的参数
+
 ```python
 def callback(ctx, created_ctxs, a, b):
     print("自定义参数相加结果: {}".format(a + b))
-    cmds = ['pwd\r', 'ls /\r', 'ls\r']
+    cmds = ['pwd\r', 'ls /\r']
     for i in range(len(created_ctxs)):
         ret = created_ctxs[i].on_recv(cmds[i % len(cmds)])
         if "dev" in ret:
@@ -116,7 +160,7 @@ def callback(ctx, created_ctxs, a, b):
 def Main(ctx):
     ctx.create_new_session([ctx.get_xsh_conf_id()]*2, callback, 3, 4)
 ```
-该脚本相当于复制了当前会话2次,并在新的会话中分别执行了"pwd"与"ls /"命令,其中如果某个会话执行的命令的返回结果中有dev这个字符串,那么那个会话再执行一次"pwd" 命令
+该脚本相当于打开了当前会话2次,并在新的会话中分别执行了"pwd"与"ls /"命令,其中如果某个会话执行的命令的返回结果中有dev这个字符串,那么那个会话再执行一次"pwd" 命令
 
 如果要打开一个其他的会话,可以在ctx.create_new_session的第一个函数中传入这个会话的配置文件的id,该id可以通过编辑的方式看到
 

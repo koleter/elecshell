@@ -1,6 +1,3 @@
-import asyncio
-
-
 class SessionContext:
     def __init__(self, worker):
         self._worker = worker
