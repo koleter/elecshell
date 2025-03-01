@@ -1,3 +1,7 @@
+import re
+from typing import Callable
+
+
 class SessionContext:
     def __init__(self, worker):
         self._worker = worker
@@ -9,6 +13,29 @@ class SessionContext:
         sleep: The waiting time from sending the command to reading the result, in seconds
         '''
         self._worker.recv(data, callback, extra_args, sleep)
+
+    def recv_util(self, data, expect_list: bytes, callback, *extra_args):
+        '''
+        send data and receive result
+        data: The command which will be execute
+        expect_list: Expected byte string to be received
+        '''
+        self._worker.recv_util(data, expect_list, callback, extra_args)
+
+    def recv_regexp(self, data, pattern: re.Pattern[bytes], callback=None, *extra_args):
+        '''
+       data: The command which will be execute
+       pattern: regexp to match result
+       '''
+        self._worker.recv_util_match_exp(data, pattern, callback, extra_args)
+
+    def recv_func(self, data, f: Callable[[list[bytes]], bool], callback=None, *extra_args):
+        '''
+       data: The command which will be execute
+       f: function to check result
+       '''
+        self._worker.recv_func(data, f, callback, extra_args)
+
 
     def prompt(self, msg, callback, *args):
         '''

@@ -48,7 +48,8 @@ watchdog==4.0.1
 
 可以查询服务器指定路径下的目录与文件名,并通过拖拽进行上传与下载
 
-首先会通过sftp的方式进行文件传输,若sftp不可用,那么会先在远程启动一个服务器进行文件传输
+首先会通过sftp的方式进行文件传输,若sftp不可用,那么会先在远程启动一个服务器进行
+文件传输,当前会话关闭时该服务器会自动退出
 
 ## 登录脚本
 可以在会话创建时立即发送一些配置好的命令
@@ -128,12 +129,37 @@ def Main(ctx):
 
 ctx.recv: 发送执行的命令并获取返回结果
 
+第一个参数: 执行的命令
 
+第二个参数: 回调函数
+
+第三个函数: 发送命令后等待的时间,单位是秒,为0表示接收到命令的结果就立即返回,
+有些命令的结果是分多次进行返回的,如果这里填0可能会导致接收的执行结果不完整
+
+之后的参数自行传递,会以相同的顺序传递给回调函数
+
+回调函数: 处理命令执行的结果
+
+第一个参数: 当前会话上下文
+
+第二个参数: 命令执行的结果
+
+其余为调用 ctx.recv 时自行传递的参数
+
+```python
+def handleRecv(ctx, ret):
+    if "dev" in ret:
+        ctx.send('echo "current session has result with dev"')
+
+def Main(ctx):
+    ctx.recv("ls /", handleRecv, 0)
+```
 
 
 ctx.create_new_session: 打开新的会话
 
-第一个参数: 是一个会话配置文件id的列表
+第一个参数: 是一个会话配置id的列表,该列表中的元素可以是会话配置的id(字符串),也可以是一个对象,对象的 conf_id 
+表示会话配置的id, session_name 表示创建的该会话的标签名
 
 第二个参数: 回调函数
 
@@ -148,28 +174,140 @@ ctx.create_new_session: 打开新的会话
 其余为调用 ctx.create_new_session 时自行传递的参数
 
 ```python
+import asyncio
+
+
+def handleRecv(ctx, ret):
+    if "dev" in ret:
+        ctx.send('echo "current session has result with dev"')
+
+
+async def handle_one(created_ctx, cmd):
+    created_ctx.recv(cmd, handleRecv, 0)
+
+
 def callback(ctx, created_ctxs, a, b):
     print("自定义参数相加结果: {}".format(a + b))
-    cmds = ['pwd\r', 'ls /\r']
+    cmds = ['pwd', 'ls /']
     for i in range(len(created_ctxs)):
-        ret = created_ctxs[i].on_recv(cmds[i % len(cmds)])
-        if "dev" in ret:
-            created_ctxs[i].send('pwd\r')
+        asyncio.create_task(handle_one(created_ctxs[i], cmds[i]))
 
 
 def Main(ctx):
-    ctx.create_new_session([ctx.get_xsh_conf_id()]*2, callback, 3, 4)
-```
-该脚本相当于打开了当前会话2次,并在新的会话中分别执行了"pwd"与"ls /"命令,其中如果某个会话执行的命令的返回结果中有dev这个字符串,那么那个会话再执行一次"pwd" 命令
+    ctx.create_new_session([ctx.get_xsh_conf_id(), {"conf_id": ctx.get_xsh_conf_id(), "session_name": "xxx"}], callback,
+                           3, 4)
 
-如果要打开一个其他的会话,可以在ctx.create_new_session的第一个函数中传入这个会话的配置文件的id,该id可以通过编辑的方式看到
+```
+
+ctx.get_xsh_conf_id 函数可以获取当前会话配置的id
+
+该脚本相当于打开了当前会话2次,并在新创建的这两个会话中分别执行了"pwd"与"ls /"命令,其中如果某个会话执行的命令的返回结果中有dev这个字符串,那么那个会话再执行一次打印命令
+
+如果要打开一个其他的会话,可以在 ctx.create_new_session 的第一个函数中传入这个会话的配置的id,该id可以通过编辑的方式看到
 
 ![edit.jpg](./preview/zn/edit.jpg)
 
 ![get_session_conf_key.jpg](./preview/zn/get_session_conf_key.jpg)
 
 
-## Hot key
+ctx.recv_util: 发送执行的命令并获取返回结果,相较于recv函数来说,该函数会等待直到出现某
+个字节串才会返回
+
+第一个参数: 执行的命令
+
+第二个参数: 一个字节串,该函数会一直接收命令的执行结果直到出现该字节串才会调用回调函数,
+<font color="red">如果结果中没有出现该字节串,进程会卡死</font>
+
+第三个函数: 回调函数
+
+之后的参数自行传递,会以相同的顺序传递给回调函数
+
+回调函数: 处理命令执行的结果
+
+第一个参数: 当前会话上下文
+
+第二个参数: 命令执行的结果
+
+其余为调用 ctx.recv 时自行传递的参数
+
+```python
+def handleRecv(ctx, ret):
+    if "dev" in ret:
+        ctx.send('echo "current session has result with dev"')
+
+def Main(ctx):
+    ctx.recv("ls /", handleRecv, 0)
+```
+
+
+ctx.recv_regexp: 发送执行的命令并获取返回结果,相较于recv函数来说,该函数会等待直到接收
+到的结果匹配一个正则
+
+第一个参数: 执行的命令
+
+第二个参数: 一个正则,<font color="red">如果结果一直不匹配该正则,进程会卡死</font>
+
+第三个函数: 回调函数
+
+之后的参数自行传递,会以相同的顺序传递给回调函数
+
+回调函数: 处理命令执行的结果
+
+第一个参数: 当前会话上下文
+
+第二个参数: 命令执行的结果
+
+其余为调用 ctx.recv 时自行传递的参数
+
+```python
+import re
+
+def handleRecv(ctx, ret):
+    ctx.send('echo "current session has result with dev"')
+
+def Main(ctx):
+    exp = re.compile(b'h.me', flags=re.MULTILINE | re.DOTALL)
+    ctx.recv_regexp("ls /", exp, handleRecv)
+```
+
+ctx.recv_func: 发送执行的命令并获取返回结果,相较于recv函数来说,该函数会g
+到的结果匹配一个正则
+
+第一个参数: 执行的命令
+
+第二个参数: 一个正则,<font color="red">如果结果一直不匹配该正则,进程会卡死</font>
+
+第三个函数: 回调函数
+
+之后的参数自行传递,会以相同的顺序传递给回调函数
+
+回调函数: 处理命令执行的结果
+
+第一个参数: 当前会话上下文
+
+第二个参数: 命令执行的结果
+
+其余为调用 ctx.recv 时自行传递的参数
+
+```python
+import re
+
+def handleRecv(ctx, ret):
+    ctx.send('echo "current session has result with dev"')
+
+def Main(ctx):
+    exp = re.compile(b'h.me', flags=re.MULTILINE | re.DOTALL)
+    ctx.recv_regexp("ls /", exp, handleRecv)
+```
+
+
+# Hot key
+## windows/linux
 ctrl + insert: 复制
 
 shift + insert: 粘贴
+
+## mac
+command + c: 复制
+
+command + v: 粘贴

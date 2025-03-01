@@ -311,9 +311,7 @@ class Worker(object):
         except tornado.websocket.WebSocketClosedError:
             self.close(reason='websocket closed')
 
-    def recv_util(self, cmd, expect_list: list[bytes], callback=None, extra_args=[], show_on_term=True):
-        if not isinstance(expect_list, list):
-            raise Exception('expect_list should be a list')
+    def recv_util(self, cmd, pattern: bytes, callback=None, extra_args=[], show_on_term=True):
         # logging.info('worker {} on read'.format(self.id))
         if not (cmd.endswith('\r') or cmd.endswith('\n')):
             cmd += "\r"
@@ -325,37 +323,36 @@ class Worker(object):
             data = b""
             text = b""
 
-            for pattern in expect_list:
-                m = len(pattern)
-                j = 0
-                table = compute_prefix_function(pattern)
+            m = len(pattern)
+            j = 0
+            table = compute_prefix_function(pattern)
 
-                while True:
-                    continue_outer = False
-                    while len(text) > 0:
-                        if j > 0 and text[0] != pattern[j]:
-                            j = table[j - 1]
-                            text = text[1:]
-                            continue
-                        if text[0] == pattern[j]:
-                            j += 1
-                        if j == m:
-                            continue_outer = True
-                            break
+            while True:
+                continue_outer = False
+                while len(text) > 0:
+                    if j > 0 and text[0] != pattern[j]:
+                        j = table[j - 1]
                         text = text[1:]
-                    if continue_outer:
+                        continue
+                    if text[0] == pattern[j]:
+                        j += 1
+                    if j == m:
+                        continue_outer = True
                         break
+                    text = text[1:]
+                if continue_outer:
+                    break
 
-                    try:
-                        while not self.chan.recv_ready():
-                            time.sleep(0.1)
-                        text = self.chan.recv(BUF_SIZE)
-                        data += text
-                    except (OSError, IOError) as e:
-                        traceback.print_exc()
-                        if self.chan.closed or errno_from_exception(e) in _ERRNO_CONNRESET:
-                            self.close(reason='chan error on reading')
-                            return
+                try:
+                    while not self.chan.recv_ready():
+                        time.sleep(0.1)
+                    text = self.chan.recv(BUF_SIZE)
+                    data += text
+                except (OSError, IOError) as e:
+                    traceback.print_exc()
+                    if self.chan.closed or errno_from_exception(e) in _ERRNO_CONNRESET:
+                        self.close(reason='chan error on reading')
+                        return
         finally:
             self.recv_lock.release()
 
