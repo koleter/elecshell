@@ -11,6 +11,7 @@ const fetch = require('node-fetch');
 const {platform} = require("os");
 const {getServerPort} = require("./lib/server");
 const fs = require('fs');
+const { log } = require('console');
 
 
 // const logStream = fs.createWriteStream("/Users/a58/Desktop/app.txt", {flags: 'a'});
@@ -29,11 +30,21 @@ const fs = require('fs');
 
 const basePath = Platform.getUserBasePath();
 
+// 防止ctrl + w关闭窗口
 app.whenReady().then(() => {
     globalShortcut.register('CommandOrControl+W', () => {
-
+        console.log("发现ctrl+w按键")
     });
 });
+
+// app.on("browser-window-focus", () => {
+//     console.log("electron 有焦点了");
+// });
+
+// app.on("browser-window-blur", () => {
+//     console.log("electron 没焦点了");
+// });
+
 
 function switchLanguage(lang) {
     let menu;

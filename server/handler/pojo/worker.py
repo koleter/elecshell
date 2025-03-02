@@ -81,6 +81,8 @@ def start_watcher():
 
     if platform.system() == 'Windows':
         drive_letters = get_all_window_drive_letters()
+    elif platform.system() == 'Linux':
+        drive_letters = [os.environ['HOME']]
     else:
         drive_letters = ["/"]
     print("Monitoring the following drives:", drive_letters)

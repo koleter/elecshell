@@ -104,11 +104,12 @@ exports.createWindow = () => {
     // });
 
     // 阻止Ctrl+W关闭窗口
-    win.webContents.on('before-input-event', (event, input) => {
-        if (input.key === 'W' && (input.modifiers.includes('Control') || input.modifiers.includes('Command'))) {
-            event.preventDefault(); // 阻止默认行为
-        }
-    });
+    // win.webContents.on('before-input-event', (event, input) => {
+    //     if (input.key === 'W' && (input.modifiers.includes('Control') || input.modifiers.includes('Command'))) {
+    //         console.log(event, input)
+    //         event.preventDefault(); // 阻止默认行为
+    //     }
+    // });
 
     // Open the DevTools.
     if (process.env.NODE_ENV === 'development') {
