@@ -16,7 +16,7 @@ class CachableConfig(BaseConfig):
                 data = json.loads(f.read())
                 self._update_conf(data)
         except Exception as e:
-            logging.error(str(e))
+            logging.warn(str(e))
 
     def default_conf(self):
         return dict()

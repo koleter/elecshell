@@ -17,7 +17,7 @@ elecshell支持上述功能
 ![webshell.jpg](./preview/zn/webshell.jpg)
 
 # 环境
-需要安装python3且命令行中存在可用的python或者python3命令,建议python的版本在3.7以上
+需要安装python3且命令行中存在可用的python或者python3命令,建议python的版本在3.8以上
 之后需要安装一下python模块
 ```text
 paramiko==3.0.0
@@ -25,6 +25,7 @@ tornado==6.2.0
 appdirs==1.4.4
 requests==2.32.3
 watchdog==4.0.1
+psutil==5.9.5
 ```
 
 还需要安装node和yarn,之后在项目根目录下执行yarn命令等待执行完毕
