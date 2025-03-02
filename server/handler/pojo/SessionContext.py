@@ -29,12 +29,12 @@ class SessionContext:
        '''
         self._worker.recv_util_match_exp(data, pattern, callback, extra_args)
 
-    def recv_func(self, data, f: Callable[[list[bytes]], bool], callback=None, *extra_args):
-        '''
-       data: The command which will be execute
-       f: function to check result
-       '''
-        self._worker.recv_func(data, f, callback, extra_args)
+    # def recv_func(self, data, f: Callable[[list[bytes]], bool], callback=None, *extra_args):
+    #     '''
+    #    data: The command which will be execute
+    #    f: function to check result
+    #    '''
+    #     self._worker.recv_func(data, f, callback, extra_args)
 
 
     def prompt(self, msg, callback, *args):

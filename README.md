@@ -14,7 +14,7 @@
 
 ## Preview
 
-![webshell.jpg](./preview/zn/webshell.jpg)
+![elecshell.jpg](./preview/zn/elecshell.jpg)
 
 ## script
 鼠标移动到窗口的最右侧可弹出脚本窗口

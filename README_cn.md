@@ -14,10 +14,10 @@ elecshell支持上述功能
 
 # 预览
 
-![webshell.jpg](./preview/zn/webshell.jpg)
+![elecshell.jpg](./preview/zn/elecshell.jpg)
 
 # 环境
-需要安装python3且命令行中存在可用的python或者python3命令,建议python的版本在3.8以上
+需要安装python3且命令行中存在可用的python或者python3命令,建议python的版本在3.9以上
 之后需要安装一下python模块
 ```text
 paramiko==3.0.0
@@ -47,7 +47,7 @@ psutil==5.9.5
 
 ![file_transfer_btn.jpg](./preview/zn/file_transfer_btn.jpg)
 
-可以查询服务器指定路径下的目录与文件名,并通过拖拽进行上传与下载
+可以查询服务器指定路径下的目录与文件名,并通过拖拽进行上传与下载,linux只能在用户目录及子目录下进行上传与下载
 
 首先会通过sftp的方式进行文件传输,若sftp不可用,那么会先在远程启动一个服务器进行
 文件传输,当前会话关闭时该服务器会自动退出
@@ -229,7 +229,7 @@ ctx.recv_util: 发送执行的命令并获取返回结果,相较于recv函数来
 
 第二个参数: 命令执行的结果
 
-其余为调用 ctx.recv 时自行传递的参数
+其余为调用 ctx.recv_util 时自行传递的参数
 
 ```python
 def handleRecv(ctx, ret):
@@ -258,37 +258,7 @@ ctx.recv_regexp: 发送执行的命令并获取返回结果,相较于recv函数�
 
 第二个参数: 命令执行的结果
 
-其余为调用 ctx.recv 时自行传递的参数
-
-```python
-import re
-
-def handleRecv(ctx, ret):
-    ctx.send('echo "current session has result with dev"')
-
-def Main(ctx):
-    exp = re.compile(b'h.me', flags=re.MULTILINE | re.DOTALL)
-    ctx.recv_regexp("ls /", exp, handleRecv)
-```
-
-ctx.recv_func: 发送执行的命令并获取返回结果,相较于recv函数来说,该函数会g
-到的结果匹配一个正则
-
-第一个参数: 执行的命令
-
-第二个参数: 一个正则,<font color="red">如果结果一直不匹配该正则,进程会卡死</font>
-
-第三个函数: 回调函数
-
-之后的参数自行传递,会以相同的顺序传递给回调函数
-
-回调函数: 处理命令执行的结果
-
-第一个参数: 当前会话上下文
-
-第二个参数: 命令执行的结果
-
-其余为调用 ctx.recv 时自行传递的参数
+其余为调用 ctx.recv_regexp 时自行传递的参数
 
 ```python
 import re
@@ -302,7 +272,7 @@ def Main(ctx):
 ```
 
 
-# Hot key
+# 热键
 ## windows/linux
 ctrl + insert: 复制
 
