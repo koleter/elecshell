@@ -9,6 +9,7 @@ from filetransfer.base_transfer import BaseTransfer
 from util.error import b_is_error
 from util.local_server import start_local_server
 from utils import gen_id
+from urllib.parse import quote
 
 port_pattern = re.compile(b'Port (\\d+) is unavailable')
 py_version_pattern = re.compile(b'Python (\\d)\\.')
@@ -21,6 +22,7 @@ import SimpleHTTPServer
 import os
 import urlparse
 import json
+import urllib
 
 def list_directory_contents(path):
     def _list_contents(path, indent=0):
@@ -56,7 +58,8 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
 
     def do_GET(self):
         # 获取请求的路径
-        path = self.path
+        raw_path = self.path
+        path = urllib.unquote(raw_path)
 
         # 分离路径和查询字符串
         query_start = path.find('?')
@@ -131,6 +134,7 @@ import http.server
 from socketserver import ThreadingMixIn, TCPServer
 import os
 import json
+from urllib.parse import unquote
 
 def list_directory_contents(path):
     def _list_contents(path, indent=0):
@@ -171,7 +175,8 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
         ip = self.client_address
         # super().do_GET()
         # 获取请求的路径
-        path = self.path
+        raw_path = self.path
+        path = unquote(raw_path)
 
         # 分离路径和查询字符串
         query_start = path.find('?')
@@ -442,6 +447,7 @@ finally:
     def download_single_file(self, local_root_dir, file, remoteDir):
         url = "http://{}:{}/{}/{}?token={}".format(self.remote_server["host"], self.remote_server["port"], remoteDir,
                                                    file, self.remote_server["token"])
+        # url = quote(url)
         response = requests.get(url, stream=True)
         if response.status_code == 200:
             # 打开文件以二进制模式写入

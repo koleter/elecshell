@@ -7,6 +7,7 @@ import uuid
 
 from util.net import get_local_host_ip
 from util.port import get_unused_port
+from urllib.parse import unquote
 
 _local_server = None
 
@@ -41,7 +42,8 @@ def _start_local_server(token):
             print(f"远程IP地址是：{ip}")
             # super().do_GET()
             # 获取请求的路径
-            path = self.path
+            raw_path = self.path
+            path = unquote(raw_path)
 
             # 分离路径和查询字符串
             query_start = path.find('?')
