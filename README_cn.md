@@ -234,11 +234,10 @@ ctx.recv_util: 发送执行的命令并获取返回结果,相较于recv函数来
 
 ```python
 def handleRecv(ctx, ret):
-    if "dev" in ret:
-        ctx.send('echo "current session has result with dev"')
+    ctx.send('echo "current session has result with dev"')
 
 def Main(ctx):
-    ctx.recv("ls /", handleRecv, 0)
+    ctx.recv_util("ls /", b'dev', handleRecv)
 ```
 
 

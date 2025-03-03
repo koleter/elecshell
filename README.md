@@ -2,77 +2,279 @@
 
 [中文](README_cn.md)
 
-### Introduction
+# Introduction
 
-用作 ssh 客户端以连接到 ssh 服务器的一个 Web 应用程序
+A web application used as an ssh client to connect to an ssh server
 
-在以往的工作中接触到了很多的ssh客户端工具如finalShell,xshell,MobaxTerm等,其中xshell的脚本功能在某些情况下节省了我不少的时间,但是xshell的脚本可以做的事情也比较有限,存在以下问题:
-1. 使用不便,比如想要使用一个非系统模块requests去发送一个网络请求,首先就要先安装该模块,xshell的python是自带的,并不是用户自己安装的python,故无法实现该操作且百度无果,没有找到好的解决方案
-2. 可以创建新的会话,但是创建出来的会话用户不可控
-3. 可以发送命令但是无法接收命令执行后的返回结果
+In previous work, I have come into contact with many ssh client tools such as finalShell, xshell, MobaxTerm, etc. Among them, the script function of xshell has saved me a lot of time in some cases, but the script of xshell can do limited things, and there are the following problems:
+
+1. Inconvenient to use, for example, if you want to use a non-system module requests to send a network request, you must first install the module. The python of xshell is built-in, not the python installed by the user, so the operation cannot be implemented and Baidu has no results, and no good solution has been found
+
+2. You can create a new session, but the created session is not controllable by the user
+
+3. You can send commands but cannot receive the return results after the command is executed
+
+elecshell supports the above functions
 
 
+# Preview
 
-## Preview
+![elecshell.jpg](./preview/en/elecshell.jpg)
 
-![elecshell.jpg](./preview/zn/elecshell.jpg)
+# Environment
+
+You need to install python3 and have an available python or python3 command in the command line. It is recommended that the python version is 3.9 or above. Then you need to install the python module
+```text
+paramiko==3.0.0
+tornado==6.2.0
+appdirs==1.4.4
+requests==2.32.3
+watchdog==4.0.1
+psutil==5.9.5
+```
+
+You also need to install node and yarn, then execute the yarn command in the project root directory and wait for it to be executed.
+
+# Development
+
+1. Run the main.py script in the server directory of the project root directory
+2. Execute yarn run start in the project root directory
+3. Execute yarn run app in the project root directory
+
+# Deployment
+1. Execute <b>yarn run build</b> in the project root directory
+2. Execute <b>yarn run app:build</b> in the project root directory
+
+Then a build folder will be generated in the project root directory, which contains the software installation program
+
+# Features
+
+## Upload and download
+After opening a session window, you can switch to the file transfer tab
+
+![file_transfer_btn.jpg](./preview/en/file_transfer_btn.jpg)
+
+You can query the directory and file name under the specified path of the server, and upload and download by dragging. Linux can only upload and download under the user directory and subdirectory.
+
+First, the file will be transferred through sftp. If sftp is not available, a server will be started remotely to transfer the file. The server will automatically exit when the current session is closed.
+
+## Login script
+You can send some configured commands immediately when the session is created
+
+Sometimes some servers have restrictions and can only connect through an intermediate machine as a relay. After logging into the intermediate machine, enter the target IP and other information to connect. At this time, you can
+set up a login script to automatically enter relevant information after logging into the intermediate machine and jump directly to the target machine
+
+## Variables
+The company may force you to change the password of the OA account every once in a while, and all sessions are logged in with this account. This feature is to prevent the need to change the configuration of a large number of sessions when changing the password. You can configure it in File-Settings
+
+![file_setting_btn.jpg](./preview/en/file_setting_btn.jpg)
+
+![variable_preview.jpg](./preview/en/variable_preview.jpg)
+
+As shown in the figure, the variable name is set to nrelayPassword, and the corresponding variable value is 2wsxZAQ!. When using it, you can wrap the variable in two curly brackets in the basic information of the session. As shown in the figure below, the actual password used for connection is 2wsxZAQ!
+
+![var_used.jpg](./preview/en/var_used.jpg)
+
+Support hostname, username and password
 
 ## script
-鼠标移动到窗口的最右侧可弹出脚本窗口
-![script.jpg](./preview/zn/script.jpg)
+When there is an active session, move the mouse to the far right of the window to pop up the script window
 
-点击添加按钮显示如下界面
+![script.jpg](./preview/en/script.jpg)
 
-![addScript.jpg](./preview/zn/addScript.jpg)
+Click the Add button to display the following interface
 
-脚本名是显示在界面上的按钮名字,python文件路径为一个python文件的绝对路径,
-一个脚本按钮的类型分为两种,公共表示所有的会话都可以使用该按钮,当前会话表示只有当前的会话可以使用的按钮(其他的会话处于活跃状态时无法看到该按钮)
+![addScript.jpg](./preview/en/addScript.jpg)
 
-python脚本的入口为Main函数,接受一个形参,该参数为handler.pojo.SessionContext.SessionContext类的一个实例对象,
-可以认为是代表了当前会话的一个对象,可用的接口可以参考该类的定义
+The label is the button name displayed on the interface
 
+The script type is divided into the following two types. The function of sending a string is to record a command. When you click the button, the command you wrote will be sent to the terminal. To run a python script, you need to write a python script yourself, and the script will be executed locally when you click the button
 
-handler.pojo.SessionContext.SessionContext类中有两个函数需要回调函数,一个是用于接收用户输入的prompt,另一个是用来创建新会话的create_new_session函数,
-回调函数需要至少两个参数,第一个参数代表当前会话的上下文对象,第二个参数为回调的结果,其余的参数为客户自行传入的参数
+If the script is public, all sessions can use this button, including newly configured sessions in the future; if it is not checked, only the session selected on the right can use it (the button cannot be seen when other sessions are active)
+
+The entry point of the python script is the Main function, which accepts a formal parameter, which can be considered as the context object representing the current session. The functions in this object do not support
+calling through multiple threads, but can be called in a multi-coroutine manner through the asyncio module
+
+## API
+
+ctx.prompt: pop-up window receives user input
+
+The first parameter is a string, showing the title of the pop-up window
+
+The second parameter is a callback function
+
+The subsequent parameters are passed by themselves and will be passed to the callback function in the same order
+
+Callback function: process the input result
+
+The first parameter represents the current session context
+
+The second parameter is the user's input
+
+The rest are parameters passed by themselves when calling ctx.prompt
 
 ```python
 def prompt_callback(ctx, result, my_arg):
-    print("自行传入的参数为: {}".format(my_arg))
+    print("The parameters passed in by yourself are: {}".format(my_arg))
     if not result:
         return
-    print(f'用户的输入为{result}')
+    print(f'Your input is {result}')
     ctx.send(result + '\r')
 
-
 def Main(ctx):
-    ctx.prompt("请输入要执行的命令:", prompt_callback, 4)
+    ctx.prompt("Please enter the command to be executed:", prompt_callback, 4)
 ```
+
+ctx.send: send command
+```python
+def Main(ctx):
+    ctx.send("pwd")
+```
+
+ctx.recv: Send the executed command and get the returned result
+
+First parameter: the executed command
+
+Second parameter: callback function
+
+Third function: the waiting time after sending the command, in seconds. 0 means that the result of the command is returned immediately.
+Some command results are returned in multiple times. If 0 is filled in here, the received execution result may be incomplete
+
+The subsequent parameters are passed by themselves and will be passed to the callback function in the same order
+
+Callback function: process the result of command execution
+
+First parameter: current session context
+
+Second parameter: result of command execution
+
+The rest are parameters passed by themselves when calling ctx.recv
 
 ```python
+def handleRecv(ctx, ret):
+    if "dev" in ret:
+        ctx.send('echo "current session has result with dev"')
+
+def Main(ctx):
+    ctx.recv("ls /", handleRecv, 0)
+```
+
+ctx.create_new_session: Open new sessions
+
+The first parameter: is a list of session configuration ids. The elements in the list can be the id of the session configuration (string) or an object. The object's conf_id indicates the id of the session configuration, and session_name indicates the tag name of the created session
+
+The second parameter: callback function
+
+The subsequent parameters are passed by themselves and will be passed to the callback function in the same order
+
+Callback function: can continue to perform corresponding operations on the newly created session
+
+The first parameter: the current session context
+
+The second parameter: is a list representing the context of all created sessions
+
+The rest are parameters passed by themselves when calling ctx.create_new_session
+
+
+```python
+import asyncio
+
+
+def handleRecv(ctx, ret):
+    if "dev" in ret:
+        ctx.send('echo "current session has result with dev"')
+
+
+async def handle_one(created_ctx, cmd):
+    created_ctx.recv(cmd, handleRecv, 0)
+
+
 def callback(ctx, created_ctxs, a, b):
-    print("自定义参数相加结果: {}".format(a + b))
-    cmds = ['pwd\r', 'ls /\r', 'ls\r']
+    print("Custom parameter addition result: {}".format(a + b))
+    cmds = ['pwd', 'ls /']
     for i in range(len(created_ctxs)):
-        ret = created_ctxs[i].on_recv(cmds[i % len(cmds)])
-        if "dev" in ret:
-            created_ctxs[i].send('pwd\r')
+        asyncio.create_task(handle_one(created_ctxs[i], cmds[i]))
 
 
 def Main(ctx):
-    ctx.create_new_session([ctx.get_xsh_conf_id()]*2, callback, 3, 4)
+    ctx.create_new_session([ctx.get_xsh_conf_id(), {"conf_id": ctx.get_xsh_conf_id(), "session_name": "xxx"}], callback,
+                           3, 4)
+
 ```
-该脚本相当于复制了当前会话2次,并在新的会话中分别执行了"pwd"与"ls /"命令,其中如果某个会话执行的命令的返回结果中有dev这个字符串,那么那个会话再执行一次"pwd" 命令
 
-如果要打开一个其他的会话,可以在ctx.create_new_session的第一个函数中传入这个会话的配置文件的id,该id可以通过编辑的方式看到
+The ctx.get_xsh_conf_id function can get the id of the current session configuration
 
-![edit.jpg](./preview/zn/edit.jpg)
+This script is equivalent to opening the current session twice, and executing the "pwd" and "ls /" commands in the two newly created sessions respectively. If the return result of the command executed by a session contains the string dev, then the print command will be executed again in that session
 
-![get_session_conf_key.jpg](./preview/zn/get_session_conf_key.jpg)
+If you want to open another session, you can pass the configuration id of this session in the first function of ctx.create_new_session. The id can be seen by editing
 
-## start
-运行main.py,浏览器打开http://localhost:8888
+![edit.jpg](./preview/en/edit.jpg)
 
-## Hot key
-ctrl + insert: 复制
+![get_session_conf_key.jpg](./preview/en/get_session_conf_key.jpg)
 
-shift + insert: 粘贴
+ctx.recv_util: Send the command to be executed and get the return result. Compared with the recv function, this function will wait until a certain byte string appears before returning.
+
+First parameter: the command to be executed
+
+Second parameter: a byte string. This function will continue to receive the execution result of the command until the byte string appears before calling the callback function.
+<font color="red">If the byte string does not appear in the result, the process will be stuck</font>
+
+Third function: callback function
+
+The subsequent parameters are passed by themselves and will be passed to the callback function in the same order
+
+Callback function: Process the result of command execution
+
+First parameter: current session context
+
+Second parameter: result of command execution
+
+The rest are parameters passed by themselves when calling ctx.recv_util
+
+```python
+def handleRecv(ctx, ret):
+    ctx.send('echo "current session has result with dev"')
+
+def Main(ctx):
+    ctx.recv_util("ls /", b'dev', handleRecv)
+```
+
+ctx.recv_regexp: Send the command to be executed and get the return result. Compared with the recv function, this function will wait until the received result matches a regular expression.
+
+First parameter: the command to be executed
+
+Second parameter: a regular expression. <font color="red">If the result does not match the regular expression, the process will be stuck</font>
+
+Third function: callback function
+
+The subsequent parameters are passed by themselves and will be passed to the callback function in the same order
+
+Callback function: process the result of command execution
+
+First parameter: current session context
+
+Second parameter: result of command execution
+
+The rest are parameters passed by themselves when calling ctx.recv_regexp
+
+```python
+import re
+
+def handleRecv(ctx, ret):
+    ctx.send('echo "current session has result with dev"')
+
+def Main(ctx):
+    exp = re.compile(b'h.me', flags=re.MULTILINE | re.DOTALL)
+    ctx.recv_regexp("ls /", exp, handleRecv)
+```
+
+# Hot key
+## windows/linux
+ctrl + insert: copy
+
+shift + insert: paste
+
+## mac
+command + c: copy
+
+command + v: paste
