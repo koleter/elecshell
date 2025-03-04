@@ -33,7 +33,7 @@ const basePath = Platform.getUserBasePath();
 // 防止ctrl + w关闭窗口
 app.whenReady().then(() => {
     globalShortcut.register('CommandOrControl+W', () => {
-        console.log("发现ctrl+w按键")
+
     });
 });
 
