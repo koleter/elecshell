@@ -1,8 +1,8 @@
 import tornado.web
-from handler.MixinHandler import MixinHandler
+from handler.BaseHandler import BaseHandler
 
 
-class NotFoundHandler(MixinHandler, tornado.web.ErrorHandler):
+class NotFoundHandler(BaseHandler, tornado.web.ErrorHandler):
 
     def initialize(self):
         super(NotFoundHandler, self).initialize()

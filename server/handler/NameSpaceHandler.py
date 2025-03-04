@@ -4,11 +4,11 @@ import shutil
 
 import tornado.web
 
-from handler.MixinHandler import MixinHandler
+from handler.BaseHandler import BaseHandler
 from handler.ConfigHandler import conf_dir_path
 from settings import base_dir
 
-class NameSpaceHandler(MixinHandler, tornado.web.RequestHandler):
+class NameSpaceHandler(BaseHandler, tornado.web.RequestHandler):
     def initialize(self, loop):
         super(NameSpaceHandler, self).initialize(loop)
 

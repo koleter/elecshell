@@ -2,7 +2,7 @@ import json
 import os
 
 import tornado.web
-from handler.MixinHandler import MixinHandler
+from handler.BaseHandler import BaseHandler
 from handler.pojo.conf.GlobalAutoConfig import GlobalAutoConfig
 from handler.pojo.conf.ProjectConfig import ProjectConfig
 from handler.pojo.conf.ScriptConfig import ScriptConfig
@@ -45,7 +45,7 @@ def initialize_confs():
 initialize_confs()
 
 
-class ConfigHandler(MixinHandler, tornado.web.RequestHandler):
+class ConfigHandler(BaseHandler, tornado.web.RequestHandler):
     def initialize(self, loop):
         super(ConfigHandler, self).initialize(loop)
         self.script = None

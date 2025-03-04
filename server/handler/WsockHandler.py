@@ -10,7 +10,7 @@ import traceback
 import paramiko
 import tornado.web
 from exception.InvalidValueError import InvalidValueError
-from handler.MixinHandler import MixinHandler
+from handler.BaseHandler import BaseHandler
 from handler.const import callback_map, callback_map_lock
 from handler.pojo.SessionContext import SessionContext
 from handler.pojo.worker import workers, clear_worker, workers_lock
@@ -25,7 +25,7 @@ except ImportError:
     JSONDecodeError = ValueError
 
 
-class WsockHandler(MixinHandler, tornado.websocket.WebSocketHandler):
+class WsockHandler(BaseHandler, tornado.websocket.WebSocketHandler):
 
     def initialize(self, loop):
         super(WsockHandler, self).initialize(loop)

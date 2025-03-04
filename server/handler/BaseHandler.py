@@ -19,7 +19,7 @@ except ImportError:
     from urlparse import urlparse
 
 
-class MixinHandler(object):
+class BaseHandler(object):
 
     custom_headers = {
         'Server': 'TornadoServer'

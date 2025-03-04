@@ -18,7 +18,7 @@ from handler import DumpHandler
 from settings import base_dir
 from settings import (
     get_app_settings, get_host_keys_settings, get_policy_setting,
-    get_ssl_context, get_server_settings, check_encoding_setting
+    get_server_settings, check_encoding_setting
 )
 import faulthandler
 
@@ -86,12 +86,9 @@ def main():
     check_encoding_setting(options.encoding)
     loop = tornado.ioloop.IOLoop.current()
     app = make_app(make_handlers(loop, options), get_app_settings(options))
-    ssl_ctx = get_ssl_context(options)
     server_settings = get_server_settings(options)
     app_listen(app, options.port, options.address, server_settings)
-    if ssl_ctx:
-        server_settings.update(ssl_options=ssl_ctx)
-        app_listen(app, options.sslport, options.ssladdress, server_settings)
+
     # url = "http://localhost:{}/session".format(options.port)
     # webbrowser.open(url, new=0, autoraise=True)
     # asyncio.run(start_watcher())

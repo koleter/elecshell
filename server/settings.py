@@ -1,6 +1,5 @@
 import logging
 import os.path
-import ssl
 
 from tornado.options import define
 from policy import (
@@ -13,16 +12,17 @@ from utils import (
 
 define('address', default='', help='Listen address')
 define('port', type=int, default=8888,  help='Listen port')
-define('ssladdress', default='', help='SSL listen address')
-define('sslport', type=int, default=4433,  help='SSL listen port')
-define('certfile', default='', help='SSL certificate file')
-define('keyfile', default='', help='SSL private key file')
-define('debug', type=bool, default=False, help='Debug mode')
+define('encoding', default='',
+       help='''The default character encoding of ssh servers.
+Example: --encoding='utf-8' to solve the problem with some switches&routers''')
 define('policy', default='warning',
        help='Missing host key policy, reject|autoadd|warning')
 define('hostfile', default='', help='User defined host keys file')
 define('syshostfile', default='', help='System wide host keys file')
+define('wpintvl', type=float, default=0, help='Websocket ping interval')
+define('debug', type=bool, default=False, help='Debug mode')
 define('tdstream', default='', help='Trusted downstream, separated by comma')
+
 define('redirect', type=bool, default=True, help='Redirecting http to https')
 define('fbidhttp', type=bool, default=True,
        help='Forbid public plain http incoming requests')
@@ -34,15 +34,12 @@ define('origin', default='*', help='''Origin policy,
 '<domains>': custom domains policy, matches any domain in the <domains> list
 separated by comma;
 '*': wildcard policy, matches any domain, allowed in debug mode only.''')
-define('wpintvl', type=float, default=0, help='Websocket ping interval')
 define('timeout', type=float, default=5, help='SSH connection timeout')
 define('delay', type=float, default=3, help='The delay to call recycle_worker')
 define('maxconn', type=int, default=100,
        help='Maximum live connections (ssh sessions) per client')
 define('font', default='', help='custom font filename')
-define('encoding', default='',
-       help='''The default character encoding of ssh servers.
-Example: --encoding='utf-8' to solve the problem with some switches&routers''')
+
 
 import appdirs
 base_dir = appdirs.user_config_dir(appname="elecshell", appauthor="")
@@ -107,23 +104,6 @@ def get_policy_setting(options, host_keys_settings):
     logging.info(policy_class.__name__)
     check_policy_setting(policy_class, host_keys_settings)
     return policy_class()
-
-
-def get_ssl_context(options):
-    if not options.certfile and not options.keyfile:
-        return None
-    elif not options.certfile:
-        raise ValueError('certfile is not provided')
-    elif not options.keyfile:
-        raise ValueError('keyfile is not provided')
-    elif not os.path.isfile(options.certfile):
-        raise ValueError('File {!r} does not exist'.format(options.certfile))
-    elif not os.path.isfile(options.keyfile):
-        raise ValueError('File {!r} does not exist'.format(options.keyfile))
-    else:
-        ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        ssl_ctx.load_cert_chain(options.certfile, options.keyfile)
-        return ssl_ctx
 
 
 def get_trusted_downstream(tdstream):

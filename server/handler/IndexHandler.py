@@ -12,7 +12,7 @@ from tornado.process import cpu_count
 
 from exception.InvalidValueError import InvalidValueError
 from handler.ConfigHandler import xsh_dir_path
-from handler.MixinHandler import MixinHandler
+from handler.BaseHandler import BaseHandler
 from handler.pojo.PrivateKey import PrivateKey
 from handler.pojo.SSHClient import SSHClient
 from handler.const import swallow_http_errors, DEFAULT_PORT, TERM
@@ -30,7 +30,7 @@ except ImportError:
 
 
 
-class IndexHandler(MixinHandler, tornado.web.RequestHandler):
+class IndexHandler(BaseHandler, tornado.web.RequestHandler):
 
 
     def initialize(self, loop, policy, host_keys_settings):

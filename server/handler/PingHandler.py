@@ -1,9 +1,9 @@
 import tornado.web
 
-from handler.MixinHandler import MixinHandler
+from handler.BaseHandler import BaseHandler
 
 
-class PingHandler(MixinHandler, tornado.web.RequestHandler):
+class PingHandler(BaseHandler, tornado.web.RequestHandler):
     def initialize(self, loop):
         super(PingHandler, self).initialize(loop)
 

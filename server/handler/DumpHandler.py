@@ -1,10 +1,10 @@
 import faulthandler
 
 import tornado.web
-from handler.MixinHandler import MixinHandler
+from handler.BaseHandler import BaseHandler
 
 
-class DumpHandler(MixinHandler, tornado.web.RequestHandler):
+class DumpHandler(BaseHandler, tornado.web.RequestHandler):
     def initialize(self, loop):
         super(DumpHandler, self).initialize(loop)
 
