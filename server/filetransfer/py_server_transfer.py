@@ -362,7 +362,7 @@ finally:
     def _upload_single_file(self, upload_local_path, remote_path):
         local_server = start_local_server()
         download_url = f'http://{local_server["local_ip"]}:{local_server["port"]}/{upload_local_path}?token={local_server["token"]}'
-        out = self.worker.execute_implicit_command(f'wget -q -O {remote_path} {download_url} || rm -f {remote_path}')
+        out = self.worker.execute_implicit_command(f"wget -q -O '{remote_path}' '{download_url}' || rm -f '{remote_path}'")
         if b_is_error(out):
             lines = out.decode(self.worker.encoding).split('\n')
             msg_lines = lines[1:-1]
@@ -383,7 +383,7 @@ finally:
                 for root, dirs, files in os.walk(local_path):
                     extra_dirname = root.removeprefix(local_path).replace(os.path.sep, "/")
                     remote_dir = remote_path + "/" + directory_name + "/" + extra_dirname
-                    self._create_remote_directory(remote_dir)
+                    self.create_remote_directory(remote_dir)
                     for file_name in files:
                         upload_local_path = os.path.join(root, file_name)
                         self._upload_single_file(upload_local_path, self.get_remote_path(remote_dir, file_name))

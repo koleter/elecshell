@@ -9,7 +9,7 @@ class BaseTransfer:
 
     def create_remote_directory(self, path):
         """递归创建远程目录"""
-        self.worker.recv(f'mkdir -p {path}; builtin history -d $((HISTCMD-1))\r', show_on_term=False)
+        self.worker.recv(f"mkdir -p '{path}'; builtin history -d $((HISTCMD-1))\r", show_on_term=False)
 
     def get_remote_file_list(self, remote_path):
         def h(ctx, output, worker):
