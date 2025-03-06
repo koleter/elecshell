@@ -254,7 +254,7 @@ class py_server_sftp_file_transfer(BaseTransfer):
         self._start_remote_http_server()
 
     def _get_remote_host(self):
-        cmd = r"hostname -I | tr ' ' '\\n' | grep -v '^172\.' | xargs"
+        cmd = r"hostname -I | tr ' ' '\\n' | grep -v '^172\.' | grep -v '^0\.' | xargs"
         match = self.worker.execute_implicit_command(cmd, pattern=host_pattern)
         return match.group(0).decode('utf-8')
 
@@ -362,7 +362,8 @@ finally:
     def _upload_single_file(self, upload_local_path, remote_path):
         local_server = start_local_server()
         download_url = f'http://{local_server["local_ip"]}:{local_server["port"]}/{upload_local_path}?token={local_server["token"]}'
-        out = self.worker.execute_implicit_command(f"wget -q -O '{remote_path}' '{download_url}' || rm -f '{remote_path}'")
+        # out = self.worker.execute_implicit_command(f"wget -q -O '{remote_path}' '{download_url}' || rm -f '{remote_path}'")
+        out = self.worker.recv_util(f"wget -q -O '{remote_path}' '{download_url}' || rm -f '{remote_path}'", b'\x1b]0', show_on_term=False)
         if b_is_error(out):
             lines = out.decode(self.worker.encoding).split('\n')
             msg_lines = lines[1:-1]
