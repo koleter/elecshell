@@ -368,7 +368,7 @@ finally:
     def _upload_single_file(self, upload_local_path, remote_path):
         local_server = start_local_server()
         download_url = f'http://{local_server["local_ip"]}:{local_server["port"]}/{upload_local_path}?token={local_server["token"]}'
-        out = self.worker.execute_implicit_command(f"wget -q -O '{remote_path}' '{download_url}' || rm -f '{remote_path}' > /dev/null")
+        out = self.worker.execute_implicit_command(f"setsid wget -q -O '{remote_path}' '{download_url}' || rm -f '{remote_path}'")
         # out = self.worker.recv_util(f"wget -q -O '{remote_path}' '{download_url}' || rm -f '{remote_path}'", b'\x1b]0', show_on_term=False)
         if b_is_error(out):
             lines = out.decode(self.worker.encoding).split('\n')
