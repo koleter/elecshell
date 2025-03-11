@@ -347,7 +347,7 @@ class Worker(object):
 
                 try:
                     while not self.chan.recv_ready():
-                        time.sleep(0.1)
+                        pass
                     text = self.chan.recv(BUF_SIZE)
                     data += text
                 except (OSError, IOError) as e:
