@@ -78,7 +78,7 @@ As shown in the figure, the variable name is set to nrelayPassword, and the corr
 Support hostname, username and password
 
 ## script
-When there is an active session, move the mouse to the far right of the window to pop up the script window
+ctrl + q will pop up the script window. If there is no active session, no available scripts will be displayed.
 
 ![script.jpg](./preview/en/script.jpg)
 

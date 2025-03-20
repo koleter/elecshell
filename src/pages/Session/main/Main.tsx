@@ -88,6 +88,18 @@ const SessionMain: React.FC = () => {
         }
     }, [activeKey]);
 
+    useEffect(() => {
+        const handleKeyUp = (e) => {
+            if (e.keyCode === 81 && e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) {
+                setDrawerOpen(true);
+            }
+        }
+        document.addEventListener('keyup', handleKeyUp);
+
+        return () => {
+            document.removeEventListener('keyup', handleKeyUp);
+        }
+    }, []);
 
     const onChange = (newActiveKey: string) => {
         setActiveKey(newActiveKey);
@@ -380,26 +392,6 @@ const SessionMain: React.FC = () => {
                     drawerOpen={drawerOpen}
                     setDrawerOpen={setDrawerOpen}
                 />
-
-                <div style={{
-                    position: 'absolute',
-                    right: '0',
-                    bottom: 0,
-                    width: '20px',
-                    height: '95%',
-                    zIndex: 999
-                }} onMouseEnter={() => {
-                    hoverTimeout = setTimeout(() => {
-                        if (process.env.NODE_ENV === 'development') {
-                            setDrawerOpen(true);
-                        } else {
-                            sessions.length && setDrawerOpen(true);
-                            // setDrawerOpen(true);
-                        }
-                    }, 100);
-                }} onMouseLeave={() => {
-                    clearTimeout(hoverTimeout);
-                }}/>
             </div>
         }}
 
