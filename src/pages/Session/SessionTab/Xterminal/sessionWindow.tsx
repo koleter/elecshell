@@ -10,7 +10,7 @@ import "./SessionWindow.less"
 import {sessionConfInfo} from "@/pages/Session/SessionList/SessionList";
 import {AppContext} from "@/pages/context/AppContextProvider";
 import {Button, Input, Tooltip} from 'antd';
-import {ArrowDownOutlined, ArrowUpOutlined} from '@ant-design/icons';
+import {ArrowDownOutlined, ArrowUpOutlined, CloseOutlined} from '@ant-design/icons';
 import {getTermHeight} from "@/pages/util/style";
 import {debounce} from "@/pages/util/event";
 
@@ -225,26 +225,34 @@ const SessionWindow: React.FC = (props) => {
         }
     };
 
-    const toggleSearchPanel = (e) => {
+    const closeSearchPanel = () => {
+        setShowSearch(false);
+        term._searchAddon.clearDecorations();
+        term.focus();
+    }
+
+    const openSearchPanel = (e) => {
         if (e.shiftKey && e.ctrlKey && e.keyCode == 70) {
-            setShowSearch((b) => {
-                if (!b) {
-                    const selection = term.getSelection();
-                    if (selection) {
-                        setSearchValue(selection);
-                        term._searchAddon.findPrevious(selection, calcSearchOption(matchCase, words, regexp));
-                        setTimeout(() => {
-                            searchInputRef?.current?.focus();
-                        }, 100);
-                    }
-                } else {
-                    term._searchAddon.clearDecorations();
-                    term.focus();
-                }
-                return !b;
-            });
+            const selection = term.getSelection();
+            if (selection) {
+                setSearchValue(selection);
+            }
+            setShowSearch(true);
+            term._searchAddon.findPrevious(selection, calcSearchOption(matchCase, words, regexp));
+            setTimeout(() => {
+                searchInputRef?.current?.focus();
+            }, 100);
         }
     }
+
+    useEffect(() => {
+        if (terminalRef.current) {
+            terminalRef.current.addEventListener('keydown', openSearchPanel);
+            return () => {
+                terminalRef.current?.removeEventListener('keydown', openSearchPanel);
+            }
+        }
+    }, [terminalRef.current]);
 
     // 等后端ssh连接建立后再建立websocket连接
     useEffect(async () => {
@@ -257,7 +265,6 @@ const SessionWindow: React.FC = (props) => {
             term._fitAddon = fitAddon;
 
             if (terminalRef.current) {
-                terminalRef.current.addEventListener('keydown', toggleSearchPanel);
                 const resizeObserver = new ResizeObserver(entries => {
                     // console.log("term resizing....");
                     fitAddon.fit();
@@ -484,38 +491,46 @@ const SessionWindow: React.FC = (props) => {
 
     return (
         <div style={{height: getTermHeight(), display: "flex", flexDirection: 'column'}}>
-            <div id={'searchPanel'} style={{
-                display: showSearch ? 'flex' : 'none',
-                width: '720px',
-                alignContent: 'center',
-                whiteSpace: 'nowrap'
-            }}>
-                <Input.TextArea ref={searchInputRef} allowClear={true} autoSize={true} value={searchValue}
-                                onChange={(newVal) => {
-                                    term._searchAddon.findNext(newVal.target.value, calcSearchOption(matchCase, words, regexp));
-                                    setSearchValue(newVal.target.value);
-                                }} onKeyDown={toggleSearchPanel}/>
-                <div style={{backgroundColor: 'white'}}>
-                    {
-                        matchButtons.map((item, index) => {
-                            return <Tooltip title={item.title} color={'white'} overlayInnerStyle={{color: 'black'}}>
-                                <Button className={'searchOptions'} type={item.getType()}
-                                        style={{height: searchPanelHeight}}
-                                        onClick={item.onClick}>{item.render}</Button>
-                            </Tooltip>
-                        })
-                    }
+            <div style={{display: showSearch ? 'flex' : 'none', position: "relative"}}>
+                <div id={'searchPanel'} style={{
+                    display: "flex",
+                    width: '720px',
+                    alignContent: 'center',
+                    whiteSpace: 'nowrap'
+                }}>
+                    <Input.TextArea ref={searchInputRef} allowClear={true} autoSize={true} value={searchValue}
+                                    onChange={(newVal) => {
+                                        term._searchAddon.findNext(newVal.target.value, calcSearchOption(matchCase, words, regexp));
+                                        setSearchValue(newVal.target.value);
+                                    }} onKeyDown={openSearchPanel}/>
+                    <div style={{backgroundColor: 'white'}}>
+                        {
+                            matchButtons.map((item, index) => {
+                                return <Tooltip title={item.title} color={'white'} overlayInnerStyle={{color: 'black'}}>
+                                    <Button className={'searchOptions'} type={item.getType()}
+                                            style={{height: searchPanelHeight}}
+                                            onClick={item.onClick}>{item.render}</Button>
+                                </Tooltip>
+                            })
+                        }
 
-                    {
-                        findButtons.map((item) => {
-                            return <Tooltip title={item.title} color={'white'} overlayInnerStyle={{color: 'black'}}>
-                                <Button className={'searchOptions'} style={{height: searchPanelHeight}}
-                                        onClick={item.onClick}>{item.render}</Button>
-                            </Tooltip>
-                        })
-                    }
+                        {
+                            findButtons.map((item) => {
+                                return <Tooltip title={item.title} color={'white'} overlayInnerStyle={{color: 'black'}}>
+                                    <Button className={'searchOptions'} style={{height: searchPanelHeight}}
+                                            onClick={item.onClick}>{item.render}</Button>
+                                </Tooltip>
+                            })
+                        }
+                    </div>
+                </div>
+                <div className={"closeContain"}>
+                    <CloseOutlined className={"closeIcon"} onClick={() => {
+                        closeSearchPanel();
+                    }}/>
                 </div>
             </div>
+
             <div style={{flex: "auto", backgroundColor: 'black', overflow: "hidden"}} ref={terminalRef}/>
         </div>
     )
