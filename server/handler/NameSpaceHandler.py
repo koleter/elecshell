@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+import uuid
 
 import tornado.web
 
@@ -37,6 +38,7 @@ class NameSpaceHandler(BaseHandler, tornado.web.RequestHandler):
                 self.write(json.dumps({"status": "fail", "content": "namespace is already exist"}))
             directoryPath = data.get('directoryPath')
             shutil.copytree(directoryPath, namespace_path)
+            self.write(json.dumps({"status": "success", "content": "import namespace success"}))
         elif action_type == "export":
             namespace = data.get('namespace')
             directoryPath = data.get('directoryPath')
@@ -61,12 +63,14 @@ class NameSpaceHandler(BaseHandler, tornado.web.RequestHandler):
                         with open(src_file_path, 'r') as f:
                             data = json.loads(f.read())
                         if data.get("scriptType") == 1:
-                            dst_py_file_path = os.path.join(script_py_path, data.get("name"))
-                            shutil.copy(data.get("scriptPath"), dst_py_file_path)
-                            data.update("scriptPath", dst_py_file_path)
-                        with open(os.path.join(dst_script_path, data.get("name")), 'w', encoding='utf-8') as f:
-                            json.dumps(data, ensure_ascii=False)
-
+                            script_path = data.get("scriptPath")
+                            random_uuid = str(uuid.uuid4())
+                            dst_py_file_path = os.path.join(script_py_path, random_uuid)
+                            shutil.copy(script_path, dst_py_file_path)
+                            data.update({"scriptPath": random_uuid})
+                        with open(os.path.join(dst_script_path, file_name), 'w', encoding='utf-8') as f:
+                            f.write(json.dumps(data, ensure_ascii=False))
+            self.write(json.dumps({"status": "success", "content": "export namespace success"}))
 
     def delete(self):
         '''

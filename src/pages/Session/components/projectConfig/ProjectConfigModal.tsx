@@ -168,11 +168,8 @@ const ProjectConfigModal = () => {
                               actions: {
                                   render: (text, namespace) => {
                                       const res = [];
-                                      if (curNameSpace === namespace) {
-                                          return [];
-                                      }
-                                      return [
-                                          <a
+                                      if (curNameSpace !== namespace) {
+                                          res.push(<a
                                               key="link"
                                               onClick={() => {
                                                   util.request('conf', {
@@ -194,22 +191,25 @@ const ProjectConfigModal = () => {
                                               }}
                                           >
                                               <FormattedMessage id={'switch'}></FormattedMessage>
-                                          </a>,
-                                          <a
-                                              key="export"
-                                              onClick={() => {
-                                                  electronAPI.ipcRenderer.send('save-directory-dialog', {
-                                                      nextChannel: EXPORT_NAMESPACE,
-                                                      title: "请选择要保存的文件夹(如果文件夹已存在会被清空)",
-                                                      arg: {
-                                                          namespace
-                                                      }
-                                                  });
-                                              }}
-                                          >
-                                              <FormattedMessage id={'export'}></FormattedMessage>
-                                          </a>,
-                                          <Popconfirm
+                                          </a>);
+                                      }
+                                      res.push(<a
+                                          key="export"
+                                          onClick={() => {
+                                              electronAPI.ipcRenderer.send('save-directory-dialog', {
+                                                  nextChannel: EXPORT_NAMESPACE,
+                                                  title: "请选择要保存的文件夹(如果文件夹已存在会被清空)",
+                                                  arg: {
+                                                      namespace
+                                                  }
+                                              });
+                                          }}
+                                      >
+                                          <FormattedMessage id={'export'}></FormattedMessage>
+                                      </a>);
+
+                                      if (curNameSpace !== namespace) {
+                                          res.push(<Popconfirm
                                               title={intl.formatMessage({id: 'Are you sure you want to delete?'})}
                                               onConfirm={() => {
                                                   util.request('namespace', {
@@ -228,8 +228,9 @@ const ProjectConfigModal = () => {
                                               >
                                                   <FormattedMessage id="delete"/>
                                               </a>
-                                          </Popconfirm>
-                                      ]
+                                          </Popconfirm>);
+                                      }
+                                      return res;
                                   },
                               },
                           }}

@@ -35,6 +35,7 @@ ipcMain.on('save-directory-dialog', function (event, arg) {
     if (curWindow) {
         dialog.showSaveDialog(curWindow, {
             title: arg.title,
+            defaultPath: arg.arg.namespace,
             properties: ['openDirectory']
         }).then(function (result) {
             if (result.canceled) {
