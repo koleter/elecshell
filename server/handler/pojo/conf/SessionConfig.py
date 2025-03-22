@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import shutil
 
@@ -23,7 +24,8 @@ class SessionConfig(BaseConfig):
                 self._file_listdir_dfs(file_item, relative_file_path, session_conf_info)
                 parent_item.get('children').append(file_item)
             else:
-                with open(self._get_real_path(relative_file_path), 'r') as f:
+                with open(self._get_real_path(relative_file_path), 'r', encoding='utf-8') as f:
+                    logging.info(self._get_real_path(relative_file_path))
                     data = json.loads(f.read())
                 session_conf_info[file] = relative_file_path
                 parent_item.get('children').append({
@@ -110,3 +112,8 @@ class SessionConfig(BaseConfig):
                 return status_success('opration success')
 
         return super().post(args)
+
+if __name__ == '__main__':
+    file = r"C:\Users\24478\AppData\Local\elecshell\config\work\xsh\9OTbA_w00VqEnUzsPauEu5hxg4ONNuFjgoqFqFmH_2k"
+    with open(file, 'r', encoding='utf-8') as f:
+        data = json.loads(f.read())

@@ -198,7 +198,6 @@ const ProjectConfigModal = () => {
                                           onClick={() => {
                                               electronAPI.ipcRenderer.send('save-directory-dialog', {
                                                   nextChannel: EXPORT_NAMESPACE,
-                                                  title: "请选择要保存的文件夹(如果文件夹已存在会被清空)",
                                                   arg: {
                                                       namespace
                                                   }
@@ -218,7 +217,9 @@ const ProjectConfigModal = () => {
                                                           namespace: namespace
                                                       })
                                                   }).then((res) => {
-                                                      loadAllNameSpace();
+                                                      if (res.status === "success") {
+                                                          loadAllNameSpace();
+                                                      }
                                                       showMessage(res)
                                                   })
                                               }}

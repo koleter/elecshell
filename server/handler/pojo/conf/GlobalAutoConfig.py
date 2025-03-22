@@ -1,5 +1,6 @@
 from handler.pojo.conf.CachableConfig import CachableConfig
 
+
 class GlobalAutoConfig(CachableConfig):
     """
     used by some auto save action

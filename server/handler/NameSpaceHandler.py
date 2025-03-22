@@ -5,6 +5,7 @@ import uuid
 
 import tornado.web
 
+from constant.script import RUN_PY_SCRIPT
 from handler.BaseHandler import BaseHandler
 from handler.ConfigHandler import conf_dir_path
 from settings import base_dir
@@ -33,11 +34,30 @@ class NameSpaceHandler(BaseHandler, tornado.web.RequestHandler):
             self.write(json.dumps({"status": "success", "content": "create namespace success"}))
         elif action_type == "import":
             namespace = data.get('namespace')
-            namespace_path = os.path.join(base_dir, namespace)
+            namespace_path = os.path.join(conf_dir_path, namespace)
             if os.path.exists(namespace_path):
-                self.write(json.dumps({"status": "fail", "content": "namespace is already exist"}))
+                self.write(json.dumps({"status": "error", "content": "namespace is already exist"}))
+                return
             directoryPath = data.get('directoryPath')
             shutil.copytree(directoryPath, namespace_path)
+            try:
+                script_dir_path = os.path.join(namespace_path, "script")
+                py_script_dir_path = os.path.join(namespace_path, "py_script")
+                for root, dirs, files in os.walk(script_dir_path):
+                    for script_path in files:
+                        with open(os.path.join(root, script_path), 'r+', encoding='utf-8') as f:
+                            data = json.loads(f.read())
+                            if data.get("scriptType") == RUN_PY_SCRIPT:
+                                data.update({"scriptPath": os.path.join(py_script_dir_path, data.get("scriptPath"))})
+                                f.seek(0)
+                                f.truncate()
+                                f.write(json.dumps(data, ensure_ascii=False))
+
+
+            except Exception as e:
+                shutil.rmtree(namespace_path)
+                self.write(json.dumps({"status": "error", "content": str(e)}))
+                return
             self.write(json.dumps({"status": "success", "content": "import namespace success"}))
         elif action_type == "export":
             namespace = data.get('namespace')
@@ -48,7 +68,7 @@ class NameSpaceHandler(BaseHandler, tornado.web.RequestHandler):
             namespace_path = os.path.join(conf_dir_path, namespace)
             xsh_path = os.path.join(namespace_path, "xsh")
             if not os.path.exists(xsh_path):
-                self.write(json.dumps({"status": "fail", "content": "empty namespace"}))
+                self.write(json.dumps({"status": "error", "content": "empty namespace"}))
                 return
             shutil.copytree(xsh_path, os.path.join(directoryPath, "xsh"))
             script_path = os.path.join(namespace_path, "script")
@@ -62,7 +82,7 @@ class NameSpaceHandler(BaseHandler, tornado.web.RequestHandler):
                         src_file_path = os.path.join(root, file_name)
                         with open(src_file_path, 'r') as f:
                             data = json.loads(f.read())
-                        if data.get("scriptType") == 1:
+                        if data.get("scriptType") == RUN_PY_SCRIPT:
                             script_path = data.get("scriptPath")
                             random_uuid = str(uuid.uuid4())
                             dst_py_file_path = os.path.join(script_py_path, random_uuid)
@@ -81,14 +101,12 @@ class NameSpaceHandler(BaseHandler, tornado.web.RequestHandler):
         namespace = data.get('namespace')
 
         if not namespace:
-            self.set_status(400)  # Bad Request
             self.write(json.dumps({"status": "error", "content": "Namespace is required"}))
             return
 
         namespace_path = os.path.join(conf_dir_path, namespace)
 
         if not os.path.exists(namespace_path):
-            self.set_status(404)  # Not Found
             self.write(json.dumps({"status": "error", "content": "Namespace does not exist"}))
             return
 
@@ -96,5 +114,4 @@ class NameSpaceHandler(BaseHandler, tornado.web.RequestHandler):
             shutil.rmtree(namespace_path)  # 使用 shutil.rmtree 删除目录及其内容
             self.write(json.dumps({"status": "success", "content": "删除命名空间成功"}))
         except Exception as e:
-            self.set_status(500)  # Internal Server Error
             self.write(json.dumps({"status": "error", "content": str(e)}))

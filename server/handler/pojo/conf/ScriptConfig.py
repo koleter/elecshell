@@ -48,7 +48,7 @@ class ScriptConfig(BaseConfig):
         elif type == 'editScript':
             fake_file_path = args['file']
             real_file_path = self._get_real_path(fake_file_path)
-            with open(real_file_path, 'r+') as f:
+            with open(real_file_path, 'r+', encoding='utf-8') as f:
                 data = json.loads(f.read())
                 data['scriptPath'] = args.get('scriptPath')
                 data['name'] = args['name']

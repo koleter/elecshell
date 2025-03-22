@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 import tornado.web
@@ -53,6 +54,7 @@ class ConfigHandler(BaseHandler, tornado.web.RequestHandler):
     def get(self):
         type = self.get_argument('type')
         self.write(json.dumps(handler_map.get(type).get(), ensure_ascii=False))
+
 
     def post(self):
         data = json.loads(self.request.body)
