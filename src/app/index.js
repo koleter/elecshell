@@ -31,11 +31,11 @@ const { log } = require('console');
 const basePath = Platform.getUserBasePath();
 
 // 防止ctrl + w关闭窗口
-app.whenReady().then(() => {
-    globalShortcut.register('CommandOrControl+W', () => {
-
-    });
-});
+// app.whenReady().then(() => {
+//     globalShortcut.register('CommandOrControl+W', () => {
+//
+//     });
+// });
 
 // app.on("browser-window-focus", () => {
 //     console.log("electron 有焦点了");

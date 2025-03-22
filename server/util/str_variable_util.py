@@ -4,10 +4,6 @@ from handler.ConfigHandler import configable_global_config
 
 
 def _replace_variable(match):
-    print(match)
-    print(match.group())
-    print(match.groups())
-    print(len(match.groups()))
     if len(match.groups()) == 0:
         return match.group()
     vs = configable_global_config.conf_cache["strVariableSetting"]
