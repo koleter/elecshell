@@ -10,5 +10,6 @@ class ConfigableGlobalConfig(CachableConfig):
 
     def default_conf(self):
         return dict({
-            "namespace": "default"
+            "namespace": "default",
+            'strVariableSetting': []
         })
