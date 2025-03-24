@@ -11,7 +11,7 @@ const Session: React.FC = () => {
         if (event.key === 'w' && (event.ctrlKey || event.metaKey)) {
             event.preventDefault(); // 禁用默认行为
             // 在这里添加自定义逻辑
-            console.log('Ctrl+W 被按下，但窗口不会关闭');
+            // console.log('Ctrl+W 被按下，但窗口不会关闭');
             // 例如，你可以显示一个对话框或执行其他操作
             // dialog.showMessageBox({ message: 'Ctrl+W 被按下，但窗口不会关闭' });
         }

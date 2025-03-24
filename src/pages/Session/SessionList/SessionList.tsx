@@ -165,7 +165,7 @@ const SessionList: React.FC = (props) => {
         {
             title: intl.formatMessage({id: 'operation'}),
             valueType: 'option',
-            width: 50,
+            width: 80,
             render: () => {
                 return null;
             },
