@@ -129,7 +129,8 @@ async function startPythonScript(pythonCommand) {
     const pythonProcess = spawn(pythonCommand, [`main.py`, `--port=${await getServerPort()}`], {
         detached: false, // 子进程依赖于父进程
         stdio: ['inherit', 'inherit', 'pipe'], // 继承父进程的标准输入输出错误流
-        cwd: process.env.NODE_ENV === 'test_production' ? path.join(__dirname, "../../server") : path.join(__dirname, "../../../server")
+        cwd: process.env.NODE_ENV === 'test_production' ? path.join(__dirname, "../../server") : path.join(__dirname, "../../../server"),
+        windowsHide: true
     });
 
     pythonProcess.stderr.on("data", (chunk) => {
