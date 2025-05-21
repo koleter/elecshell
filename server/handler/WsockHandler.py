@@ -147,6 +147,11 @@ class WsockHandler(BaseHandler, tornado.websocket.WebSocketHandler):
                     t[0](SessionContext(worker), msg.get('args'), *t[1])
                 except Exception as e:
                     traceback.print_exc()
+                    worker.handler.write_message({
+                        'type': 'message',
+                        'status': 'error',
+                        "content": str(e)
+                    })
                     pass
                 finally:
                     with callback_map_lock:
