@@ -66,4 +66,6 @@ export default {
     export: "export",
     "Please input namespace": "Please input namespace",
     "Aim current directory": "Aim current directory",
+    "Delete the script": "Delete the script",
+    "Are you sure to delete this script?": "Are you sure to delete this script?",
 };

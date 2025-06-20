@@ -1,5 +1,5 @@
 import React, {useContext, useEffect, useState} from "react";
-import {Button, Drawer, Form, Input, message, Modal, Radio, Select} from "antd";
+import {Button, Drawer, Form, Input, message, Modal, Popconfirm, Radio, Select} from "antd";
 import { PythonOutlined, FileTextOutlined } from '@ant-design/icons';
 
 import {ProList} from "@ant-design/pro-components";
@@ -87,6 +87,7 @@ const ScriptDrawer: React.FC = (props) => {
             placement="right"
             onClose={() => {
                 setDrawerOpen(false);
+                setScriptSearchValue("");
             }}
             open={drawerOpen}
             size={'large'}
@@ -143,9 +144,10 @@ const ScriptDrawer: React.FC = (props) => {
                             >
                                 <FormattedMessage id="edit"/>
                             </a>,
-                            <a
-                                key="view"
-                                onClick={() => {
+                            <Popconfirm
+                                title={intl.formatMessage({id: "Delete the script"})}
+                                description={intl.formatMessage({id: "Are you sure to delete this script?"})}
+                                onConfirm={() => {
                                     util.request('conf', {
                                         method: 'POST',
                                         body: JSON.stringify({
@@ -163,8 +165,13 @@ const ScriptDrawer: React.FC = (props) => {
                                     })
                                 }}
                             >
-                                <FormattedMessage id="delete"/>
-                            </a>,
+                                <a
+                                    key="view"
+                                >
+                                    <FormattedMessage id="delete"/>
+                                </a>
+                            </Popconfirm>
+                            ,
                         ],
                     },
                 }}
@@ -173,7 +180,7 @@ const ScriptDrawer: React.FC = (props) => {
                         <Form.Item
                             label={<FormattedMessage id="search"/>}
                         >
-                            <Input style={{float: 'left'}} onChange={(e) => {
+                            <Input style={{float: 'left'}} value={scriptSearchValue} onChange={(e) => {
                                 const {value: inputValue} = e.target;
                                 setScriptSearchValue(inputValue);
                             }}/>
