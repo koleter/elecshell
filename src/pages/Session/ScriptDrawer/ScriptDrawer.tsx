@@ -146,7 +146,6 @@ const ScriptDrawer: React.FC = (props) => {
                             </a>,
                             <Popconfirm
                                 title={intl.formatMessage({id: "Delete the script"})}
-                                description={intl.formatMessage({id: "Are you sure to delete this script?"})}
                                 onConfirm={() => {
                                     util.request('conf', {
                                         method: 'POST',

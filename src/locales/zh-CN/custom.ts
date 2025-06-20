@@ -67,5 +67,4 @@ export default {
     "Please input namespace": "请指定命名空间",
     "Aim current directory": "定位当前目录",
     "Delete the script": "删除脚本",
-    "Are you sure to delete this script?": "确定要删除该脚本吗?"
 };
