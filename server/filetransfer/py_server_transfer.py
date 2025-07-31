@@ -455,7 +455,7 @@ finally:
         url = "http://{}:{}/{}/{}?token={}".format(self.remote_server["host"], self.remote_server["port"], remoteDir,
                                                    file, self.remote_server["token"])
         # url = quote(url)
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True, timeout=3)
         if response.status_code == 200:
             # 打开文件以二进制模式写入
             with open(os.path.join(local_root_dir, file), 'wb') as f:
@@ -478,7 +478,14 @@ finally:
             self.download_single_file(local_root_dir, file, remoteDir)
 
     def download_files(self, local_root_dir, files, remoteDir):
-        self._download_files(local_root_dir, files, remoteDir)
+        try:
+            self._download_files(local_root_dir, files, remoteDir)
+        except Exception as e:
+            self.worker.handler.write_message({
+                "type": "message",
+                "status": "error",
+                "content": str(e)
+            })
 
     def close(self):
         pass
