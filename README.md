@@ -128,7 +128,13 @@ def Main(ctx):
 ctx.send: send command
 ```python
 def Main(ctx):
-    ctx.send("pwd")
+    ctx.send("pwd\r")
+```
+
+ctx.sendln: send command
+```python
+def Main(ctx):
+    ctx.sendln("pwd")
 ```
 
 ctx.recv: Send the executed command and get the returned result

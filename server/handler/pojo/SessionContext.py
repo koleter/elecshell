@@ -57,9 +57,12 @@ class SessionContext:
         '''
         return self._worker.create_new_session(conf_list, callback, args)
 
-    def send(self, data):
+    def sendln(self, data):
         if data[-1] != '\r':
             data += '\r'
+        self.send(data)
+
+    def send(self, data):
         self._worker.send(data)
 
     def get_xsh_conf_id(self):

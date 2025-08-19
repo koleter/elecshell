@@ -126,7 +126,14 @@ ctx.send: 发送执行的命令
 
 ```python
 def Main(ctx):
-    ctx.send("pwd")
+    ctx.send("pwd\r")
+```
+
+ctx.sendln: 发送执行的命令
+
+```python
+def Main(ctx):
+    ctx.sendln("pwd")
 ```
 
 ctx.recv: 发送执行的命令并获取返回结果
