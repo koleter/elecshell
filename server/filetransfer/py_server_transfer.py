@@ -256,11 +256,10 @@ class py_server_sftp_file_transfer(BaseTransfer):
     def __init__(self, worker):
         super().__init__(worker)
         self.remote_server = None
-
         self._start_remote_http_server()
 
     def _get_remote_host(self):
-        cmd = r"hostname -I | tr ' ' '\\n' | grep -v '^172\.' | grep -v '^0\.' | xargs"
+        cmd = r"hostname -I | tr ' ' '\\n' | grep -v '^172\.0\.0' | grep -v '^0\.' | xargs"
         match = self.worker.execute_implicit_command(cmd, pattern=host_pattern)
         return match.group(0).decode('utf-8')
 
