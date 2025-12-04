@@ -15,6 +15,7 @@ from logging.handlers import RotatingFileHandler
 
 from handler.PingHandler import PingHandler
 from handler import DumpHandler
+from handler.trace import TraceHandler
 from settings import base_dir
 from settings import (
     get_app_settings, get_host_keys_settings, get_policy_setting,
@@ -59,7 +60,8 @@ def make_handlers(loop, options):
         (r'/conf', ConfigHandler, dict(loop=loop)),
         (r'/ping', PingHandler, dict(loop=loop)),
         (r'/namespace', NameSpaceHandler, dict(loop=loop)),
-        (r'/dump', DumpHandler, dict(loop=loop))
+        (r'/dump', DumpHandler, dict(loop=loop)),
+        (r'/trace', TraceHandler, dict(loop=loop))
     ]
     return handlers
 
