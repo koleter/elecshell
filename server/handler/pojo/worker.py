@@ -34,7 +34,7 @@ from handler.const import BUF_SIZE, callback_map, callback_map_lock
 import time
 import psutil
 from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+from watchdog.events import FileSystemEventHandler, PatternMatchingEventHandler
 
 workers = {}  # {id: worker}
 workers_lock = threading.Lock()
@@ -42,32 +42,28 @@ workers_lock = threading.Lock()
 loop = IOLoop.current()
 
 
-class WatchDogFileHandler(FileSystemEventHandler):
+class WatchDogFileHandler(PatternMatchingEventHandler):
+    def __init__(self):
+        super().__init__(patterns=["*elecshellTransfer_*.json"], ignore_directories=True)
 
-    def on_created(self, event):
-        if event.is_directory:
-            return
-        if 'chrome_drag' in event.src_path:
-            return
-        file_name = os.path.basename(event.src_path)
-        if not 'elecshellTransfer_' in file_name:
-            return
-        data = None
-        # 文件可能还在被创建过程中，操作系统可能还没有完全关闭文件句柄，导致暂时无法访问
+    def _handle(self, path):
         for i in range(5):
             time.sleep(0.1)
             try:
-                with open(event.src_path, 'r') as f:
+                with open(path, 'r') as f:
                     data = json.loads(f.read())
                     break
             except Exception as e:
-                logging.error(f"open {event.src_path} error, {str(e)}")
-        os.remove(event.src_path)
+                logging.error(f"open {path} error, {str(e)}")
+        os.remove(path)
         if data is None:
             return
         worker = workers.get(data.get('sessionId'))
-        loop.add_callback(worker.download_files, os.path.dirname(event.src_path), data.get('files'),
+        loop.add_callback(worker.download_files, os.path.dirname(path), data.get('files'),
                           data.get('remoteDir'))
+
+    def on_created(self, event):
+        self.loop.add_callback(self._handle, event.src_path)
 
 
 def get_all_window_drive_letters():
@@ -87,10 +83,10 @@ def start_watcher():
         drive_letters = ["/"]
     print("Monitoring the following drives:", drive_letters)
 
+    observer = Observer()
     for drive in drive_letters:
-        observer = Observer()
         observer.schedule(event_handler, drive, recursive=True)
-        observer.start()
+    observer.start()
 
 
 start_watcher()
