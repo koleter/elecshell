@@ -44,7 +44,7 @@ loop = IOLoop.current()
 
 class WatchDogFileHandler(PatternMatchingEventHandler):
     def __init__(self):
-        super().__init__(patterns=["*elecshellTransfer_*.json"], ignore_directories=True)
+        super().__init__(patterns=["elecshellTransfer_*.txt"], ignore_directories=True)
 
     def _handle(self, path):
         for i in range(5):
@@ -59,11 +59,11 @@ class WatchDogFileHandler(PatternMatchingEventHandler):
         if data is None:
             return
         worker = workers.get(data.get('sessionId'))
-        loop.add_callback(worker.download_files, os.path.dirname(path), data.get('files'),
-                          data.get('remoteDir'))
+        worker.download_files(os.path.dirname(path), data.get('files'),
+                              data.get('remoteDir'))
 
     def on_created(self, event):
-        self.loop.add_callback(self._handle, event.src_path)
+        loop.add_callback(self._handle, event.src_path)
 
 
 def get_all_window_drive_letters():
@@ -207,7 +207,8 @@ class Worker(object):
             except tornado.websocket.WebSocketClosedError:
                 asyncio.create_task(self.close(reason='websocket closed'))
 
-    def execute_implicit_command(self, cmd, callback=None, func: Callable[[list[bytes]], bool]=None, extra_args=[], sleep=0, pattern: re.Pattern[bytes] = None):
+    def execute_implicit_command(self, cmd, callback=None, func: Callable[[list[bytes]], bool] = None, extra_args=[],
+                                 sleep=0, pattern: re.Pattern[bytes] = None):
         if pattern:
             return self.recv_util_match_exp(f'{cmd}; builtin history -d $((HISTCMD-1))', pattern, callback,
                                             extra_args,
