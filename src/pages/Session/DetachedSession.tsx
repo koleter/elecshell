@@ -24,6 +24,7 @@ const DetachedSession: React.FC = () => {
     const encoding = params.get('encoding') || 'utf-8';
     const logPath = params.get('logPath') || '';
     const sessionConfId = params.get('sessionConfId') || '';
+    const sessionConfPath = params.get('sessionConfPath') || '';
 
     const [initialContent, setInitialContent] = useState('');
 
@@ -53,6 +54,7 @@ const DetachedSession: React.FC = () => {
         logPath,
         sessionConfId,
         isConnected: true,
+        sessionConfPath,
     };
 
     return (

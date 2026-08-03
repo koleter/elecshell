@@ -79,6 +79,7 @@ ipcMain.handle('create-detached-window', async (event, data) => {
     if (session?.encoding) query.set('encoding', session.encoding);
     if (session?.logPath) query.set('logPath', session.logPath);
     if (session?.sessionConfId) query.set('sessionConfId', session.sessionConfId);
+    if (session?.sessionConfPath) query.set('sessionConfPath', session.sessionConfPath);
     if (tempPath) query.set('tempPath', tempPath);
     const queryString = query.toString();
 

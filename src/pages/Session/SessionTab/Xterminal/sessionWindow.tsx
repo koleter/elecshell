@@ -260,6 +260,7 @@ const SessionWindow: React.FC = (props) => {
 
     // 等后端ssh连接建立后再建立websocket连接
     useEffect(async () => {
+        console.log("create and init websocket", isConnected, session)
         if (isConnected) {
             const searchAddon = new SearchAddon();
             term.loadAddon(searchAddon);

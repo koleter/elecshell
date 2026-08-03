@@ -20,6 +20,7 @@ import DraggableTabs from "@/pages/Session/components/DraggableTabs/DraggableTab
 import type {DragEndEvent} from "@dnd-kit/core";
 import {arrayMove} from "@dnd-kit/sortable";
 import SessionDraggableTabs from "@/pages/Session/components/SessionDraggableTabs/SessionDraggableTabs";
+const path = require('path');
 
 const {Content, Sider} = Layout;
 type TargetKey = React.MouseEvent | React.KeyboardEvent | string;
@@ -77,8 +78,12 @@ const SessionMain: React.FC<{ initialSession?: any; detached?: boolean; initialC
     } = useContext(AppContext);
 
     useEffect(() => {
+        console.log("activeKey", activeKey, "initialSession", initialSession)
         if (initialSession && !activeKey) {
             setActiveKey(initialSession.key);
+            sessionIdMapFileName[initialSession.key] = initialSession.sessionConfPath.substr(
+                initialSession.sessionConfPath.lastIndexOf(path.sep) + 1,
+            );
         }
     }, [initialSession]);
 
@@ -217,6 +222,7 @@ const SessionMain: React.FC<{ initialSession?: any; detached?: boolean; initialC
                     encoding: item.encoding,
                     logPath: item.logPath,
                     sessionConfId: item.sessionConfId,
+                    sessionConfPath: item.sessionConfPath,
                 },
                 initialContent,
             });
