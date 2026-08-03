@@ -30,6 +30,7 @@ class WsockHandler(BaseHandler, tornado.websocket.WebSocketHandler):
     def initialize(self, loop):
         super(WsockHandler, self).initialize(loop)
         self.worker_ref = None
+        self.detached = False
 
     async def open(self):
         if not workers:
@@ -89,6 +90,15 @@ class WsockHandler(BaseHandler, tornado.websocket.WebSocketHandler):
                     await method(*msg.get("args"))
                 else:
                     method(*msg.get("args"))
+            elif type == 'detach':
+                self.detached = True
+                if worker:
+                    worker.handler = None
+                    try:
+                        self.loop.remove_handler(worker.fd)
+                    except Exception as e:
+                        logging.warning('remove handler for detached worker {} failed: {}'.format(worker.id, e))
+                return
 
             # exec a command and recv the result
             elif type == 'sendRecv':
@@ -169,5 +179,13 @@ class WsockHandler(BaseHandler, tornado.websocket.WebSocketHandler):
             logging.info('close_reason is {}'.format(self.close_reason))
         worker = self.worker_ref if self.worker_ref else None
         if worker:
-            clear_worker(worker)
-            worker.close(reason=self.close_reason)
+            if self.detached:
+                logging.info('Worker {} detached, keep alive'.format(worker.id))
+                worker.handler = None
+                try:
+                    self.loop.remove_handler(worker.fd)
+                except Exception as e:
+                    logging.warning('remove handler for detached worker {} failed: {}'.format(worker.id, e))
+            else:
+                clear_worker(worker)
+                worker.close(reason=self.close_reason)

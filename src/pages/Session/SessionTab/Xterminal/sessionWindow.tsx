@@ -6,6 +6,7 @@ import {CONNECTED, CONNECTING} from "../../../../const"
 import {promptModalCancel, sessionIdMapFileName, sessionIdRef, sessionInit} from "../../main/Main"
 import {SearchAddon} from 'xterm-addon-search'
 import {FitAddon} from 'xterm-addon-fit'
+import {SerializeAddon} from 'xterm-addon-serialize'
 import "./SessionWindow.less"
 import {sessionConfInfo} from "@/pages/Session/SessionList/SessionList";
 import {AppContext} from "@/pages/context/AppContextProvider";
@@ -42,12 +43,15 @@ const termOptions = {
 
 const SessionWindow: React.FC = (props) => {
     const terminalRef = useRef<null | HTMLDivElement>(null);
-    const {id, sessionConfId, setSessions, isConnected, encoding, session} = props;
+    const {id, sessionConfId, setSessions, isConnected, encoding, session, initialContent} = props;
     const context = useContext(AppContext);
     const searchInputRef = useRef(null);
     const {activeKey, promptModalCancelRef} = context;
     // 展示搜索框
     const [showSearch, setShowSearch] = useState(false);
+    // detached window 终端是否已准备就绪
+    const [termReady, setTermReady] = useState(false);
+    const initialContentWrittenRef = useRef(false);
 
     const [term] = useState(new Terminal(termOptions));
 
@@ -263,6 +267,9 @@ const SessionWindow: React.FC = (props) => {
             const fitAddon = new FitAddon();
             term.loadAddon(fitAddon);
             term._fitAddon = fitAddon;
+            const serializeAddon = new SerializeAddon();
+            term.loadAddon(serializeAddon);
+            term._serializeAddon = serializeAddon;
 
             if (terminalRef.current) {
                 const resizeObserver = new ResizeObserver(entries => {
@@ -312,6 +319,8 @@ const SessionWindow: React.FC = (props) => {
                 // The following two lines must be placed here so that the term.onResize event can be triggered during initialization.
                 term.open(terminalRef.current as HTMLDivElement);
                 term.focus();
+
+                setTermReady(true);
 
                 fitAddon.fit();
                 setTimeout(() => {
@@ -474,6 +483,18 @@ const SessionWindow: React.FC = (props) => {
             }
         }, 100);
     }, [activeKey]);
+
+    // detached window 收到历史内容后写入终端
+    useEffect(() => {
+        if (termReady && initialContent && !initialContentWrittenRef.current) {
+            try {
+                term.write(initialContent);
+                initialContentWrittenRef.current = true;
+            } catch (e) {
+                console.error('write initial content failed', e);
+            }
+        }
+    }, [termReady, initialContent]);
 
     function calcSearchOption(matchCase, words, regexp) {
         const res = Object.assign({}, defaultSearchOption);

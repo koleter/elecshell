@@ -1,9 +1,14 @@
-﻿export default [
+export default [
   {
     name: 'session',
     icon: 'table',
     path: '/session',
     component: './Session',
+    menuRender: false
+  },
+  {
+    path: '/session/detached',
+    component: './Session/DetachedSession',
     menuRender: false
   },
   {

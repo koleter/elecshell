@@ -1,5 +1,7 @@
-const {BrowserWindow, screen, globalShortcut, ipcMain, dialog} = require('electron');
+const {BrowserWindow, screen, globalShortcut, ipcMain, dialog, webContents} = require('electron');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const {switchFileInExploer} = require("./fileDialog");
 
 ipcMain.on("sendAllWindowsIpcMessage", (event, arg) => {
@@ -28,6 +30,81 @@ ipcMain.on('update-title', (event, title) => {
     if (curWindow) {
         curWindow.setTitle(title);
     }
+});
+
+ipcMain.handle('create-detached-window', async (event, data) => {
+    const {sessionId, session, initialContent} = data || {};
+    const option = {
+        title: session?.label || 'elecshell',
+        width: 900,
+        height: 600,
+        webPreferences: {
+            preload: path.join(__dirname, 'preload.js'),
+            nodeIntegration: true,
+            contextIsolation: false,
+            webSecurity: false,
+            allowDisplayingInsecureContent: true,
+            allowRunningInsecureContent: true,
+            enableRemoteModule: true
+        },
+        frame: process.platform !== "darwin",
+        titleBarOverlay: true,
+        fullscreenable: true,
+        minimizable: true,
+        maximizable: true,
+        resizable: true,
+        movable: true,
+        acceptFirstMouse: true,
+    };
+    if (process.platform === "darwin") {
+        option.titleBarStyle = 'hidden';
+    }
+    const win = new BrowserWindow(option);
+    const webContentsId = win.webContents.id;
+
+    let tempPath = '';
+    if (initialContent) {
+        tempPath = path.join(os.tmpdir(), `elecshell-detached-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`);
+        try {
+            fs.writeFileSync(tempPath, initialContent, 'utf-8');
+        } catch (e) {
+            console.error('write detached initial content failed', e);
+            tempPath = '';
+        }
+    }
+
+    const query = new URLSearchParams();
+    if (sessionId) query.set('sessionId', sessionId);
+    if (session?.label) query.set('label', session.label);
+    if (session?.encoding) query.set('encoding', session.encoding);
+    if (session?.logPath) query.set('logPath', session.logPath);
+    if (session?.sessionConfId) query.set('sessionConfId', session.sessionConfId);
+    if (tempPath) query.set('tempPath', tempPath);
+    const queryString = query.toString();
+
+    if (process.env.NODE_ENV === 'development') {
+        await win.loadURL(`http://localhost:8000/session/detached?${queryString}`);
+    } else if (process.env.NODE_ENV === 'test_production') {
+        await win.loadFile(path.join(__dirname, "../../../antdBuild/index.html"), {
+            hash: `/session/detached?${queryString}`
+        });
+    } else {
+        await win.loadFile(path.join(__dirname, "../../antdBuild/index.html"), {
+            hash: `/session/detached?${queryString}`
+        });
+    }
+
+    win.on('closed', () => {
+        if (tempPath) {
+            try {
+                fs.unlinkSync(tempPath);
+            } catch (e) {
+                // ignore
+            }
+        }
+    });
+
+    return {webContentsId};
 });
 
 ipcMain.on('save-directory-dialog', function (event, arg) {
