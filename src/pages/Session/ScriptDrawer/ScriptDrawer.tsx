@@ -81,6 +81,17 @@ const ScriptDrawer: React.FC = (props) => {
         </>
     }
 
+    console.log(
+        'scriptData',
+        scriptData,
+        'sessionIdMapFileName',
+        sessionIdMapFileName,
+        'sessionIdRef',
+        sessionIdRef,
+        'activeKey',
+        activeKey
+    );
+
     return <>
         <Drawer
             title={capitalizeFirstLetter(intl.formatMessage({id: 'script'}))}
@@ -285,6 +296,6 @@ const ScriptDrawer: React.FC = (props) => {
             </Form>
         </Modal>
     </>
-}
+};
 
 export default ScriptDrawer;

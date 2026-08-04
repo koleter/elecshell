@@ -241,6 +241,7 @@ const SessionList: React.FC = (props) => {
     async function createNewSession(sessionConfId, filePath, title, encoding, callback) {
         const id = getUUid();
         setSessions(sessions => {
+            console.log("createNewSession", id);
             const data = [...sessions];
             data.push({
                 label: title,

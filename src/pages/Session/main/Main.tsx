@@ -20,6 +20,7 @@ import DraggableTabs from "@/pages/Session/components/DraggableTabs/DraggableTab
 import type {DragEndEvent} from "@dnd-kit/core";
 import {arrayMove} from "@dnd-kit/sortable";
 import SessionDraggableTabs from "@/pages/Session/components/SessionDraggableTabs/SessionDraggableTabs";
+const path = require('path');
 
 const {Content, Sider} = Layout;
 type TargetKey = React.MouseEvent | React.KeyboardEvent | string;
@@ -57,9 +58,10 @@ const loop = (
     }
 };
 
-const SessionMain: React.FC = () => {
+const SessionMain: React.FC<{ initialSession?: any; detached?: boolean; initialContent?: string }> = (props) => {
+    const {initialSession, initialContent} = props;
     const [drawerOpen, setDrawerOpen] = useState(false);
-    const [sessions, setSessions] = useState([]);
+    const [sessions, setSessions] = useState(initialSession ? [initialSession] : []);
     const intl = useIntl();
 
     const {
@@ -74,6 +76,16 @@ const SessionMain: React.FC = () => {
         selectedMenuKey,
         setSelectedMenuKey
     } = useContext(AppContext);
+
+    useEffect(() => {
+        console.log("activeKey", activeKey, "initialSession", initialSession)
+        if (initialSession && !activeKey) {
+            setActiveKey(initialSession.key);
+            sessionIdMapFileName[initialSession.key] = initialSession.sessionConfPath.substr(
+                initialSession.sessionConfPath.lastIndexOf(path.sep) + 1,
+            );
+        }
+    }, [initialSession]);
 
     useEffect(() => {
         if (!activeKey) {
@@ -144,6 +156,80 @@ const SessionMain: React.FC = () => {
         action: 'add' | 'remove',
     ) => {
         removeTabByKey(targetKey);
+    };
+
+    const serializeTerminal = (term: any) => {
+        if (!term) return '';
+        try {
+            if (term._serializeAddon) {
+                return term._serializeAddon.serialize();
+            }
+        } catch (e) {
+            console.error('serialize term failed', e);
+        }
+        try {
+            const buffer = term.buffer.active;
+            const lines: string[] = [];
+            for (let i = 0; i < buffer.length; i++) {
+                const line = buffer.getLine(i);
+                if (line) {
+                    lines.push(line.translateToString(true));
+                }
+            }
+            return lines.join('\n');
+        } catch (e) {
+            console.error('read term buffer failed', e);
+            return '';
+        }
+    };
+
+    const handleDetach = async (sessionKey: string) => {
+        const item = sessions.find((s) => s.key === sessionKey);
+        if (!item || !item.isConnected) {
+            return;
+        }
+        const ref = sessionIdRef[sessionKey];
+        if (!ref) {
+            return;
+        }
+
+        const initialContent = serializeTerminal(ref.term);
+
+        try {
+            ref.send({type: 'detach'});
+            console.log("send detach:", sessionKey)
+        } catch (e) {
+            console.error('send detach failed', e);
+        }
+
+        // 从当前窗口移除标签,websocket 关闭时后端会根据 detached 标记保留 worker
+        setSessions((prev) => {
+            const data = prev.filter((s) => s.key !== sessionKey);
+            if (activeKey === sessionKey) {
+                const idx = prev.findIndex((s) => s.key === sessionKey);
+                const nextActive = data[idx - 1]?.key || data[0]?.key || '';
+                setActiveKey(nextActive);
+            }
+            return data;
+        });
+
+        try {
+            await window.electronAPI.ipcRenderer.invoke('create-detached-window', {
+                sessionId: sessionKey,
+                session: {
+                    key: item.key,
+                    label: item.label,
+                    encoding: item.encoding,
+                    logPath: item.logPath,
+                    sessionConfId: item.sessionConfId,
+                    sessionConfPath: item.sessionConfPath,
+                },
+                initialContent,
+            });
+        } catch (e) {
+            console.error('create detached window failed', e);
+            showMessage({status: 'error', content: String(e)});
+        }
     };
 
     const promptOk = () => {
@@ -239,6 +325,7 @@ const SessionMain: React.FC = () => {
                                 activeKey={activeKey}
                                 style={{height: '100px'}}
                                 hideAdd
+                                onDetach={handleDetach}
                                 onDragEnd={({ active, over }: DragEndEvent) => {
                                     if (active.id !== over?.id) {
                                         setSessions((prev) => {
@@ -249,6 +336,7 @@ const SessionMain: React.FC = () => {
                                     }
                                 }}
                                 items={sessions.map(item => {
+                                    console.log("render session:", item);
                                     function closeSessions(sessions) {
                                         sessions.forEach(session => {
                                             try {
@@ -377,6 +465,7 @@ const SessionMain: React.FC = () => {
                                             isConnected={item.isConnected}
                                             encoding={item.encoding}
                                             session={item}
+                                            initialContent={item.key === initialSession?.key ? initialContent : undefined}
                                         />
                                     }
                                 })}
