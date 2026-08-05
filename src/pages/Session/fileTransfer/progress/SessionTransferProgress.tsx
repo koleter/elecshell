@@ -9,15 +9,15 @@ const SessionTransferProgress: React.FC = (props) => {
     const { activeKey, fileProgressInfo, setFileProgressInfo } = useContext(AppContext);
 
     useEffect(() => {
-        setFileProgressInfo(fileProgressInfo => {
-            fileProgressInfo[activeKey] = [];
-            return fileProgressInfo;
-        });
+        setFileProgressInfo(fileProgressInfo => ({
+            ...fileProgressInfo,
+            [activeKey]: [],
+        }));
 
         return () => {
             setFileProgressInfo(fileProgressInfo => {
-                delete fileProgressInfo[activeKey];
-                return fileProgressInfo;
+                const { [activeKey]: _, ...rest } = fileProgressInfo;
+                return rest;
             });
         }
     }, []);
@@ -49,7 +49,7 @@ const SessionTransferProgress: React.FC = (props) => {
             direction="vertical"
             size="small"
         >
-            {fileProgressInfo[activeKey]?.values().map((info) => {
+            {fileProgressInfo[activeKey]?.map((info) => {
                 return (
                     <div key={info.id} className={'fileTransferProgress'}>
                         <Tooltip
