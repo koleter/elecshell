@@ -81,16 +81,16 @@ const ScriptDrawer: React.FC = (props) => {
         </>
     }
 
-    console.log(
-        'scriptData',
-        scriptData,
-        'sessionIdMapFileName',
-        sessionIdMapFileName,
-        'sessionIdRef',
-        sessionIdRef,
-        'activeKey',
-        activeKey
-    );
+    // console.log(
+    //     'scriptData',
+    //     scriptData,
+    //     'sessionIdMapFileName',
+    //     sessionIdMapFileName,
+    //     'sessionIdRef',
+    //     sessionIdRef,
+    //     'activeKey',
+    //     activeKey
+    // );
 
     return <>
         <Drawer
