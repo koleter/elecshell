@@ -84,7 +84,7 @@ ipcMain.handle('create-detached-window', async (event, data) => {
     const queryString = query.toString();
 
     if (process.env.NODE_ENV === 'development') {
-        await win.loadURL(`http://localhost:8000/session/detached?${queryString}`);
+        await win.loadURL(`http://localhost:8000/#/session/detached?${queryString}`);
     } else if (process.env.NODE_ENV === 'test_production') {
         await win.loadFile(path.join(__dirname, "../../../antdBuild/index.html"), {
             hash: `/session/detached?${queryString}`
@@ -192,7 +192,7 @@ exports.createWindow = () => {
 
     // Open the DevTools.
     if (process.env.NODE_ENV === 'development') {
-        win.loadURL("http://localhost:8000/session");
+        win.loadURL("http://localhost:8000/#/session");
         win.webContents.on('did-finish-load', () => {
             win.webContents.openDevTools();
         });

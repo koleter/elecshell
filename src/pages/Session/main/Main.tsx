@@ -200,6 +200,13 @@ const SessionMain: React.FC<{ initialSession?: any; detached?: boolean; initialC
             console.error('send detach failed', e);
         }
 
+        try {
+            // 主动关闭原窗口的 websocket 连接,确保后端根据 detached 标记保留 worker
+            ref.sock.close();
+        } catch (e) {
+            console.error('close original socket failed', e);
+        }
+
         // 从当前窗口移除标签,websocket 关闭时后端会根据 detached 标记保留 worker
         setSessions((prev) => {
             const data = prev.filter((s) => s.key !== sessionKey);
@@ -321,7 +328,7 @@ const SessionMain: React.FC<{ initialSession?: any; detached?: boolean; initialC
                                 id={"sessionTabs"}
                                 type="editable-card"
                                 activeKey={activeKey}
-                                style={{height: '100px'}}
+                                style={{height: '100%'}}
                                 hideAdd
                                 onDetach={handleDetach}
                                 onDragEnd={({ active, over }: DragEndEvent) => {
