@@ -35,8 +35,6 @@ export const sessionIdMapFileName = {};
 // 记录sessionId对应的sock等信息
 export const sessionIdRef = {};
 
-export const sessionInit = {};
-
 type MenuItem = Required<MenuProps>['items'][number];
 
 let hoverTimeout;
@@ -78,7 +76,7 @@ const SessionMain: React.FC<{ initialSession?: any; detached?: boolean; initialC
     } = useContext(AppContext);
 
     useEffect(() => {
-        console.log("activeKey", activeKey, "initialSession", initialSession)
+        // console.log("activeKey", activeKey, "initialSession", initialSession)
         if (initialSession && !activeKey) {
             setActiveKey(initialSession.key);
             sessionIdMapFileName[initialSession.key] = initialSession.sessionConfPath.substr(
@@ -336,7 +334,7 @@ const SessionMain: React.FC<{ initialSession?: any; detached?: boolean; initialC
                                     }
                                 }}
                                 items={sessions.map(item => {
-                                    console.log("render session:", item);
+                                    // console.log("render session:", item);
                                     function closeSessions(sessions) {
                                         sessions.forEach(session => {
                                             try {

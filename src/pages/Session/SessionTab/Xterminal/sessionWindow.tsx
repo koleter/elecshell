@@ -3,7 +3,7 @@ import {Terminal} from "xterm"
 import "xterm/css/xterm.css"
 import util, {callbackMap, getUUid, sessionStatusMap, showMessage} from "../../../../util"
 import {CONNECTED, CONNECTING} from "../../../../const"
-import {promptModalCancel, sessionIdMapFileName, sessionIdRef, sessionInit} from "../../main/Main"
+import {promptModalCancel, sessionIdMapFileName, sessionIdRef} from "../../main/Main"
 import {SearchAddon} from 'xterm-addon-search'
 import {FitAddon} from 'xterm-addon-fit'
 import {SerializeAddon} from 'xterm-addon-serialize'
@@ -46,7 +46,8 @@ const SessionWindow: React.FC = (props) => {
     const {id, sessionConfId, setSessions, isConnected, encoding, session, initialContent} = props;
     const context = useContext(AppContext);
     const searchInputRef = useRef(null);
-    const {activeKey, promptModalCancelRef} = context;
+    const { activeKey, promptModalCancelRef, setSessionTransferTreeData, setFileProgressInfo } =
+        context;
     // 展示搜索框
     const [showSearch, setShowSearch] = useState(false);
     // detached window 终端是否已准备就绪
@@ -260,7 +261,7 @@ const SessionWindow: React.FC = (props) => {
 
     // 等后端ssh连接建立后再建立websocket连接
     useEffect(async () => {
-        console.log("create and init websocket", isConnected, session)
+        // console.log("create and init websocket", isConnected, session)
         if (isConnected) {
             const searchAddon = new SearchAddon();
             term.loadAddon(searchAddon);
@@ -324,12 +325,6 @@ const SessionWindow: React.FC = (props) => {
                 setTermReady(true);
 
                 fitAddon.fit();
-                setTimeout(() => {
-                    while (sessionInit[id]?.length) {
-                        const f = sessionInit[id].shift();
-                        f();
-                    }
-                }, 100);
             };
 
             sessionIdRef[id] = {
@@ -341,12 +336,14 @@ const SessionWindow: React.FC = (props) => {
                     sock.send(JSON.stringify(msg));
                 },
                 sendData: function (data: string) {
-                    sock.send(JSON.stringify({'data': data, 'type': 'data'}));
+                    sock.send(JSON.stringify({ data: data, type: 'data' }));
                 },
                 sendRecv: function (cmd: string, f: Function) {
                     const requestId = getUUid();
                     callbackMap[requestId] = f;
-                    sock.send(JSON.stringify({'data': cmd, requestId: requestId, 'type': 'sendRecv'}));
+                    sock.send(
+                        JSON.stringify({ data: cmd, requestId: requestId, type: 'sendRecv' }),
+                    );
                 },
                 callback: async function (methodName, args, callback) {
                     const uid = getUUid();
@@ -356,8 +353,46 @@ const SessionWindow: React.FC = (props) => {
                         args: args,
                         methodName: methodName,
                         requestId: uid,
-                    })
-                }
+                    });
+                },
+                refreshRemoteFileList: (prev) => {
+                    // console.log(prev);
+                    prev.unshift({
+                        title: '..',
+                        key: '..',
+                        isLeaf: false,
+                        remoteDirectory: searchValue,
+                    });
+                    setSessionTransferTreeData((treeData) => {
+                        const data = {
+                            ...treeData,
+                        };
+                        data[activeKey] = prev;
+                        return data;
+                    });
+                },
+                refreshFileProgressInfo: (result) => {
+                    // console.log(result);
+                    setFileProgressInfo((fileProgressInfo) => {
+                        const data = fileProgressInfo[activeKey];
+                        let exist = false;
+                        for (const info of data) {
+                            if (info.id === result.id) {
+                                info.percent = result.percent;
+                                exist = true;
+                                break;
+                            }
+                        }
+                        if (!exist) {
+                            data.push(result);
+                        }
+
+                        const retData = {
+                            ...fileProgressInfo
+                        };
+                        return retData;
+                    });
+                },
             };
 
             sock.onerror = function (e) {

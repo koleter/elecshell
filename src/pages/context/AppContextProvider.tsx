@@ -29,6 +29,13 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
 
     const [selectedMenuKey, setSelectedMenuKey] = useState(NENU_SESSIONS);
 
+    // sessionTransfer树状文件数据
+    const [sessionTransferTreeData, setSessionTransferTreeData] = useState({});
+
+    // 文件传输进度信息
+    const [fileProgressInfo, setFileProgressInfo] = useState({});
+
+
     const prompt = function (title, callback, defaultUserInput = "") {
         setPromptTitle(title);
         setPromptOKCallback(() => callback);
@@ -112,38 +119,54 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
     }, [refreshScriptData])
 
     return (
-        <AppContext.Provider value={{
-            xshListWindowWidth,
-            setXshListWindowWidth,
-            // use for prompt
-            promptInputRef,
-            showPrompt,
-            setShowPrompt,
-            promptTitle,
-            setPromptTitle,
-            promptOKCallback,
-            setPromptOKCallback,
-            promptUserInput,
-            setPromptUserInput,
-            prompt,
-            promptModalCancelRef,
-            // sessionList
-            treeData,
-            setTreeData,
-            refreshTreeData,
-            setRefreshTreeData,
-            sessionRootKey,
-            // session
-            activeKey, setActiveKey,
-            // menu
-            selectedMenuKey, setSelectedMenuKey,
-            // global config
-            connectVariable, setConnectVariable,
-            // refresh global config
-            refreshConfigableGlobalConfig, setRefreshConfigableGlobalConfig,
-            // scriptData
-            scriptData, setScriptData, refreshScriptData, setRefreshScriptData,
-        }}>{/** value就是可在<AppContextProvider>组件的子组件中使用useContext() hook函数所获取的对象 */}
+        <AppContext.Provider
+            value={{
+                xshListWindowWidth,
+                setXshListWindowWidth,
+                // use for prompt
+                promptInputRef,
+                showPrompt,
+                setShowPrompt,
+                promptTitle,
+                setPromptTitle,
+                promptOKCallback,
+                setPromptOKCallback,
+                promptUserInput,
+                setPromptUserInput,
+                prompt,
+                promptModalCancelRef,
+                // sessionList
+                treeData,
+                setTreeData,
+                refreshTreeData,
+                setRefreshTreeData,
+                sessionRootKey,
+                // session
+                activeKey,
+                setActiveKey,
+                // menu
+                selectedMenuKey,
+                setSelectedMenuKey,
+                // global config
+                connectVariable,
+                setConnectVariable,
+                // refresh global config
+                refreshConfigableGlobalConfig,
+                setRefreshConfigableGlobalConfig,
+                // scriptData
+                scriptData,
+                setScriptData,
+                refreshScriptData,
+                setRefreshScriptData,
+                // sessionTransfer
+                sessionTransferTreeData,
+                setSessionTransferTreeData,
+                // fileProgressInfo
+                fileProgressInfo,
+                setFileProgressInfo,
+            }}
+        >
+            {/** value就是可在<AppContextProvider>组件的子组件中使用useContext() hook函数所获取的对象 */}
             {props.children}
         </AppContext.Provider>
     );
