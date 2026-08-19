@@ -18,6 +18,8 @@ const path = require('path');
 
 const SessionTransfer: React.FC = (props) => {
     const dragWindowRef = useRef<Element>(null);
+    const { session } = props;
+    const sessionKey = session.key;
 
     const { activeKey, selectedMenuKey, sessionTransferTreeData, setSessionTransferTreeData } =
         useContext(AppContext);
@@ -32,7 +34,7 @@ const SessionTransfer: React.FC = (props) => {
         if (!remoteDirectory.trim()) {
             return;
         }
-        sessionIdRef[activeKey]?.send({
+        sessionIdRef[sessionKey]?.send({
             type: 'exec_worker_method',
             methodName: "get_remote_file_list",
             args: [remoteDirectory]
@@ -44,15 +46,15 @@ const SessionTransfer: React.FC = (props) => {
     }
 
     useEffect(() => {
-        setSessionTransferTreeData((data) => {
-            data[activeKey] = [];
-            return data;
-        });
+        setSessionTransferTreeData((data) => ({
+            ...data,
+            [sessionKey]: data[sessionKey] || [],
+        }));
 
         return () => {
             setSessionTransferTreeData((data) => {
-                delete data[activeKey];
-                return data;
+                const { [sessionKey]: _, ...rest } = data;
+                return rest;
             });
         }
     }, []);
@@ -68,7 +70,7 @@ const SessionTransfer: React.FC = (props) => {
                     path: file.path
                 })
             }
-            sessionIdRef[activeKey]?.send({
+            sessionIdRef[sessionKey]?.send({
                 type: 'exec_worker_method',
                 methodName: "upload_files",
                 args: [fileInfos, searchValue]
@@ -102,8 +104,8 @@ const SessionTransfer: React.FC = (props) => {
                         <Button
                             icon={<AimOutlined />}
                             onClick={() => {
-                                sessionIdRef[activeKey]?.sendRecv('pwd', function (val: string) {
-                                    sessionIdRef[activeKey]?.term.write(
+                                sessionIdRef[sessionKey]?.sendRecv('pwd', function (val: string) {
+                                    sessionIdRef[sessionKey]?.term.write(
                                         val,
                                         (raw) => {
                                             // console.log(raw);
@@ -139,7 +141,7 @@ const SessionTransfer: React.FC = (props) => {
                         className={'sftpFileList'}
                         multiple
                         draggable={true}
-                        treeData={sessionTransferTreeData[activeKey]}
+                        treeData={sessionTransferTreeData[sessionKey]}
                         expandAction={false}
                         selectedKeys={selectedKeys}
                         onSelect={function (
@@ -183,7 +185,7 @@ const SessionTransfer: React.FC = (props) => {
                             const files = new Set(selectedKeys);
                             files.add(node.key);
                             const prop = {
-                                sessionId: activeKey,
+                                sessionId: sessionKey,
                                 files: [...files],
                                 remoteDir: searchValue,
                             };
@@ -215,7 +217,7 @@ const SessionTransfer: React.FC = (props) => {
                         }}
                     />
                 </div>
-                <SessionTransferProgress />
+                <SessionTransferProgress sessionKey={sessionKey}/>
             </div>
         </>
     );

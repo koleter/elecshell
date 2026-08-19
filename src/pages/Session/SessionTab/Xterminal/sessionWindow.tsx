@@ -357,24 +357,21 @@ const SessionWindow: React.FC = (props) => {
                 },
                 refreshRemoteFileList: (prev) => {
                     // console.log(prev);
-                    prev.unshift({
+                    const newTreeData = [{
                         title: '..',
                         key: '..',
                         isLeaf: false,
                         remoteDirectory: searchValue,
-                    });
-                    setSessionTransferTreeData((treeData) => {
-                        const data = {
-                            ...treeData,
-                        };
-                        data[activeKey] = prev;
-                        return data;
-                    });
+                    }, ...prev];
+                    setSessionTransferTreeData((treeData) => ({
+                        ...treeData,
+                        [id]: newTreeData,
+                    }));
                 },
                 refreshFileProgressInfo: (result) => {
                     // console.log(result);
                     setFileProgressInfo((fileProgressInfo) => {
-                        const data = fileProgressInfo[activeKey];
+                        const data = [...(fileProgressInfo[id] || [])];
                         let exist = false;
                         for (const info of data) {
                             if (info.id === result.id) {
@@ -387,10 +384,10 @@ const SessionWindow: React.FC = (props) => {
                             data.push(result);
                         }
 
-                        const retData = {
-                            ...fileProgressInfo
+                        return {
+                            ...fileProgressInfo,
+                            [id]: data,
                         };
-                        return retData;
                     });
                 },
             };
