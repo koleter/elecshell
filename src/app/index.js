@@ -5,7 +5,7 @@ const {exec, spawn} = require('child_process');
 const {Platform} = require('./platform/platform');
 const {ZN_template} = require('./locales/menu/zh-CN');
 const {EN_template} = require('./locales/menu/en-US');
-const {createWindow} = require('./lib/window');
+const {createWindow, cleanupDragOverlay} = require('./lib/window');
 const {sleep} = require("./lib/util");
 const fetch = require('node-fetch');
 const {platform} = require("os");
@@ -194,7 +194,12 @@ async function start() {
     // for applications and their menu bar to stay active until the user quits
     // explicitly with Cmd + Q.
     app.on('window-all-closed', async () => {
+        cleanupDragOverlay();
         app.quit();
+    });
+
+    app.on('before-quit', () => {
+        cleanupDragOverlay();
     });
 
     app.on('activate', () => {

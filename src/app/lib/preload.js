@@ -15,6 +15,9 @@ const electronAPI = {
         return process.versions;
     },
     ENV: process.env.NODE_ENV,
+    showDragOverlay: (payload) => ipcRenderer.invoke('show-drag-overlay', payload),
+    updateDragOverlayData: (payload) => ipcRenderer.send('update-drag-overlay-data', payload),
+    hideDragOverlay: () => ipcRenderer.invoke('hide-drag-overlay'),
 };
 
 if (process.contextIsolated) {
@@ -27,4 +30,3 @@ if (process.contextIsolated) {
 } else {
     window.electronAPI = electronAPI;
 }
-

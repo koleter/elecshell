@@ -22,3 +22,21 @@ declare module 'bizcharts-plugin-slider';
 declare let ANT_DESIGN_PRO_ONLY_DO_NOT_USE_IN_YOUR_PRODUCTION: 'site' | undefined;
 
 declare const REACT_APP_ENV: 'test' | 'dev' | 'pre' | false;
+
+interface ElectronAPIBase {
+    platform: string;
+    ipcRenderer: any;
+    FS_appendFileSync: any;
+    FS_writeFileSync: any;
+    FS_readFileSync: any;
+    FS_unlinkSync: any;
+    getVersions: () => any;
+    ENV: any;
+    showDragOverlay?: (payload: any) => Promise<any>;
+    updateDragOverlayData?: (payload: any) => void;
+    hideDragOverlay?: () => Promise<any>;
+}
+
+interface Window {
+    electronAPI: ElectronAPIBase;
+}

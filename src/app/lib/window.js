@@ -1,8 +1,171 @@
-const {BrowserWindow, screen, globalShortcut, ipcMain, dialog, webContents} = require('electron');
+const {app, BrowserWindow, screen, globalShortcut, ipcMain, dialog, webContents} = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const {switchFileInExploer} = require("./fileDialog");
+
+let dragOverlayWin = null;
+let dragMoveTimer = null;
+
+function getDragOverlayWindow() {
+    if (dragOverlayWin && !dragOverlayWin.isDestroyed()) return dragOverlayWin;
+    dragOverlayWin = new BrowserWindow({
+        width: 400,
+        height: 200,
+        frame: false,
+        transparent: true,
+        resizable: false,
+        movable: false,
+        minimizable: false,
+        maximizable: false,
+        closable: false,
+        focusable: false,
+        skipTaskbar: true,
+        alwaysOnTop: true,
+        fullscreenable: false,
+        hasShadow: false,
+        show: false,
+        acceptFirstMouse: true,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false,
+            webSecurity: false,
+        },
+    });
+    dragOverlayWin.setAlwaysOnTop(true, 'screen-saver');
+    dragOverlayWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    dragOverlayWin.setIgnoreMouseEvents(true, { forward: true });
+    dragOverlayWin.on('closed', () => {
+        dragOverlayWin = null;
+        stopDragMovePolling();
+    });
+    const overlayHtmlPath = path.join(__dirname, '..', 'drag-overlay.html');
+    dragOverlayWin.loadFile(overlayHtmlPath).catch(e => console.error('load drag-overlay failed', e));
+    return dragOverlayWin;
+}
+
+function startDragMovePolling(offsetX = -40, offsetY = -14) {
+    stopDragMovePolling();
+    dragMoveTimer = setInterval(() => {
+        if (!dragOverlayWin || dragOverlayWin.isDestroyed()) {
+            stopDragMovePolling();
+            return;
+        }
+        const cursor = screen.getCursorScreenPoint();
+        const display = screen.getDisplayNearestPoint(cursor);
+        const workArea = display.workArea;
+        const [winW, winH] = dragOverlayWin.getSize();
+        let x = cursor.x + offsetX;
+        let y = cursor.y + offsetY;
+        x = Math.max(workArea.x, Math.min(workArea.x + workArea.width - Math.min(winW, workArea.width), x));
+        y = Math.max(workArea.y, Math.min(workArea.y + workArea.height - Math.min(winH, workArea.height), y));
+        const [curX, curY] = dragOverlayWin.getPosition();
+        if (curX !== x || curY !== y) {
+            dragOverlayWin.setBounds({ x, y }, false);
+        }
+    }, 16);
+}
+
+function stopDragMovePolling() {
+    if (dragMoveTimer) {
+        clearInterval(dragMoveTimer);
+        dragMoveTimer = null;
+    }
+}
+
+ipcMain.handle('show-drag-overlay', async (event, payload) => {
+    const {
+        label,
+        connected = false,
+        outside = true,
+        clientX = 0,
+        clientY = 0,
+        offsetX = -40,
+        offsetY = -14,
+        snapshot,
+    } = payload || {};
+    const win = getDragOverlayWindow();
+    if (!win.webContents.isLoading()) {
+        // already loaded, no-op
+    } else {
+        await new Promise((r) => {
+            const done = () => {
+                clearTimeout(t);
+                r(null);
+            };
+            const t = setTimeout(done, 500);
+            win.webContents.once('did-finish-load', done);
+        });
+    }
+    const snap = snapshot || {};
+    const winW = Math.min(800, Math.max(200, snap.width || 400));
+    const winH = Math.min(400, Math.max(96, snap.height || 200));
+    let sx, sy;
+    const cursor = screen.getCursorScreenPoint();
+    sx = cursor.x;
+    sy = cursor.y;
+
+    // 给定一个屏幕坐标点，返回离它最近的显示器对象
+    const display = screen.getDisplayNearestPoint({ x: sx, y: sy });
+    const workArea = display.workArea;
+    let x = sx + offsetX;
+    let y = sy + offsetY;
+    x = Math.max(
+        workArea.x,
+        Math.min(workArea.x + workArea.width - Math.min(winW, workArea.width), x),
+    );
+    y = Math.max(
+        workArea.y,
+        Math.min(workArea.y + workArea.height - Math.min(winH, workArea.height), y),
+    );
+    win.setBounds({ x, y, width: winW, height: winH }, false);
+    win.webContents.send(
+        'drag-overlay-data',
+        Object.assign({ label: label || '', connected, outside }, snap ? { snapshot: snap } : {}),
+    );
+    win.showInactive();
+    startDragMovePolling(offsetX, offsetY);
+    return { ok: true };
+});
+
+ipcMain.on('update-drag-overlay-data', (event, payload) => {
+    if (!dragOverlayWin || dragOverlayWin.isDestroyed()) return;
+    if (payload && payload.snapshot) {
+        const snap = payload.snapshot;
+        const winW = Math.min(800, Math.max(200, snap.width || 400));
+        const winH = Math.min(400, Math.max(96, snap.height || 200));
+        const [curW, curH] = dragOverlayWin.getSize();
+        if (Math.abs(curW - winW) > 4 || Math.abs(curH - winH) > 4) {
+            dragOverlayWin.setSize(winW, winH, false);
+        }
+    }
+    dragOverlayWin.webContents.send('drag-overlay-data', payload || {});
+});
+
+ipcMain.handle('hide-drag-overlay', async () => {
+    stopDragMovePolling();
+    if (dragOverlayWin && !dragOverlayWin.isDestroyed()) {
+        dragOverlayWin.hide();
+        dragOverlayWin.setPosition(-10000, -10000, false);
+    }
+    return { ok: true };
+});
+
+function cleanupDragOverlay() {
+    stopDragMovePolling();
+    try {
+        if (dragOverlayWin && !dragOverlayWin.isDestroyed()) {
+            // destroy() 忽略 closable:false, 强制关闭
+            dragOverlayWin.removeAllListeners();
+            dragOverlayWin.destroy();
+        }
+    } catch (e) {
+        console.error('cleanup drag overlay failed', e);
+    }
+    dragOverlayWin = null;
+}
+
+module.exports.cleanupDragOverlay = cleanupDragOverlay;
 
 ipcMain.on("sendAllWindowsIpcMessage", (event, arg) => {
     const allWindows = BrowserWindow.getAllWindows();
@@ -34,6 +197,7 @@ ipcMain.on('update-title', (event, title) => {
 
 ipcMain.handle('create-detached-window', async (event, data) => {
     const {sessionId, session, initialContent} = data || {};
+    const cursor = screen.getCursorScreenPoint();
     const option = {
         title: session?.label || 'elecshell',
         width: 900,
@@ -55,12 +219,33 @@ ipcMain.handle('create-detached-window', async (event, data) => {
         resizable: true,
         movable: true,
         acceptFirstMouse: true,
+        show: false,
     };
+    const w = option.width;
+    const h = option.height;
+    const display = screen.getDisplayNearestPoint(cursor);
+    const wa = display.workArea;
+    let x = cursor.x - Math.floor(w * 0.25);
+    let y = cursor.y - 40;
+    x = Math.max(wa.x, Math.min(wa.x + wa.width - w, x));
+    y = Math.max(wa.y, Math.min(wa.y + wa.height - h, y));
+    option.x = x;
+    option.y = y;
     if (process.platform === "darwin") {
         option.titleBarStyle = 'hidden';
     }
     const win = new BrowserWindow(option);
     const webContentsId = win.webContents.id;
+
+    win.on('closed', () => {
+        const remaining = BrowserWindow.getAllWindows().filter(w2 => w2 && !w2.isDestroyed() && w2 !== dragOverlayWin);
+        if (remaining.length === 0) {
+            cleanupDragOverlay();
+            if (process.platform !== 'darwin') {
+                setTimeout(() => { try { app.quit(); } catch (e) {} }, 0);
+            }
+        }
+    });
 
     let tempPath = '';
     if (initialContent) {
@@ -94,6 +279,12 @@ ipcMain.handle('create-detached-window', async (event, data) => {
             hash: `/session/detached?${queryString}`
         });
     }
+
+    if (!option.x || !option.y) {
+        win.center();
+    }
+    win.show();
+    win.focus();
 
     win.on('closed', () => {
         if (tempPath) {
@@ -177,6 +368,16 @@ exports.createWindow = () => {
         option.titleBarStyle = 'hidden';
     }
     const win = new BrowserWindow(option);
+
+    win.on('closed', () => {
+        const remaining = BrowserWindow.getAllWindows().filter(w => w && !w.isDestroyed() && w !== dragOverlayWin);
+        if (remaining.length === 0) {
+            cleanupDragOverlay();
+            if (process.platform !== 'darwin') {
+                setTimeout(() => { try { app.quit(); } catch (e) {} }, 0);
+            }
+        }
+    });
 
     // globalShortcut.register("CommandOrControl+W", () => {
     //     //stuff here

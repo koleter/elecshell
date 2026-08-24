@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>drag-overlay</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+      line-height: 1.5715;
+  }
+  #host { width: 100%; height: 100%; position: relative; overflow: hidden; font-size: 14px; }
+  #card {
+      position: absolute;
+      left: 4px;
+      top: 4px;
+      display: flex;
+      align-items: center;
+      box-sizing: border-box;
+  }
+  #status {
+    width: 1em;
+    height: 1em;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0;
+    vertical-align: middle;
+    flex-shrink: 0;
+  }
+  #label { display: inline-block; vertical-align: middle; flex: 1; min-width: 0; max-width: 560px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+</head>
+<body>
+  <div id="host">
+    <div id="card">
+      <span id="label"></span>
+      <span id="status"></span>
+    </div>
+  </div>
+<script>
+  const { ipcRenderer } = require('electron');
+  const card = document.getElementById('card');
+  const labelEl = document.getElementById('label');
+  const statusEl = document.getElementById('status');
+  const host = document.getElementById('host');
+
+
+  function applySnapshot(snap) {
+    if (!snap) return false;
+    if (typeof snap.label === 'string') labelEl.textContent = snap.label;
+    if (typeof snap.connected === 'boolean') {
+      statusEl.style.display = 'inline-block';
+      statusEl.style.backgroundColor = snap.connected ? 'green' : 'red';
+    } else {
+      statusEl.style.display = 'none';
+    }
+
+    card.style.padding = '8px 0 8px 16px';
+    card.style.background = snap.background || '#fff';
+    card.style.border = snap.border || '2px solid #1890ff';
+    card.style.borderRadius = snap.borderRadius || '4px';
+    card.style.boxShadow = snap.boxShadow || '0 12px 32px rgba(0,0,0,0.25)';
+    card.style.opacity = (snap.opacity != null) ? String(snap.opacity) : '0.98';
+    card.style.whiteSpace = 'nowrap';
+    card.style.cursor = 'move';
+    return true;
+  }
+
+  ipcRenderer.on('drag-overlay-data', (ev, data) => {
+    if (!data) return;
+    if (data.snapshot && applySnapshot(data.snapshot)) return;
+    // legacy fallback
+    if (typeof data.label === 'string') labelEl.textContent = data.label;
+    if (typeof data.connected === 'boolean') {
+      statusEl.style.display = 'inline-block';
+      statusEl.style.backgroundColor = data.connected ? 'green' : 'red';
+      card.style.padding = '8px 0 8px 16px';
+    } else {
+      statusEl.style.display = 'none';
+      card.style.padding = '8px 16px';
+    }
+    // card.style.background = data.outside ? '#fff1f0' : '#fff';
+    // card.style.border = data.outside ? '2px solid #ff4d4f' : '2px solid #1890ff';
+  });
+</script>
+</body>
+</html>
