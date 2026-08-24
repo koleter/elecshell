@@ -404,22 +404,6 @@ const SessionDraggableTabs = (props: SessionDraggableTabsProps) => {
             {typeof activeItem!.label === 'object'
                 ? React.cloneElement(activeItem!.label as React.ReactElement, {style: {padding: 0, display: 'inline-block'}})
                 : activeItem!.label}
-            {(isOutsideTabs || pointerLeftWindow || nearWindowEdge) && (
-                <div style={{
-                    position: 'absolute',
-                    top: '-28px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    background: '#ff4d4f',
-                    color: 'white',
-                    padding: '2px 10px',
-                    borderRadius: '10px',
-                    fontSize: '12px',
-                    whiteSpace: 'nowrap',
-                    boxShadow: '0 2px 8px rgba(255,77,79,0.4)',
-                }}>
-                </div>
-            )}
         </div>
     ) : null;
 
