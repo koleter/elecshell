@@ -15,19 +15,27 @@
     -webkit-user-select: none;
     user-select: none;
     -webkit-font-smoothing: antialiased;
+      line-height: 1.5715;
   }
   #host { width: 100%; height: 100%; position: relative; overflow: hidden; font-size: 14px; }
-  #card { position: absolute; left: 4px; top: 4px; display: flex; align-items: center; }
+  #card {
+      position: absolute;
+      left: 4px;
+      top: 4px;
+      display: flex;
+      align-items: center;
+      box-sizing: border-box;
+  }
   #status {
     width: 1em;
     height: 1em;
     border-radius: 50%;
     display: inline-block;
-    margin: 0;
+    margin-right: 0;
     vertical-align: middle;
     flex-shrink: 0;
   }
-  #label { display: inline-block; vertical-align: middle; max-width: 560px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #label { display: inline-block; vertical-align: middle; flex: 1; min-width: 0; max-width: 560px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
 </head>
 <body>
@@ -55,7 +63,7 @@
       statusEl.style.display = 'none';
     }
 
-    card.style.padding = snap.padding || '8px 0 8px 16px';
+    card.style.padding = '8px 0 8px 16px';
     card.style.background = snap.background || '#fff';
     card.style.border = snap.border || '2px solid #1890ff';
     card.style.borderRadius = snap.borderRadius || '4px';
@@ -63,11 +71,6 @@
     card.style.opacity = (snap.opacity != null) ? String(snap.opacity) : '0.98';
     card.style.whiteSpace = 'nowrap';
     card.style.cursor = 'move';
-    card.style.transition = 'transform 0.08s ease-out, background-color 0.12s ease-out, border-color 0.12s ease-out';
-    card.style.transformOrigin = '0 0';
-    const scale = snap.scale != null ? Number(snap.scale) : 1;
-    card.style.transform = 'scale(' + scale + ')';
-
     return true;
   }
 
@@ -79,6 +82,10 @@
     if (typeof data.connected === 'boolean') {
       statusEl.style.display = 'inline-block';
       statusEl.style.backgroundColor = data.connected ? 'green' : 'red';
+      card.style.padding = '8px 0 8px 16px';
+    } else {
+      statusEl.style.display = 'none';
+      card.style.padding = '8px 16px';
     }
     // card.style.background = data.outside ? '#fff1f0' : '#fff';
     // card.style.border = data.outside ? '2px solid #ff4d4f' : '2px solid #1890ff';
