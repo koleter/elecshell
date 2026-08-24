@@ -74,13 +74,25 @@ function stopDragMovePolling() {
 }
 
 ipcMain.handle('show-drag-overlay', async (event, payload) => {
-    const { label, connected = false, outside = true, clientX = 0, clientY = 0, offsetX = -40, offsetY = -14, snapshot } = payload || {};
+    const {
+        label,
+        connected = false,
+        outside = true,
+        clientX = 0,
+        clientY = 0,
+        offsetX = -40,
+        offsetY = -14,
+        snapshot,
+    } = payload || {};
     const win = getDragOverlayWindow();
     if (!win.webContents.isLoading()) {
         // already loaded, no-op
     } else {
-        await new Promise(r => {
-            const done = () => { clearTimeout(t); r(null); };
+        await new Promise((r) => {
+            const done = () => {
+                clearTimeout(t);
+                r(null);
+            };
             const t = setTimeout(done, 500);
             win.webContents.once('did-finish-load', done);
         });
@@ -88,33 +100,29 @@ ipcMain.handle('show-drag-overlay', async (event, payload) => {
     const snap = snapshot || {};
     const winW = Math.min(800, Math.max(200, snap.width || 400));
     const winH = Math.min(400, Math.max(96, snap.height || 200));
-    const senderWin = BrowserWindow.fromWebContents(event.sender);
     let sx, sy;
     const cursor = screen.getCursorScreenPoint();
-    if (senderWin) {
-        const wcBounds = senderWin.getContentBounds();
-        sx = wcBounds.x + clientX;
-        sy = wcBounds.y + clientY;
-        const dist = Math.hypot(sx - cursor.x, sy - cursor.y);
-        if (dist > 5) {
-            sx = cursor.x;
-            sy = cursor.y;
-        }
-    } else {
-        sx = cursor.x;
-        sy = cursor.y;
-    }
+    sx = cursor.x;
+    sy = cursor.y;
+
+    // 给定一个屏幕坐标点，返回离它最近的显示器对象
     const display = screen.getDisplayNearestPoint({ x: sx, y: sy });
     const workArea = display.workArea;
     let x = sx + offsetX;
     let y = sy + offsetY;
-    x = Math.max(workArea.x, Math.min(workArea.x + workArea.width - Math.min(winW, workArea.width), x));
-    y = Math.max(workArea.y, Math.min(workArea.y + workArea.height - Math.min(winH, workArea.height), y));
+    x = Math.max(
+        workArea.x,
+        Math.min(workArea.x + workArea.width - Math.min(winW, workArea.width), x),
+    );
+    y = Math.max(
+        workArea.y,
+        Math.min(workArea.y + workArea.height - Math.min(winH, workArea.height), y),
+    );
     win.setBounds({ x, y, width: winW, height: winH }, false);
-    win.webContents.send('drag-overlay-data', Object.assign(
-        { label: label || '', connected, outside },
-        snap ? { snapshot: snap } : {}
-    ));
+    win.webContents.send(
+        'drag-overlay-data',
+        Object.assign({ label: label || '', connected, outside }, snap ? { snapshot: snap } : {}),
+    );
     win.showInactive();
     startDragMovePolling(offsetX, offsetY);
     return { ok: true };

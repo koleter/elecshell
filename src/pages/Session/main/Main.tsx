@@ -355,6 +355,7 @@ const SessionMain: React.FC<{ initialSession?: any; detached?: boolean; initialC
 
                                     // @ts-ignore
                                     return {
+                                        isConnected: item.isConnected,
                                         label: (
                                             <Dropdown
                                                 menu={{

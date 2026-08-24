@@ -77,6 +77,7 @@ const SessionDraggableTabs = (props: SessionDraggableTabsProps) => {
 
     const pendingDetachRef = useRef<string | null>(null);
     const dragActiveRef = useRef(false);
+    // 存储拖拽开始时的位置
     const lastPosRef = useRef<{ x: number; y: number } | null>(null);
     const EDGE_SWITCH_THRESHOLD = 30;
 
@@ -138,12 +139,10 @@ const SessionDraggableTabs = (props: SessionDraggableTabsProps) => {
         const labelText = extractPlainLabel(activeId ? items.find(i => String(i.key) === activeId) : undefined);
         const activeItem = activeId ? items.find(i => String(i.key) === activeId) : undefined;
         const outside = isOutsideTabs || pointerLeftWindow || nearWindowEdge;
-        const tipText = pointerLeftWindow ? '松开以打开新窗口' : (outside ? '松开以分离到新窗口' : '');
         return {
             label: labelText,
             connected: !!(activeItem as any)?.isConnected,
             outside,
-            tip: tipText,
             pointerLeft: !!pointerLeftWindow,
             width: Math.max(120, Math.ceil(rect.width) + 8),
             height: Math.max(56, Math.ceil(rect.height) + 40),
@@ -388,7 +387,6 @@ const SessionDraggableTabs = (props: SessionDraggableTabsProps) => {
                 position: 'fixed',
                 left: overlayPos!.x,
                 top: overlayPos!.y,
-                padding: '8px 16px',
                 background: (isOutsideTabs || pointerLeftWindow || nearWindowEdge) ? '#fff1f0' : '#fff',
                 border: `2px solid ${(isOutsideTabs || pointerLeftWindow || nearWindowEdge) ? '#ff4d4f' : '#1890ff'}`,
                 borderRadius: '4px',
@@ -420,7 +418,6 @@ const SessionDraggableTabs = (props: SessionDraggableTabsProps) => {
                     whiteSpace: 'nowrap',
                     boxShadow: '0 2px 8px rgba(255,77,79,0.4)',
                 }}>
-                    {pointerLeftWindow ? '松开以打开新窗口' : '松开以分离到新窗口'}
                 </div>
             )}
         </div>
