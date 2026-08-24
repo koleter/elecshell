@@ -10,34 +10,20 @@
     width: 100%;
     height: 100%;
     background: transparent;
-    overflow: visible;
+    overflow: hidden;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
     -webkit-user-select: none;
     user-select: none;
     -webkit-font-smoothing: antialiased;
   }
-  #host { width: 100%; height: 100%; position: relative; overflow: visible; }
-  #card { position: absolute; left: 4px; top: 4px; display: inline-flex; align-items: center; }
-  #tip {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(255,77,79,0.4);
-    color: white;
-    background: #ff4d4f;
-    border-radius: 10px;
-    padding: 2px 10px;
-    font-size: 12px;
-    line-height: 18px;
-    pointer-events: none;
-  }
+  #host { width: 100%; height: 100%; position: relative; overflow: hidden; font-size: 14px; }
+  #card { position: absolute; left: 4px; top: 4px; display: flex; align-items: center; }
   #status {
     width: 1em;
     height: 1em;
     border-radius: 50%;
     display: inline-block;
-    margin-left: 8px;
+    margin: 0;
     vertical-align: middle;
     flex-shrink: 0;
   }
@@ -57,12 +43,7 @@
   const labelEl = document.getElementById('label');
   const statusEl = document.getElementById('status');
   const host = document.getElementById('host');
-  let tipEl = null;
 
-  function removeTip() {
-    if (tipEl && tipEl.parentNode) tipEl.parentNode.removeChild(tipEl);
-    tipEl = null;
-  }
 
   function applySnapshot(snap) {
     if (!snap) return false;
@@ -74,7 +55,7 @@
       statusEl.style.display = 'none';
     }
 
-    card.style.padding = snap.padding || '8px 16px';
+    card.style.padding = snap.padding || '8px 0 8px 16px';
     card.style.background = snap.background || '#fff';
     card.style.border = snap.border || '2px solid #1890ff';
     card.style.borderRadius = snap.borderRadius || '4px';
@@ -87,22 +68,6 @@
     const scale = snap.scale != null ? Number(snap.scale) : 1;
     card.style.transform = 'scale(' + scale + ')';
 
-    if (snap.tip) {
-      if (!tipEl) {
-        tipEl = document.createElement('div');
-        tipEl.id = 'tip';
-        host.appendChild(tipEl);
-      }
-      tipEl.textContent = snap.tip;
-      const cardRect = card.getBoundingClientRect();
-      const cardW = (card.offsetWidth * scale);
-      const cardL = 4;
-      const cx = cardL + cardW / 2;
-      tipEl.style.left = cx + 'px';
-      tipEl.style.top = '-24px';
-    } else {
-      removeTip();
-    }
     return true;
   }
 
@@ -115,8 +80,8 @@
       statusEl.style.display = 'inline-block';
       statusEl.style.backgroundColor = data.connected ? 'green' : 'red';
     }
-    card.style.background = data.outside ? '#fff1f0' : '#fff';
-    card.style.border = data.outside ? '2px solid #ff4d4f' : '2px solid #1890ff';
+    // card.style.background = data.outside ? '#fff1f0' : '#fff';
+    // card.style.border = data.outside ? '2px solid #ff4d4f' : '2px solid #1890ff';
   });
 </script>
 </body>
