@@ -106,7 +106,7 @@ async def recycle_worker(worker):
 
 
 class Worker(object):
-    def __init__(self, id, loop, ssh, chan: paramiko.Channel, dst_addr, login_script=[], debug=False):
+    def __init__(self, id, loop, ssh, chan: paramiko.Channel, dst_addr, login_script=[], debug=False, keepalive_interval=60):
         self.loop = loop
         self.ssh = ssh
         self.chan = chan
@@ -124,6 +124,39 @@ class Worker(object):
         self.xsh_conf_id = None
         self.login_script = login_script
         self.file_transfer = None
+        self.keepalive_interval = keepalive_interval
+        self.keepalive_timer = None
+        if self.keepalive_interval > 0:
+            self.start_keepalive()
+
+    def start_keepalive(self):
+        if self.keepalive_interval <= 0:
+            return
+        self._send_keepalive()
+        self.keepalive_timer = self.loop.call_later(
+            self.keepalive_interval, self._keepalive_tick
+        )
+
+    def _keepalive_tick(self):
+        if self.closed:
+            return
+        self._send_keepalive()
+        self.keepalive_timer = self.loop.call_later(
+            self.keepalive_interval, self._keepalive_tick
+        )
+
+    def _send_keepalive(self):
+        try:
+            transport = self.ssh.get_transport()
+            if transport:
+                transport.send_ignore(byte_count=0)
+        except (OSError, IOError) as e:
+            logging.debug(f"Keepalive send failed for worker {self.id}: {e}")
+
+    def stop_keepalive(self):
+        if self.keepalive_timer is not None:
+            self.keepalive_timer.cancel()
+            self.keepalive_timer = None
 
     def init_file_transfer(self):
         if self.file_transfer is not None:
@@ -505,6 +538,7 @@ class Worker(object):
         return warp
 
     def close(self, reason=None):
+        self.stop_keepalive()
         if self.closed:
             return
         self.closed = True
