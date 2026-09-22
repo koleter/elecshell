@@ -1,4 +1,5 @@
-import {MenuProps, Space} from 'antd';
+import type {MenuProps} from 'antd';
+import { Space} from 'antd';
 import {Dropdown, Input, Layout, Menu, Modal, Tabs} from 'antd';
 import type {DataNode} from 'antd/es/tree';
 import React, {useContext, useEffect, useRef, useState} from 'react';
@@ -390,7 +391,7 @@ const SessionMain: React.FC<{ initialSession?: any; detached?: boolean; initialC
                                                         {
                                                             label: (
                                                                 <>
-                                                                    {item['logPath'] ? <div onClick={() => {
+                                                                    {item.logPath ? <div onClick={() => {
                                                                         setSessions(() => {
                                                                             const data = [...sessions];
                                                                             for (let i = 0; i < data.length; i++) {
@@ -402,7 +403,7 @@ const SessionMain: React.FC<{ initialSession?: any; detached?: boolean; initialC
                                                                             return data;
                                                                         });
                                                                     }}>
-                                                                        <FormattedMessage id={'Close Logging'}></FormattedMessage>
+                                                                        <FormattedMessage id={'Close Logging'} />
                                                                     </div> : <div onClick={() => {
                                                                         window.electronAPI.ipcRenderer.send('save-file-dialog', item.key);
                                                                         window.electronAPI.ipcRenderer.on('selected-file', function (event, result, sessionId) {
@@ -422,7 +423,7 @@ const SessionMain: React.FC<{ initialSession?: any; detached?: boolean; initialC
                                                                             });
                                                                         });
                                                                     }}>
-                                                                        <FormattedMessage id={'Startup Logging'}></FormattedMessage>
+                                                                        <FormattedMessage id={'Startup Logging'} />
                                                                     </div>
                                                                     }
                                                                 </>
@@ -434,7 +435,7 @@ const SessionMain: React.FC<{ initialSession?: any; detached?: boolean; initialC
                                                                 <div onClick={() => {
                                                                     setSessions(sessions.filter(session => session.key === item.key));
                                                                     closeSessions(sessions.filter(session => session.key !== item.key));
-                                                                }}><FormattedMessage id={'Close other tabs'}></FormattedMessage></div>
+                                                                }}><FormattedMessage id={'Close other tabs'} /></div>
                                                             ),
                                                             key: 'closeOtherTabs'
                                                         },
@@ -443,7 +444,7 @@ const SessionMain: React.FC<{ initialSession?: any; detached?: boolean; initialC
                                                                 <div onClick={() => {
                                                                     closeSessions(sessions);
                                                                     setSessions([]);
-                                                                }}><FormattedMessage id={'Close all tabs'}></FormattedMessage></div>
+                                                                }}><FormattedMessage id={'Close all tabs'} /></div>
                                                             ),
                                                             key: 'closeAllTabs'
                                                         }
@@ -457,7 +458,7 @@ const SessionMain: React.FC<{ initialSession?: any; detached?: boolean; initialC
                           borderRadius: '50%',
                           width: '1em',
                           height: '1em'
-                      }}></div>
+                      }} />
                   </span>
                                             </Dropdown>
 

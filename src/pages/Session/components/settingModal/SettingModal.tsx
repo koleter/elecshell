@@ -82,7 +82,7 @@ const SettingModal = () => {
                     counter[connectVariable[i].name]++;
                 }
                 const result = []
-                for (let key in counter) {
+                for (const key in counter) {
                     if (counter[key] != 1) {
                         result.push(key);
                     }

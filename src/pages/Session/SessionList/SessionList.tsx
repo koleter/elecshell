@@ -4,7 +4,7 @@ import {
     EditableProTable
 } from '@ant-design/pro-components';
 import UploadInFormItem from "../components/upload/Upload"
-import {DataNode, TreeProps} from "antd/es/tree";
+import type {DataNode, TreeProps} from "antd/es/tree";
 import {request} from "@@/plugin-request/request";
 import util, {defineValidatorWithErrMessage, getUUid} from "@/util";
 import {sessionIdMapFileName} from "@/pages/Session/main/Main";
@@ -21,7 +21,7 @@ const {DirectoryTree} = Tree;
 const defaultSessionPropertyActiveKey = 'baseInfo';
 
 // 记录session配置文件信息,conf_id -> conf_path
-export let sessionConfInfo = {};
+export const sessionConfInfo = {};
 
 const SessionList: React.FC = (props) => {
     const {setSessions, setActiveKey} = props;

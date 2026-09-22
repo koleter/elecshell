@@ -44,7 +44,7 @@ const UploadInFormItem = (props) => {
                    });
                  }} fileList={fileList}>
     <Button icon={<UploadOutlined/>}>Click to Upload</Button>
-  </Upload>
-}
+  </Upload>;
+};
 
 export default UploadInFormItem;

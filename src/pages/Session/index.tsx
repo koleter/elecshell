@@ -23,7 +23,7 @@ const Session: React.FC = () => {
         <div style={{height: '100vh'}}>
             {window.electronAPI.platform == "darwin" && <Header/>}
             <div style={{position: 'relative', height: window.electronAPI.platform == "darwin" ? `calc(100vh - ${HEADER_HEIGHT}px)` : '100vh'}}>
-                <SessionMain></SessionMain>
+                <SessionMain />
             </div>
         </div>
 

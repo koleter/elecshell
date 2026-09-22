@@ -10,7 +10,8 @@ import "./SessionTransfer.less"
 import {sessionIdRef} from "@/pages/Session/main/Main";
 import {AppContext} from "@/pages/context/AppContextProvider";
 import util, {getUUid, showMessage} from "@/util";
-import {DataNode, TreeProps} from "antd/es/tree";
+import type {DataNode} from "antd/es/tree";
+import { TreeProps} from "antd/es/tree";
 import {AimOutlined} from "@ant-design/icons";
 import {spiltResponseWithLine} from "@/pages/util/terminal_util";
 import SessionTransferProgress from "@/pages/Session/fileTransfer/progress/SessionTransferProgress";
@@ -123,7 +124,7 @@ const SessionTransfer: React.FC = (props) => {
                                     );
                                 });
                             }}
-                        ></Button>
+                         />
                     </Tooltip>
                 </div>
 

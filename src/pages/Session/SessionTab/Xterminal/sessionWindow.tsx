@@ -131,7 +131,7 @@ const SessionWindow: React.FC = (props) => {
         createNewSession: (sessionConfs, callback) => {
             const arr = [];
             sessionConfs.forEach(sessionConf => {
-                var body;
+                let body;
                 switch (Object.prototype.toString.call(sessionConf)) {
                     case "[object String]":
                         if (!(sessionConf in sessionConfInfo)) {
@@ -281,7 +281,7 @@ const SessionWindow: React.FC = (props) => {
                 resizeObserver.observe(terminalRef.current);
             }
 
-            let raw_url = await util.getUrl();
+            const raw_url = await util.getUrl();
             const ws_url = raw_url.split(/\?|#/, 1)[0].replace('http', 'ws'),
                 join = (ws_url[ws_url.length - 1] === '/' ? '' : '/'),
                 url = ws_url + join + 'ws?id=' + id,

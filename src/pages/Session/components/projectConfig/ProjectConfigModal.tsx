@@ -154,19 +154,20 @@ const ProjectConfigModal = () => {
                           className={"globalconfig-namespace"}
                           dataSource={nameSpaceList.filter(namespace => {
                               return namespace.indexOf(searchValue) > -1;
-                          })}
+                          }).map(namespace => ({ title: namespace, namespace }))}
                           metas={{
                               valueType: 'text',
                               title: {
                                   render: (text, row) => {
-                                      if (curNameSpace === row) {
-                                          return <><span style={{color: 'red'}}>*</span>{row}</>;
+                                      if (curNameSpace === row.namespace) {
+                                          return <><span style={{color: 'red'}}>*</span>{row.namespace}</>;
                                       }
-                                      return <span>{row}</span>;
+                                      return <span>{row.namespace}</span>;
                                   }
                               },
                               actions: {
-                                  render: (text, namespace) => {
+                                  render: (text, row) => {
+                                      const namespace = row.namespace;
                                       const res = [];
                                       if (curNameSpace !== namespace) {
                                           res.push(<a
@@ -190,7 +191,7 @@ const ProjectConfigModal = () => {
                                                   });
                                               }}
                                           >
-                                              <FormattedMessage id={'switch'}></FormattedMessage>
+                                              <FormattedMessage id={'switch'} />
                                           </a>);
                                       }
                                       res.push(<a
@@ -204,7 +205,7 @@ const ProjectConfigModal = () => {
                                               });
                                           }}
                                       >
-                                          <FormattedMessage id={'export'}></FormattedMessage>
+                                          <FormattedMessage id={'export'} />
                                       </a>);
 
                                       if (curNameSpace !== namespace) {
