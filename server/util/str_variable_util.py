@@ -1,12 +1,12 @@
 import re
 
-from handler.ConfigHandler import configable_global_config
+from handler.ConfigHandler import configable_project_config
 
 
 def _replace_variable(match):
     if len(match.groups()) == 0:
         return match.group()
-    vs = configable_global_config.conf_cache["strVariableSetting"]
+    vs = configable_project_config.conf_cache["strVariableSetting"]
     if not vs:
         return match.group()
     subGroupStr = match.groups()[0]

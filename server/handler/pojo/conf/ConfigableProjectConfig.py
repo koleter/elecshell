@@ -1,6 +1,6 @@
 from handler.pojo.conf.CachableConfig import CachableConfig
 
-class ConfigableGlobalConfig(CachableConfig):
+class ConfigableProjectConfig(CachableConfig):
     """
     a class used by settings
     """

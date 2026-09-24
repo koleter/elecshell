@@ -91,7 +91,7 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
         util.request('conf', {
             method: 'GET',
             params: {
-                type: 'ConfigableGlobalConfig',
+                type: 'ConfigableProjectConfig',
             }
         }).then(res => {
             if (res.status == 'success') {

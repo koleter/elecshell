@@ -96,7 +96,7 @@ const SettingModal = () => {
             util.request('conf', {
                 method: 'POST',
                 body: JSON.stringify({
-                    type: 'ConfigableGlobalConfig',
+                    type: 'ConfigableProjectConfig',
                     args: {
                         strVariableSetting: connectVariable
                     }
