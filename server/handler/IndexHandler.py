@@ -11,7 +11,7 @@ from tornado.options import options
 from tornado.process import cpu_count
 
 from exception.InvalidValueError import InvalidValueError
-from handler.ConfigHandler import xsh_dir_path
+import handler.ConfigHandler as ConfigHandler
 from handler.BaseHandler import BaseHandler
 from handler.pojo.PrivateKey import PrivateKey
 from handler.pojo.SSHClient import SSHClient
@@ -170,7 +170,7 @@ class IndexHandler(BaseHandler, tornado.web.RequestHandler):
 
         try:
             data = json.loads(self.request.body)
-            session_conf_file_path = os.path.join(xsh_dir_path, data['filePath'])
+            session_conf_file_path = os.path.join(ConfigHandler.xsh_dir_path, data['filePath'])
             session_name = data.get('sessionName')
             with open(session_conf_file_path, 'r', encoding='utf-8') as f:
                 session_conf = json.loads(f.read())
