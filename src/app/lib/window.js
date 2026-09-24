@@ -33,7 +33,10 @@ function getDragOverlayWindow() {
         },
     });
     dragOverlayWin.setAlwaysOnTop(true, 'screen-saver');
-    dragOverlayWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    dragOverlayWin.setVisibleOnAllWorkspaces(true, {
+        visibleOnFullScreen: true,
+        skipTransformProcessType: true,
+    });
     dragOverlayWin.setIgnoreMouseEvents(true, { forward: true });
     dragOverlayWin.on('closed', () => {
         dragOverlayWin = null;
