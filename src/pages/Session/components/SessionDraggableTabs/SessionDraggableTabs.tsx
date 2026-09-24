@@ -415,6 +415,10 @@ const SessionDraggableTabs = (props: SessionDraggableTabsProps) => {
                 renderTabBar={(tabBarProps, DefaultTabBar) => (
                     <DndContext
                         sensors={[sensor]}
+                        autoScroll={{
+                            // 保留局部容器滚动，但不能把窗口标题栏滚出视口。
+                            canScroll: (element) => element !== document.scrollingElement,
+                        }}
                         onDragStart={handleDragStart}
                         onDragMove={handleDragMove}
                         onDragEnd={handleDragEnd}

@@ -6,7 +6,8 @@ const DragLine = ({startPos, canMove = null, moveFunc = null, moveEndFunc = null
     if ("column" == direction) {
         style = {height: '6px', width: '100%', cursor: 'row-resize'}
     } else {
-        style = {width: '6px', height: '100vh', cursor: 'col-resize'}
+        // 跟随内容区高度，避免连同顶部标题栏一起撑出视口。
+        style = {width: '6px', height: '100%', cursor: 'col-resize'}
     }
     return <div
         style={style}

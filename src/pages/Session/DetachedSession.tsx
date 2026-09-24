@@ -63,7 +63,7 @@ const DetachedSession: React.FC = () => {
             <ProjectConfigModal/>
             <div style={{height: '100vh'}}>
                 {window.electronAPI.platform == "darwin" && <Header/>}
-                <div style={{position: 'relative', height: '100%'}}>
+                <div style={{position: 'relative', height: window.electronAPI.platform === 'darwin' ? `calc(100vh - ${HEADER_HEIGHT}px)` : '100vh'}}>
                     <SessionMain
                         initialSession={session}
                         initialContent={initialContent}
