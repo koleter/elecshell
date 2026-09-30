@@ -77,6 +77,13 @@ As shown in the figure, the variable name is set to nrelayPassword, and the corr
 
 Support hostname, username and password
 
+Variables are divided into two levels: workspace variables and global variables
+
+- Workspace variables: configured in File-Settings, only effective for sessions under the current namespace
+- Global variables: configured in the Variables tab of Global Config, shared by sessions under all namespaces
+
+When parsing `{{variable_name}}`, the workspace variable is matched first. If not matched, the global variable with the same name will be used as a fallback. If neither is matched, the original string is retained
+
 ## script
 ctrl + q will pop up the script window. If there is no active session, no available scripts will be displayed.
 
