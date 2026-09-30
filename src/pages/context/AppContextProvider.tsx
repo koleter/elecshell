@@ -102,6 +102,25 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
         })
     }, [refreshConfigableGlobalConfig])
 
+    // 全局变量（跨命名空间共享）
+    const [globalConnectVariable, setGlobalConnectVariable] = useState([]);
+    const [refreshGlobalVariableConfig, setRefreshGlobalVariableConfig] = useState(0);
+
+    useEffect(() => {
+        util.request('conf', {
+            method: 'GET',
+            params: {
+                type: 'GlobalVariableConfig',
+            }
+        }).then(res => {
+            if (res.status == 'success') {
+                setGlobalConnectVariable(res?.data?.strVariableSetting || []);
+            } else {
+                message[res.status](res.msg);
+            }
+        })
+    }, [refreshGlobalVariableConfig])
+
     const [scriptData, setScriptData] = useState([]);
     const [refreshScriptData, setRefreshScriptData] = useState(0);
     useEffect(() => {
@@ -153,6 +172,12 @@ export function AppContextProvider(props: { children: React.ReactNode | React.Re
                 // refresh global config
                 refreshConfigableGlobalConfig,
                 setRefreshConfigableGlobalConfig,
+                // global variable
+                globalConnectVariable,
+                setGlobalConnectVariable,
+                // refresh global variable
+                refreshGlobalVariableConfig,
+                setRefreshGlobalVariableConfig,
                 // scriptData
                 scriptData,
                 setScriptData,

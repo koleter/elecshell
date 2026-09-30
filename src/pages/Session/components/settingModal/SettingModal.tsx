@@ -1,44 +1,19 @@
-import {EditableProTable, ModalForm} from '@ant-design/pro-components';
+import {ModalForm} from '@ant-design/pro-components';
 import React, {useContext, useEffect, useState} from 'react';
-import util, {getUUid, showMessage} from "@/util";
-import {Input, message, Tabs} from 'antd';
+import util, {showMessage} from "@/util";
+import {message, Tabs} from 'antd';
 import {AppContext} from "@/pages/context/AppContextProvider";
 import {useIntl} from '@@/plugin-locale/localeExports';
 import {capitalizeFirstLetter} from "@/pages/util/string";
+import ConnectVariableTable, {validateVariables} from "./ConnectVariableTable";
 
 const SettingModal = () => {
     const [modalVisit, setModalVisit] = useState(false);
     const intl = useIntl();
 
-    const columns = [
-        {
-            title: intl.formatMessage({id: 'Variable Name'}),
-            dataIndex: 'name'
-        },
-        {
-            title: intl.formatMessage({id: 'Variable Value'}),
-            renderFormItem: (_, {isEditable}) => {
-                return <Input.Password/>;
-            },
-            render: (text, record, _, action) => [
-                <Input.Password placeholder="input password" defaultValue={text}/>
-            ],
-            dataIndex: 'value'
-        },
-        {
-            title: capitalizeFirstLetter(intl.formatMessage({id: 'operation'})),
-            valueType: 'option',
-            width: 100,
-            render: () => {
-                return null;
-            },
-        },
-    ];
-
     const {
         connectVariable,
         setConnectVariable,
-        refreshConfigableGlobalConfig,
         setRefreshConfigableGlobalConfig,
     } = useContext(AppContext);
 
@@ -63,34 +38,12 @@ const SettingModal = () => {
         title={capitalizeFirstLetter(intl.formatMessage({id: "settings"}))}
         open={modalVisit}
         onFinish={async () => {
-            const formData = {};
-            for (let i = 0; i < connectVariable.length; i++) {
-                const item = connectVariable[i];
-                if (!item.name) {
-                    showMessage({
-                        status: "error",
-                        content: intl.formatMessage({id: 'Variable name cannot be empty'})
-                    });
-                    return;
-                }
-                formData[item.name] = item;
-            }
-            if (Object.keys(formData).length != connectVariable.length) {
-                // has repeat data, this is not allowed
-                const counter = {}
-                for (let i = 0; i < connectVariable.length; i++) {
-                    counter[connectVariable[i].name]++;
-                }
-                const result = []
-                for (const key in counter) {
-                    if (counter[key] != 1) {
-                        result.push(key);
-                    }
-                }
+            const error = validateVariables(connectVariable, intl.formatMessage);
+            if (error) {
                 showMessage({
                     status: "error",
-                    content: "exist same name: " + result.join(",")
-                })
+                    content: error
+                });
                 return;
             }
             util.request('conf', {
@@ -125,28 +78,7 @@ const SettingModal = () => {
                   {
                       key: 'variable',
                       label: capitalizeFirstLetter(intl.formatMessage({id: 'variable'})),
-                      children: <EditableProTable
-                          columns={columns}
-                          rowKey="id"
-                          value={connectVariable}
-                          onChange={setConnectVariable}
-                          recordCreatorProps={{
-                              newRecordType: 'dataSource',
-                              record: () => ({
-                                  id: getUUid(),
-                              }),
-                          }}
-                          editable={{
-                              type: 'multiple',
-                              editableKeys: connectVariable.map(item => item.id),
-                              actionRender: (row, config, defaultDoms) => {
-                                  return [defaultDoms.delete];
-                              },
-                              onValuesChange: (record, recordList) => {
-                                  setConnectVariable(recordList);
-                              },
-                          }}
-                      />
+                      children: <ConnectVariableTable value={connectVariable} onChange={setConnectVariable}/>
                   }]}
         />
     </ModalForm>

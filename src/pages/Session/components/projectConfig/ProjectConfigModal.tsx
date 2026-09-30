@@ -12,6 +12,7 @@ import {AppContext} from "@/pages/context/AppContextProvider";
 import {capitalizeFirstLetter} from "@/pages/util/string";
 import {useIntl} from '@@/plugin-locale/localeExports';
 import { PlusOutlined } from '@ant-design/icons';
+import ConnectVariableTable, {validateVariables} from "@/pages/Session/components/settingModal/ConnectVariableTable";
 import "./ProjectConfigModal.css"
 
 const IMPORT_NAMESPACE = "importNamespace";
@@ -30,7 +31,10 @@ const ProjectConfigModal = () => {
         prompt,
         setRefreshConfigableGlobalConfig,
         setRefreshTreeData,
-        setRefreshScriptData
+        setRefreshScriptData,
+        globalConnectVariable,
+        setGlobalConnectVariable,
+        setRefreshGlobalVariableConfig
     } = useContext(AppContext);
 
     useEffect(() => {
@@ -104,12 +108,19 @@ const ProjectConfigModal = () => {
         };
 
         electronAPI.ipcRenderer.on('openManagerNameSpaceModal', handleOpenManagerNameSpaceModal);
+
+        const handleRefreshGlobalVariableConfig = (event, arg) => {
+            setRefreshGlobalVariableConfig(n => n + 1);
+        };
+
+        electronAPI.ipcRenderer.on('refreshGlobalVariableConfig', handleRefreshGlobalVariableConfig);
         // 清理函数，确保在组件卸载时移除事件监听器
         return () => {
             electronAPI.ipcRenderer.removeListener('switchLanguage', handleSwitchLanguage);
             electronAPI.ipcRenderer.removeListener(IMPORT_NAMESPACE, handleImportNamespace);
             electronAPI.ipcRenderer.removeListener(EXPORT_NAMESPACE, handleExportNamespace);
             electronAPI.ipcRenderer.removeListener('openManagerNameSpaceModal', handleOpenManagerNameSpaceModal);
+            electronAPI.ipcRenderer.removeListener('refreshGlobalVariableConfig', handleRefreshGlobalVariableConfig);
         };
     }, [])
 
@@ -118,6 +129,32 @@ const ProjectConfigModal = () => {
             method: 'GET',
         }).then(res => {
             setNameSpaceList(res);
+        })
+    }
+
+    // 保存全局变量（跨命名空间共享，workspace 变量未匹配时回退使用）
+    function saveGlobalVariable() {
+        const error = validateVariables(globalConnectVariable, intl.formatMessage);
+        if (error) {
+            showMessage({
+                status: 'error',
+                content: error
+            });
+            return;
+        }
+        util.request('conf', {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'GlobalVariableConfig',
+                args: {
+                    strVariableSetting: globalConnectVariable
+                }
+            })
+        }).then(res => {
+            message[res.status](res.msg);
+            if (res.status === 'success') {
+                electronAPI.ipcRenderer.send('sendAllWindowsIpcMessage', 'refreshGlobalVariableConfig');
+            }
         })
     }
 
@@ -292,6 +329,17 @@ const ProjectConfigModal = () => {
                           <Radio value={"en-US"}>English</Radio>
                           <Radio value={"zh-CN"}>简体中文</Radio>
                       </Radio.Group>
+                      </>
+                  }, {
+                      key: 'variable',
+                      label: capitalizeFirstLetter(intl.formatMessage({id: 'variable'})),
+                      children: <>
+                          <ConnectVariableTable value={globalConnectVariable} onChange={setGlobalConnectVariable}/>
+                          <div style={{display: 'flex', justifyContent: 'center', marginTop: 8}}>
+                              <Button type={'primary'} onClick={saveGlobalVariable}>
+                                  {capitalizeFirstLetter(intl.formatMessage({id: 'save'}))}
+                              </Button>
+                          </div>
                       </>
                   }]}
             />

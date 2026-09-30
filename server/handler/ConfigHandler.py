@@ -5,6 +5,7 @@ import os
 import tornado.web
 from handler.BaseHandler import BaseHandler
 from handler.pojo.conf.GlobalAutoConfig import GlobalAutoConfig
+from handler.pojo.conf.GlobalVariableConfig import GlobalVariableConfig
 from handler.pojo.conf.ProjectConfig import ProjectConfig
 from handler.pojo.conf.ScriptConfig import ScriptConfig
 from handler.pojo.conf.SessionConfig import SessionConfig
@@ -19,6 +20,8 @@ project_config = ProjectConfig(conf_dir_path)
 
 xsh_dir_path = None
 configable_project_config = None
+# 全局变量配置不随命名空间切换，直接存放在 config 根目录
+global_variable_config = GlobalVariableConfig(conf_dir_path)
 handler_map = {}
 
 
@@ -39,6 +42,7 @@ def initialize_confs():
         'ScriptConfig': ScriptConfig(script_dir_path),
         'GlobalAutoConfig': GlobalAutoConfig(global_dir_path),
         'ConfigableProjectConfig': configable_project_config,
+        'GlobalVariableConfig': global_variable_config,
         'ProjectConfig': project_config
     }
 
