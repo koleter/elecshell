@@ -1,9 +1,6 @@
 import asyncio
 import base64
-import json
 import logging
-import os
-import platform
 import re
 import threading
 import traceback
@@ -32,64 +29,9 @@ from tornado.util import errno_from_exception
 from handler.const import BUF_SIZE, callback_map, callback_map_lock
 
 import time
-import psutil
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler, PatternMatchingEventHandler
 
 workers = {}  # {id: worker}
 workers_lock = threading.Lock()
-
-loop = IOLoop.current()
-
-
-class WatchDogFileHandler(PatternMatchingEventHandler):
-    def __init__(self):
-        super().__init__(patterns=["elecshellTransfer_*.txt"], ignore_directories=True)
-
-    def _handle(self, path):
-        for i in range(5):
-            time.sleep(0.1)
-            try:
-                with open(path, 'r') as f:
-                    data = json.loads(f.read())
-                    break
-            except Exception as e:
-                logging.error(f"open {path} error, {str(e)}")
-        os.remove(path)
-        if data is None:
-            return
-        worker = workers.get(data.get('sessionId'))
-        worker.download_files(os.path.dirname(path), data.get('files'),
-                              data.get('remoteDir'))
-
-    def on_created(self, event):
-        loop.add_callback(self._handle, event.src_path)
-
-
-def get_all_window_drive_letters():
-    partitions = psutil.disk_partitions()
-    drive_letters = [partition.device for partition in partitions]
-    return drive_letters
-
-
-def start_watcher():
-    event_handler = WatchDogFileHandler()
-
-    if platform.system() == 'Windows':
-        drive_letters = get_all_window_drive_letters()
-    elif platform.system() == 'Linux':
-        drive_letters = [os.environ['HOME']]
-    else:
-        drive_letters = ["/"]
-    print("Monitoring the following drives:", drive_letters)
-
-    observer = Observer()
-    for drive in drive_letters:
-        observer.schedule(event_handler, drive, recursive=True)
-    observer.start()
-
-
-start_watcher()
 
 
 def clear_worker(worker):

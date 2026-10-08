@@ -412,10 +412,7 @@ finally:
                 self._download_directories(cur_dir_path, entry[1], cur_remote_dir_path, entry[2])
 
     async def _download_progress(self, local_path, remote_path):
-        url = "http://{}:{}/{}?token={}&type={}".format(self.remote_server["host"], self.remote_server["port"],
-                                                        remote_path, self.remote_server["token"], "getFileSize")
-        response = requests.get(url)
-        file_size = int(response.text)
+        file_size = self.get_remote_file_size(remote_path)
 
         last_download_size = 0
         id = gen_id()
@@ -451,9 +448,7 @@ finally:
                     await asyncio.sleep(0.1)
 
     def download_single_file(self, local_root_dir, file, remoteDir):
-        url = "http://{}:{}/{}/{}?token={}".format(self.remote_server["host"], self.remote_server["port"], remoteDir,
-                                                   file, self.remote_server["token"])
-        # url = quote(url)
+        url = self.get_remote_file_url(remoteDir + "/" + file)
         response = requests.get(url, stream=True, timeout=3)
         if response.status_code == 200:
             # 打开文件以二进制模式写入
@@ -485,6 +480,58 @@ finally:
                 "status": "error",
                 "content": str(e)
             })
+
+    def get_remote_file_url(self, remote_path, params=None):
+        """构造远程服务器上文件的访问 URL, remote_path 为以 / 开头的路径(自动 URL 编码)"""
+        url = "http://{}:{}/{}?token={}".format(
+            self.remote_server["host"], self.remote_server["port"],
+            quote(remote_path), self.remote_server["token"])
+        for key, value in (params or {}).items():
+            url += "&{}={}".format(key, value)
+        return url
+
+    def get_remote_file_size(self, remote_path):
+        """查询远程文件大小(字节)"""
+        url = self.get_remote_file_url(remote_path, {'type': 'getFileSize'})
+        return int(requests.get(url, timeout=5).text)
+
+    def _save_stream_to_file(self, response, local_file_path):
+        """将流式响应写入本地文件(阻塞)"""
+        with open(local_file_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=64 * 1024):
+                if chunk:
+                    f.write(chunk)
+
+    def download_entry_sync(self, local_root_dir, file, remoteDir):
+        """同步(阻塞)下载指定条目(文件或目录)到本地, 失败抛异常。
+        可多线程并发调用(拖拽下载并行传输)。"""
+        response = requests.get(self.get_remote_file_url(remoteDir + "/" + file),
+                                stream=True, timeout=10)
+        if response.status_code == 200:
+            self._save_stream_to_file(response, os.path.join(local_root_dir, file))
+        elif response.status_code == 202:
+            # 目录: 响应为 [type, name, children] 树
+            self._download_directories_sync(local_root_dir, file, remoteDir, response.json())
+        else:
+            raise RuntimeError(f'download {remoteDir}/{file} failed: {response.text}')
+
+    def _download_directories_sync(self, local_root_dir, dir_name, remote_dir, tree):
+        """递归下载远程目录(阻塞版, download_entry_sync 辅助)"""
+        cur_dir_path = os.path.join(local_root_dir, dir_name)
+        os.makedirs(cur_dir_path, exist_ok=True)
+        cur_remote_dir_path = remote_dir + "/" + dir_name
+        for entry in tree:
+            if entry[0] == 'F':
+                response = requests.get(
+                    self.get_remote_file_url(cur_remote_dir_path + "/" + entry[1]),
+                    stream=True, timeout=10)
+                if response.status_code != 200:
+                    raise RuntimeError(
+                        f'download {cur_remote_dir_path}/{entry[1]} failed: {response.text}')
+                self._save_stream_to_file(response, os.path.join(cur_dir_path, entry[1]))
+            elif entry[0] == 'D':
+                self._download_directories_sync(cur_dir_path, entry[1],
+                                                cur_remote_dir_path, entry[2])
 
     def close(self):
         pass

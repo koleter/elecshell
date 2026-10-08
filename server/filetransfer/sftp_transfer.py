@@ -171,6 +171,36 @@ class sftp_file_transfer(BaseTransfer):
         for file in files:
             self.download_single_file_or_dir(local_root_dir, file, remoteDir)
 
+    def download_entry_sync(self, local_root_dir, file, remoteDir):
+        """同步(阻塞)下载指定条目(文件或目录)到本地, 失败抛异常。
+        每次调用独立开 channel, 可多线程并发调用(拖拽下载并行传输)。"""
+        sftp = self.worker.ssh.open_sftp()
+        try:
+            for file_info in sftp.listdir_attr(remoteDir):
+                if file_info.filename != file:
+                    continue
+                remote_path = remoteDir + "/" + file
+                local_path = os.path.join(local_root_dir, file)
+                if stat.S_ISDIR(file_info.st_mode):
+                    self._download_directories_sync(sftp, local_path, remote_path)
+                else:
+                    sftp.get(remote_path, local_path)
+                return
+            raise FileNotFoundError(f'{remoteDir}/{file} not found or not accessible')
+        finally:
+            sftp.close()
+
+    def _download_directories_sync(self, sftp, local_root_dir, remoteDir):
+        """递归下载远程目录(阻塞版, download_entry_sync 辅助)"""
+        os.makedirs(local_root_dir, exist_ok=True)
+        for file_info in sftp.listdir_attr(remoteDir):
+            remote_path = remoteDir + "/" + file_info.filename
+            local_path = os.path.join(local_root_dir, file_info.filename)
+            if stat.S_ISDIR(file_info.st_mode):
+                self._download_directories_sync(sftp, local_path, remote_path)
+            else:
+                sftp.get(remote_path, local_path)
+
 
     def close(self):
         self.sftp.close()

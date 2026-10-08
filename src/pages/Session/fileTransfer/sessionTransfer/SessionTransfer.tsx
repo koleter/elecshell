@@ -9,7 +9,7 @@ const {DirectoryTree} = Tree;
 import "./SessionTransfer.less"
 import {sessionIdRef} from "@/pages/Session/main/Main";
 import {AppContext} from "@/pages/context/AppContextProvider";
-import util, {getUUid, showMessage} from "@/util";
+import util, {showMessage} from "@/util";
 import type {DataNode} from "antd/es/tree";
 import { TreeProps} from "antd/es/tree";
 import {AimOutlined} from "@ant-design/icons";
@@ -28,6 +28,14 @@ const SessionTransfer: React.FC = (props) => {
     const [searchValue, setSearchValue] = useState('');
 
     const [selectedKeys, setSelectedKeys] = useState([]);
+
+    // 拖出下载端点的基础地址: dragstart 中必须同步使用, 提前获取并缓存
+    const baseUrlRef = useRef('');
+    useEffect(() => {
+        util.getUrl().then(url => {
+            baseUrlRef.current = url;
+        });
+    }, []);
 
     const intl = useIntl();
 
@@ -181,24 +189,24 @@ const SessionTransfer: React.FC = (props) => {
                             );
                         }}
                         onDragStart={function ({ event, node }) {
-                            // console.log(event, node)
-                            const fileName = `\.elecshellTransfer_${getUUid()}`;
                             const files = new Set(selectedKeys);
                             files.add(node.key);
-                            const prop = {
+                            // 指向后端流式下载端点, Chromium 在用户放置文件时才发起请求,
+                            // 由后端直接从 SFTP 读取内容流式返回, 放置前零字节传输
+                            const params = new URLSearchParams({
                                 sessionId: sessionKey,
-                                files: [...files],
                                 remoteDir: searchValue,
-                            };
-                            const fileContent = JSON.stringify(prop);
-                            const file = new Blob([fileContent], { type: 'text/plain' });
-                            const url = URL.createObjectURL(file);
-
-                            // 使用 dataTransfer.setData 设置下载链接
-                            // event.dataTransfer.setData('text/uri-list', url);
+                                files: JSON.stringify([...files]),
+                            });
+                            const url = `${baseUrlRef.current}dragdownload?${params.toString()}`;
+                            // 单个普通文件保留原文件名; 目录或多文件由后端打包为 tar.gz, 文件名须与内容一致
+                            const isSingleFile = files.size === 1 && node.isLeaf;
+                            const fileName = isSingleFile
+                                ? String(node.key).replace(/:/g, '_')
+                                : `elecshell_${files.size}_files.tar.gz`;
                             event.dataTransfer.setData(
                                 'downloadURL',
-                                `text/plain:${fileName}:${url}`,
+                                `application/octet-stream:${fileName}:${url}`,
                             );
                             setSelectedKeys([]);
                         }}

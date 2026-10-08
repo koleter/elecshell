@@ -7,6 +7,7 @@ from tornado.options import options
 
 from handler import const
 from handler.ConfigHandler import ConfigHandler
+from handler.DragDownloadHandler import DragDownloadHandler
 from handler.IndexHandler import IndexHandler
 from handler.NameSpaceHandler import NameSpaceHandler
 from handler.NotFoundHandler import NotFoundHandler
@@ -59,6 +60,7 @@ def make_handlers(loop, options):
         (r'/ws', WsockHandler, dict(loop=loop)),
         (r'/conf', ConfigHandler, dict(loop=loop)),
         (r'/ping', PingHandler, dict(loop=loop)),
+        (r'/dragdownload', DragDownloadHandler, dict(loop=loop)),
         (r'/namespace', NameSpaceHandler, dict(loop=loop)),
         (r'/dump', DumpHandler, dict(loop=loop)),
         (r'/trace', TraceHandler, dict(loop=loop))
