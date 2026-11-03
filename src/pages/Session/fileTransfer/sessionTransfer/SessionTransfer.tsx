@@ -1,5 +1,5 @@
 import React, {useContext, useEffect, useState, useRef} from "react";
-import {Dropdown, Form, Input, message, Modal, Space, Tree, Divider, Button, Tooltip} from "antd";
+import {Input, message, Tree, Button, Tooltip} from "antd";
 import {useIntl} from '@@/plugin-locale/localeExports';
 
 const {Search} = Input;
@@ -7,24 +7,23 @@ const {Search} = Input;
 const {DirectoryTree} = Tree;
 
 import "./SessionTransfer.less"
-import {sessionIdRef} from "@/pages/Session/main/Main";
+import {sessionIdRef} from "@/pages/Session/sessionRuntime";
 import {AppContext} from "@/pages/context/AppContextProvider";
-import util, {showMessage} from "@/util";
+import util from "@/util";
 import type {DataNode} from "antd/es/tree";
-import { TreeProps} from "antd/es/tree";
+import type {TerminalSession} from "../../components/SessionWorkspace/layout";
 import {AimOutlined} from "@ant-design/icons";
 import {spiltResponseWithLine} from "@/pages/util/terminal_util";
 import SessionTransferProgress from "@/pages/Session/fileTransfer/progress/SessionTransferProgress";
 const path = require('path');
 
-const SessionTransfer: React.FC = (props) => {
+const SessionTransfer: React.FC<{session: TerminalSession}> = (props) => {
     const dragWindowRef = useRef<Element>(null);
     const { session } = props;
     const sessionKey = session.key;
 
-    const { activeKey, selectedMenuKey, sessionTransferTreeData, setSessionTransferTreeData } =
+    const { sessionTransferTreeData, setSessionTransferTreeData } =
         useContext(AppContext);
-    // selectedMenuKey == MENU_FILETRANSFER &&
     const [searchValue, setSearchValue] = useState('');
 
     const [selectedKeys, setSelectedKeys] = useState([]);

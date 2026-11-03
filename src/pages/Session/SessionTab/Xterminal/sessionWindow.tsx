@@ -1,19 +1,19 @@
-import React, {useContext, useEffect, useRef, useState} from "react";
+import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {Terminal} from "xterm"
 import "xterm/css/xterm.css"
 import util, {callbackMap, getUUid, sessionStatusMap, showMessage} from "../../../../util"
 import {CONNECTED, CONNECTING} from "../../../../const"
-import {promptModalCancel, sessionIdMapFileName, sessionIdRef} from "../../main/Main"
+import {sessionConfInfo, sessionIdMapFileName, sessionIdRef} from "../../sessionRuntime"
+import type {TerminalSession} from "../../components/SessionWorkspace/layout";
 import {SearchAddon} from 'xterm-addon-search'
+import type {ISearchOptions} from 'xterm-addon-search';
+import type {TextAreaRef} from 'antd/es/input/TextArea';
 import {FitAddon} from 'xterm-addon-fit'
 import {SerializeAddon} from 'xterm-addon-serialize'
 import "./SessionWindow.less"
-import {sessionConfInfo} from "@/pages/Session/SessionList/SessionList";
 import {AppContext} from "@/pages/context/AppContextProvider";
 import {Button, Input, Tooltip} from 'antd';
 import {ArrowDownOutlined, ArrowUpOutlined, CloseOutlined} from '@ant-design/icons';
-import {getTermHeight} from "@/pages/util/style";
-import {debounce} from "@/pages/util/event";
 
 // 查询框中所有元素的高度
 const searchPanelHeight = '34px';
@@ -29,6 +29,17 @@ const defaultSearchOption = {
     }
 };
 
+// 搜索按钮只描述差异，状态切换与查找流程统一处理。
+const searchOptionButtons = [
+    {key: 'caseSensitive', render: 'Cc', title: 'match case'},
+    {key: 'wholeWord', render: 'W', title: 'words'},
+    {key: 'regex', render: 'Exp', title: 'regexp'},
+] as const;
+const findButtons = [
+    {method: 'findPrevious', render: <ArrowUpOutlined/>, title: 'Previous Occurrence'},
+    {method: 'findNext', render: <ArrowDownOutlined/>, title: 'Next Occurrence'},
+] as const;
+
 const termOptions = {
     rendererType: "canvas",
     fontSize: 12,
@@ -41,95 +52,76 @@ const termOptions = {
     allowProposedApi: true
 };
 
-const SessionWindow: React.FC = (props) => {
+type SessionCallback = (...args: any[]) => void;
+
+interface SessionWindowProps {
+    id: string;
+    sessionConfId?: string;
+    setSessions: React.Dispatch<React.SetStateAction<TerminalSession[]>>;
+    isConnected: boolean;
+    encoding?: string;
+    session: TerminalSession;
+    initialContent?: string;
+    visible: boolean;
+    focused: boolean;
+}
+
+const SessionWindow: React.FC<SessionWindowProps> = (props) => {
     const terminalRef = useRef<null | HTMLDivElement>(null);
-    const {id, sessionConfId, setSessions, isConnected, encoding, session, initialContent} = props;
-    const context = useContext(AppContext);
-    const searchInputRef = useRef(null);
-    const { activeKey, promptModalCancelRef, setSessionTransferTreeData, setFileProgressInfo } =
-        context;
+    const {id, sessionConfId, setSessions, isConnected, encoding = "utf-8", session, initialContent, visible, focused} = props;
+    const context = useContext<any>(AppContext);
+    const searchInputRef = useRef<TextAreaRef>(null);
+    const {promptModalCancelRef} = context;
+    // 连接回调长期存活，通过 ref 读取最新上下文，避免界面变化引起连接重建。
+    const contextRef = useRef(context);
+    contextRef.current = context;
     // 展示搜索框
     const [showSearch, setShowSearch] = useState(false);
     // detached window 终端是否已准备就绪
     const [termReady, setTermReady] = useState(false);
     const initialContentWrittenRef = useRef(false);
 
-    const [term] = useState(new Terminal(termOptions));
+    // 一个会话只创建一个终端实例，跨分屏移动或切换标签均复用该实例及其缓冲区。
+    const [term] = useState<any>(() => new Terminal(termOptions));
+    const openedRef = useRef(false);
+    const visibleRef = useRef(visible);
+    const focusedRef = useRef(focused);
+    const sessionRef = useRef(session);
+    visibleRef.current = visible;
+    focusedRef.current = focused;
+    sessionRef.current = session;
+    const fitFrame = useRef(0);
+    const fitTerminal = useCallback(() => {
+        // 分屏拖动会连续改变容器尺寸，每帧最多 fit 一次；隐藏/零尺寸时跳过以免算错行列。
+        cancelAnimationFrame(fitFrame.current);
+        fitFrame.current = requestAnimationFrame(() => {
+            const element = terminalRef.current;
+            if (openedRef.current && visibleRef.current && element && element.clientWidth > 0 && element.clientHeight > 0) {
+                term._fitAddon?.fit();
+            }
+        });
+    }, [term]);
 
-    const [matchCase, setMatchCase] = useState(false);
-    const [words, setWords] = useState(false);
-    const [regexp, setRegexp] = useState(false);
+    const [searchOptions, setSearchOptions] = useState<ISearchOptions>(defaultSearchOption);
 
     const [searchValue, setSearchValue] = useState("");
+    const searchValueRef = useRef(searchValue);
+    searchValueRef.current = searchValue;
 
-    const matchButtons = [
-        {
-            render: "Cc",
-            title: "match case",
-            getType: function () {
-                return matchCase ? 'primary' : 'text';
-            },
-            onClick: function () {
-                term._searchAddon.clearDecorations();
-                const newMatchCase = !matchCase;
-                setMatchCase(m => {
-                    return !m;
-                });
-                term._searchAddon.findPrevious(searchValue, calcSearchOption(newMatchCase, words, regexp));
-            }
-        }, {
-            render: "W",
-            title: "words",
-            getType: function () {
-                return words ? 'primary' : 'text';
-            },
-            onClick: function () {
-                term._searchAddon.clearDecorations();
-                const newWords = !words;
-                setWords(m => {
-                    return !m;
-                });
-                term._searchAddon.findPrevious(searchValue, calcSearchOption(matchCase, newWords, regexp));
-            }
-        }, {
-            render: "Exp",
-            title: "regexp",
-            getType: function () {
-                return regexp ? 'primary' : 'text';
-            },
-            onClick: function () {
-                term._searchAddon.clearDecorations();
-                const newReg = !regexp;
-                setRegexp(m => {
-                    return !m;
-                });
-                term._searchAddon.findPrevious(searchValue, calcSearchOption(matchCase, words, newReg));
-            }
-        }];
+    const toggleSearchOption = (key: (typeof searchOptionButtons)[number]['key']) => {
+        const options = {...searchOptions, [key]: !searchOptions[key]};
+        setSearchOptions(options);
+        term._searchAddon.clearDecorations();
+        term._searchAddon.findPrevious(searchValue, options);
+    };
 
-    const findButtons = [
-        {
-            render: <ArrowUpOutlined/>,
-            title: "Previous Occurrence",
-            onClick: function () {
-                term._searchAddon.findPrevious(searchValue, calcSearchOption(matchCase, words, regexp));
-            }
-        }, {
-            render: <ArrowDownOutlined/>,
-            title: "Next Occurrence",
-            onClick: function () {
-                term._searchAddon.findNext(searchValue, calcSearchOption(matchCase, words, regexp));
-            }
-        }
-    ]
-
-    const globalMethodMap = {
-        prompt: (msg, callback, cancelCallback) => {
+    const globalMethodMap: Record<string, (...args: any[]) => void> = {
+        prompt: (msg: string, callback: SessionCallback, cancelCallback: SessionCallback) => {
             promptModalCancelRef.current = cancelCallback;
             context.prompt(msg, callback);
         },
-        createNewSession: (sessionConfs, callback) => {
-            const arr = [];
+        createNewSession: (sessionConfs: any[], callback?: (sessions: any[]) => void) => {
+            const arr: Promise<any>[] = [];
             sessionConfs.forEach(sessionConf => {
                 let body;
                 switch (Object.prototype.toString.call(sessionConf)) {
@@ -175,7 +167,7 @@ const SessionWindow: React.FC = (props) => {
                 }
 
                 // 保存新创建的所有会话的id
-                const newSessionIds = [];
+                const newSessionIds: string[] = [];
                 let hasError = false;
                 for (let i = 0; i < res.length; i++) {
                     const item = res[i];
@@ -191,44 +183,37 @@ const SessionWindow: React.FC = (props) => {
                 if (hasError) {
                     return;
                 }
-                setSessions((sessions) => {
-                    const data = [...sessions];
-                    for (let i = 0; i < res.length; i++) {
-                        const item = res[i];
-                        sessionIdMapFileName[item.id] = item.filePath.substr(item.filePath.lastIndexOf('\\') + 1);
-                        data.push({
-                            label: item.sessionName,
-                            key: item.id,
-                            sessionConfId: item.filePath,
-                            isConnected: true
-                        });
-                    }
-
-                    const interval = 200;
-
-                    // 创建新会话需要等待所有会话的websocket与后端建立完毕
-                    function checkAllSessionIsReady(time) {
-                        // 最多等4秒,无法全部执行成功的话就不再执行回调
-                        if (time > 4000) {
-                            return;
-                        }
-                        for (let i = 0; i < newSessionIds.length; i++) {
-                            if (sessionStatusMap[newSessionIds[i]] !== CONNECTED) {
-                                setTimeout(() => {
-                                    checkAllSessionIsReady(time + interval);
-                                }, interval);
-                                return;
-                            }
-                        }
-                        callback && callback(res);
-                    }
-
-                    checkAllSessionIsReady(0);
-                    return data;
+                // 先构建会话数据再提交纯更新，配置路径与编码随会话一起保留。
+                const addedSessions = res.map(item => {
+                    sessionIdMapFileName[item.id] = item.filePath.split(/[\\/]/).pop() || item.filePath;
+                    return {
+                        label: item.sessionName,
+                        key: item.id,
+                        sessionConfId: item.sessionConfId || item.filePath,
+                        sessionConfPath: item.filePath,
+                        encoding: item.encoding || encoding,
+                        isConnected: true,
+                    };
                 });
+                setSessions(previous => [...previous, ...addedSessions]);
+
+                // 等待新会话连接后再通知脚本；轮询放在状态更新函数外，避免重复执行副作用。
+                function checkAllSessionIsReady(time: number) {
+                    if (time > 4000) return;
+                    if (newSessionIds.some(sessionId => sessionStatusMap[sessionId] !== CONNECTED)) {
+                        setTimeout(() => checkAllSessionIsReady(time + 200), 200);
+                        return;
+                    }
+                    callback?.(res);
+                }
+                checkAllSessionIsReady(0);
             })
         }
     };
+
+    // 服务端调用全局方法时使用当前版本，避免拖拽后仍调用旧的上下文或会话状态。
+    const methodsRef = useRef(globalMethodMap);
+    methodsRef.current = globalMethodMap;
 
     const closeSearchPanel = () => {
         setShowSearch(false);
@@ -236,58 +221,70 @@ const SessionWindow: React.FC = (props) => {
         term.focus();
     }
 
-    const openSearchPanel = (e) => {
-        if (e.shiftKey && e.ctrlKey && e.keyCode == 70) {
+    const openSearchPanel = (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (e.shiftKey && e.ctrlKey && e.key.toLowerCase() === 'f') {
+            // 捕获阶段拦截原有搜索快捷键，避免被 xterm 当作输入发送到远端。
+            e.preventDefault();
+            e.stopPropagation();
             const selection = term.getSelection();
             if (selection) {
                 setSearchValue(selection);
             }
             setShowSearch(true);
-            term._searchAddon.findPrevious(selection, calcSearchOption(matchCase, words, regexp));
-            setTimeout(() => {
-                searchInputRef?.current?.focus();
-            }, 100);
+            term._searchAddon.findPrevious(selection, searchOptions);
         }
     }
 
     useEffect(() => {
-        if (terminalRef.current) {
-            terminalRef.current.addEventListener('keydown', openSearchPanel);
-            return () => {
-                terminalRef.current?.removeEventListener('keydown', openSearchPanel);
-            }
-        }
-    }, [terminalRef.current]);
+        if (!showSearch || !visible || !focused) return undefined;
+        // 仅在当前可见且聚焦的分屏中移动搜索焦点，切换标签时取消尚未执行的任务。
+        const frame = requestAnimationFrame(() => searchInputRef.current?.focus());
+        return () => cancelAnimationFrame(frame);
+    }, [showSearch, visible, focused]);
 
-    // 等后端ssh连接建立后再建立websocket连接
-    useEffect(async () => {
-        // console.log("create and init websocket", isConnected, session)
-        if (isConnected) {
-            const searchAddon = new SearchAddon();
-            term.loadAddon(searchAddon);
-            term._searchAddon = searchAddon;
-            const fitAddon = new FitAddon();
-            term.loadAddon(fitAddon);
-            term._fitAddon = fitAddon;
-            const serializeAddon = new SerializeAddon();
-            term.loadAddon(serializeAddon);
-            term._serializeAddon = serializeAddon;
+    // 插件和尺寸观察器与终端共同创建/销毁，不随分屏位置和可见性重复初始化。
+    useEffect(() => {
+        const searchAddon = new SearchAddon();
+        const fitAddon = new FitAddon();
+        const serializeAddon = new SerializeAddon();
+        term.loadAddon(searchAddon);
+        term.loadAddon(fitAddon);
+        term.loadAddon(serializeAddon);
+        term._searchAddon = searchAddon;
+        term._fitAddon = fitAddon;
+        term._serializeAddon = serializeAddon;
+        const observer = new ResizeObserver(fitTerminal);
+        if (terminalRef.current) observer.observe(terminalRef.current);
+        return () => {
+            observer.disconnect();
+            cancelAnimationFrame(fitFrame.current);
+            term.dispose();
+        };
+    }, [term, fitTerminal]);
 
-            if (terminalRef.current) {
-                const resizeObserver = new ResizeObserver(entries => {
-                    // console.log("term resizing....");
-                    fitAddon.fit();
-                });
-                resizeObserver.observe(terminalRef.current);
-            }
-
+    // 连接跟随会话生命周期；布局、焦点、搜索和日志路径变化都不会触发重连。
+    useEffect(() => {
+        if (!isConnected) return undefined;
+        let disposed = false;
+        let socket: WebSocket | null = null;
+        const subscriptions: {dispose: () => void}[] = [];
+        const clearRuntime = () => {
+            // 旧连接的异步清理不能误删同一会话 ID 下已经建立的新连接。
+            if (sessionIdRef[id]?.sock !== socket) return;
+            delete sessionIdRef[id];
+            delete sessionIdMapFileName[id];
+            delete sessionStatusMap[id];
+        };
+        const connect = async () => {
             const raw_url = await util.getUrl();
+            // 页面可能在异步获取地址期间被关闭，此时不再建立孤立连接。
+            if (disposed) return;
             const ws_url = raw_url.split(/\?|#/, 1)[0].replace('http', 'ws'),
                 join = (ws_url[ws_url.length - 1] === '/' ? '' : '/'),
                 url = ws_url + join + 'ws?id=' + id,
-                decoder = window.TextDecoder ? new window.TextDecoder(encoding) : encoding;
+                decoder = new TextDecoder(encoding);
 
-            function decode(val) {
+            function decode(val: string) {
                 // 先用atob解码Base64字符串
                 const raw = atob(val);
                 // 创建一个Uint8Array，存储解码后的字节
@@ -301,32 +298,37 @@ const SessionWindow: React.FC = (props) => {
             }
 
             const sock = new window.WebSocket(url);
+            socket = sock;
             sessionStatusMap[id] = CONNECTING;
 
             sock.onopen = function () {
                 // resize_terminal(term);
                 sessionStatusMap[id] = CONNECTED;
 
-                function sendTermResizeMessage(cols, rows) {
-                    sock.send(JSON.stringify({'type': 'resize', 'resize': [cols, rows]}));
+                function sendTermResizeMessage(cols: number, rows: number) {
+                    if (sock.readyState === WebSocket.OPEN) sock.send(JSON.stringify({'type': 'resize', 'resize': [cols, rows]}));
                 }
 
-                function termResize(size) {
+                function termResize(size: {cols: number; rows: number}) {
                     const {cols, rows} = size;
                     sendTermResizeMessage(cols, rows);
                 }
 
-                term.onResize(termResize);
+                subscriptions.push(term.onResize(termResize));
 
-                // The following two lines must be placed here so that the term.onResize event can be triggered during initialization.
-                term.open(terminalRef.current as HTMLDivElement);
-                term.focus();
+                // 先订阅 resize 再首次打开终端，确保初始化产生的行列变化也能同步到远端。
+                if (!openedRef.current) {
+                    term.open(terminalRef.current as HTMLDivElement);
+                    openedRef.current = true;
+                }
+                if (visibleRef.current && focusedRef.current) term.focus();
 
                 setTermReady(true);
 
-                fitAddon.fit();
+                fitTerminal();
             };
 
+            // 脚本和文件传输通过会话 ID 访问运行时，不依赖该会话处于哪个分屏。
             sessionIdRef[id] = {
                 id: id,
                 sock: sock,
@@ -338,14 +340,14 @@ const SessionWindow: React.FC = (props) => {
                 sendData: function (data: string) {
                     sock.send(JSON.stringify({ data: data, type: 'data' }));
                 },
-                sendRecv: function (cmd: string, f: Function) {
+                sendRecv: function (cmd: string, f: SessionCallback) {
                     const requestId = getUUid();
                     callbackMap[requestId] = f;
                     sock.send(
                         JSON.stringify({ data: cmd, requestId: requestId, type: 'sendRecv' }),
                     );
                 },
-                callback: async function (methodName, args, callback) {
+                callback: async function (methodName: string, args: any, callback: SessionCallback) {
                     const uid = getUUid();
                     callbackMap[uid] = callback;
                     this.send({
@@ -355,22 +357,22 @@ const SessionWindow: React.FC = (props) => {
                         requestId: uid,
                     });
                 },
-                refreshRemoteFileList: (prev) => {
+                refreshRemoteFileList: (prev: any[]) => {
                     // console.log(prev);
                     const newTreeData = [{
                         title: '..',
                         key: '..',
                         isLeaf: false,
-                        remoteDirectory: searchValue,
+                        remoteDirectory: searchValueRef.current,
                     }, ...prev];
-                    setSessionTransferTreeData((treeData) => ({
+                    contextRef.current.setSessionTransferTreeData((treeData: any) => ({
                         ...treeData,
                         [id]: newTreeData,
                     }));
                 },
-                refreshFileProgressInfo: (result) => {
+                refreshFileProgressInfo: (result: any) => {
                     // console.log(result);
-                    setFileProgressInfo((fileProgressInfo) => {
+                    contextRef.current.setFileProgressInfo((fileProgressInfo: any) => {
                         const data = [...(fileProgressInfo[id] || [])];
                         let exist = false;
                         for (const info of data) {
@@ -396,26 +398,26 @@ const SessionWindow: React.FC = (props) => {
                 console.error(e);
             };
 
-            term.onData(function (data) {
-                sock.send(JSON.stringify({'data': data, 'type': 'data'}));
-            });
+            subscriptions.push(term.onData(function (data: string) {
+                if (sock.readyState === WebSocket.OPEN) sock.send(JSON.stringify({'data': data, 'type': 'data'}));
+            }));
 
-            function wsockCallback(res) {
+            function wsockCallback(res: any) {
                 switch (res.type) {
                     case 'data':
                         // 使用TextDecoder将字节序列转换为UTF-8字符串
-                        term.write(decode(res.val), (raw) => {
-                            if (res.requestId) {
-                                sessionIdRef[id].send({
+                        term.write(decode(res.val), (raw: string) => {
+                            if (res.requestId && !disposed && sock.readyState === WebSocket.OPEN) {
+                                sessionIdRef[id]?.send({
                                     type: 'callback',
                                     requestId: res.requestId,
                                     args: raw
                                 })
                             }
 
-                            if (session.logPath) {
+                            if (sessionRef.current.logPath) {
                                 try {
-                                    window.electronAPI.FS_appendFileSync(session.logPath, raw);
+                                    window.electronAPI.FS_appendFileSync(sessionRef.current.logPath, raw);
                                 } catch (err) {
                                     showMessage({
                                         status: 'error',
@@ -430,7 +432,7 @@ const SessionWindow: React.FC = (props) => {
                         break;
                     case 'execSessionMethod':
                         if (res.requestId) {
-                            sessionIdRef[id][res.method](res.args, (callbackResponse) => {
+                            sessionIdRef[id][res.method](res.args, (callbackResponse: any) => {
                                 sessionIdRef[id].send({
                                     type: 'callback',
                                     requestId: res.requestId,
@@ -443,7 +445,7 @@ const SessionWindow: React.FC = (props) => {
                         break;
                     case 'execMethod':
                         if (res.requestId) {
-                            globalMethodMap[res.method](res.args, (callbackResponse) => {
+                            methodsRef.current[res.method](res.args, (callbackResponse: any) => {
                                 sessionIdRef[id].send({
                                     type: 'callback',
                                     requestId: res.requestId,
@@ -456,7 +458,7 @@ const SessionWindow: React.FC = (props) => {
                                 })
                             })
                         } else {
-                            globalMethodMap[res.method](res.args);
+                            methodsRef.current[res.method](res.args);
                         }
                         break;
                     case 'eval':
@@ -478,46 +480,48 @@ const SessionWindow: React.FC = (props) => {
                 }
             }
 
-            sessionIdRef[id].sock.onclose = function (e) {
-                try {
-                    sessionIdRef[id].term.write("\nthis session is closed.....");
-                } catch (e) {
-                }
-                // removeTabByKey(id);
-                window.onresize = null;
-                delete sessionIdRef[id];
-                delete sessionIdMapFileName[id];
-                delete sessionStatusMap[id];
-
-                setSessions(sessions => {
-                    const data = [...sessions];
-                    for (let i = 0; i < data.length; i++) {
-                        if (data[i].key == id) {
-                            data[i].isConnected = false;
-                            break;
-                        }
-                    }
-                    return data;
-                })
-                // console.log(`sessionIdRef, sessionIdMapFileName, `, sessionIdRef, sessionIdMapFileName)
+            sock.onclose = () => {
+                if (disposed) return;
+                term.write("\r\nthis session is closed.....");
+                clearRuntime();
+                setSessions(previous => previous.map(item => item.key === id ? {...item, isConnected: false} : item));
             };
-
-            sessionIdRef[id].sock.onmessage = function (msg) {
-                const res = JSON.parse(msg.data);
-                wsockCallback(res);
+            sock.onmessage = message => {
+                if (!disposed) wsockCallback(JSON.parse(message.data));
             };
-        }
-    }, [isConnected]);
+        };
+        connect().catch(error => {
+            if (disposed) return;
+            console.error('initialize terminal connection failed', error);
+            setSessions(previous => previous.map(item => item.key === id ? {...item, isConnected: false} : item));
+        });
+        return () => {
+            // 先屏蔽旧回调，再清理终端事件和 socket，避免关闭过程中修改已移除会话。
+            disposed = true;
+            subscriptions.forEach(subscription => subscription.dispose());
+            if (socket) {
+                socket.onopen = null;
+                socket.onmessage = null;
+                socket.onclose = null;
+                socket.onerror = null;
+                socket.close();
+            }
+            clearRuntime();
+        };
+    }, [isConnected, id, term, encoding, sessionConfId, fitTerminal, setSessions]);
 
     useEffect(() => {
-        setTimeout(() => {
-            if (id == activeKey) {
-                term.focus();
-            }
-        }, 100);
-    }, [activeKey]);
+        if (!visible || !termReady) return undefined;
+        fitTerminal();
+        const frame = requestAnimationFrame(() => {
+            const container = terminalRef.current?.parentElement;
+            // 焦点已在该终端的搜索框等子控件中时保留它，避免 fit 后抢走输入焦点。
+            if (focused && !container?.contains(document.activeElement)) term.focus();
+        });
+        return () => cancelAnimationFrame(frame);
+    }, [visible, focused, termReady, term, fitTerminal]);
 
-    // detached window 收到历史内容后写入终端
+    // 独立窗口首次准备好后只回放一次历史内容，后续重渲染不会重复追加。
     useEffect(() => {
         if (termReady && initialContent && !initialContentWrittenRef.current) {
             try {
@@ -527,65 +531,45 @@ const SessionWindow: React.FC = (props) => {
                 console.error('write initial content failed', e);
             }
         }
-    }, [termReady, initialContent]);
-
-    function calcSearchOption(matchCase, words, regexp) {
-        const res = Object.assign({}, defaultSearchOption);
-        if (matchCase) {
-            res.caseSensitive = true;
-        }
-        if (words) {
-            res.wholeWord = true;
-        }
-        if (regexp) {
-            res.regex = true;
-        }
-        return res;
-    }
+    }, [termReady, initialContent, term]);
 
     return (
-        <div style={{height: getTermHeight(), display: "flex", flexDirection: 'column'}}>
-            <div style={{display: showSearch ? 'flex' : 'none', position: "relative"}}>
-                <div id={'searchPanel'} style={{
-                    display: "flex",
-                    width: '720px',
-                    alignContent: 'center',
-                    whiteSpace: 'nowrap'
-                }}>
+        <div className="session-terminal" onKeyDownCapture={openSearchPanel}
+             style={{height: '100%', minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column'}}>
+            <div className="session-search-panel" style={{display: showSearch ? 'flex' : 'none'}}>
+                <div className="session-search-fields">
                     <Input.TextArea ref={searchInputRef} allowClear={true} autoSize={true} value={searchValue}
+                                    style={{flex: '1 1 120px', minWidth: 0}}
                                     onChange={(newVal) => {
-                                        term._searchAddon.findNext(newVal.target.value, calcSearchOption(matchCase, words, regexp));
+                                        term._searchAddon.findNext(newVal.target.value, searchOptions);
                                         setSearchValue(newVal.target.value);
-                                    }} onKeyDown={openSearchPanel}/>
-                    <div style={{backgroundColor: 'white'}}>
+                                    }}/>
+                    <div className="session-search-actions">
                         {
-                            matchButtons.map((item, index) => {
-                                return <Tooltip title={item.title} color={'white'} overlayInnerStyle={{color: 'black'}}>
-                                    <Button className={'searchOptions'} type={item.getType()}
+                            searchOptionButtons.map((item) => {
+                                return <Tooltip key={item.title} title={item.title} color={'white'} overlayInnerStyle={{color: 'black'}}>
+                                    <Button className={'searchOptions'} type={searchOptions[item.key] ? 'primary' : 'text'}
                                             style={{height: searchPanelHeight}}
-                                            onClick={item.onClick}>{item.render}</Button>
+                                            onClick={() => toggleSearchOption(item.key)}>{item.render}</Button>
                                 </Tooltip>
                             })
                         }
 
                         {
                             findButtons.map((item) => {
-                                return <Tooltip title={item.title} color={'white'} overlayInnerStyle={{color: 'black'}}>
+                                return <Tooltip key={item.title} title={item.title} color={'white'} overlayInnerStyle={{color: 'black'}}>
                                     <Button className={'searchOptions'} style={{height: searchPanelHeight}}
-                                            onClick={item.onClick}>{item.render}</Button>
+                                            onClick={() => term._searchAddon[item.method](searchValue, searchOptions)}>{item.render}</Button>
                                 </Tooltip>
                             })
                         }
                     </div>
                 </div>
-                <div className={"closeContain"}>
-                    <CloseOutlined className={"closeIcon"} onClick={() => {
-                        closeSearchPanel();
-                    }}/>
-                </div>
+                <Button type="text" size="small" aria-label="Close search" icon={<CloseOutlined/>} onClick={closeSearchPanel}/>
+
             </div>
 
-            <div style={{flex: "auto", backgroundColor: 'black', overflow: "hidden"}} ref={terminalRef}/>
+            <div style={{flex: '1 1 0', minWidth: 0, minHeight: 0, backgroundColor: 'black', overflow: 'hidden'}} ref={terminalRef}/>
         </div>
     )
 }

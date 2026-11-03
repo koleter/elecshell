@@ -1,13 +1,11 @@
-import React, {useContext, useEffect, useState} from "react";
+import React, {useContext, useEffect} from "react";
 import {Progress, Space, Tooltip} from "antd";
-import {sessionIdRef} from "@/pages/Session/main/Main";
 import {AppContext} from "@/pages/context/AppContextProvider";
 import './SessionTransferProgress.less'
-const path = require('path');
 
-const SessionTransferProgress: React.FC = (props) => {
+const SessionTransferProgress: React.FC<{sessionKey: string}> = (props) => {
     const { sessionKey } = props;
-    const { activeKey, fileProgressInfo, setFileProgressInfo } = useContext(AppContext);
+    const { fileProgressInfo, setFileProgressInfo } = useContext(AppContext);
 
     useEffect(() => {
         setFileProgressInfo(fileProgressInfo => ({

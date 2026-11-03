@@ -1,13 +1,13 @@
-import React, {useContext, useEffect, useRef, useState} from "react";
-import {Dropdown, Form, Input, message, Modal, Tabs, Tree, Button, Menu} from "antd";
+import React, {useContext, useState} from "react";
+import {Dropdown, Form, Input, message, Modal, Tabs, Tree} from "antd";
 import {
     EditableProTable
 } from '@ant-design/pro-components';
 import UploadInFormItem from "../components/upload/Upload"
 import type {DataNode, TreeProps} from "antd/es/tree";
-import {request} from "@@/plugin-request/request";
 import util, {defineValidatorWithErrMessage, getUUid} from "@/util";
-import {sessionIdMapFileName} from "@/pages/Session/main/Main";
+import {sessionIdMapFileName} from "@/pages/Session/sessionRuntime";
+import type {TerminalSession} from "../components/SessionWorkspace/layout";
 import {AppContext} from "@/pages/context/AppContextProvider";
 import "./SessionList.less"
 import {NENU_SESSIONS} from "@/const";
@@ -20,10 +20,12 @@ const path = require('path');
 const {DirectoryTree} = Tree;
 const defaultSessionPropertyActiveKey = 'baseInfo';
 
-// 记录session配置文件信息,conf_id -> conf_path
-export const sessionConfInfo = {};
+interface SessionListProps {
+    setSessions: React.Dispatch<React.SetStateAction<TerminalSession[]>>;
+    setActiveKey: (key: string) => void;
+}
 
-const SessionList: React.FC = (props) => {
+const SessionList: React.FC<SessionListProps> = (props) => {
     const {setSessions, setActiveKey} = props;
 
     const [form] = Form.useForm();
@@ -41,14 +43,7 @@ const SessionList: React.FC = (props) => {
         setRefreshTreeData,
         sessionRootKey,
         selectedMenuKey,
-        xshListWindowWidth
     } = useContext(AppContext);
-
-    useEffect(() => {
-        document.addEventListener("copy", e => {
-            console.log(e)
-        })
-    }, []);
 
     function genSessionBaseInfo(showType: string) {
         return <>
@@ -240,19 +235,14 @@ const SessionList: React.FC = (props) => {
      */
     async function createNewSession(sessionConfId, filePath, title, encoding, callback) {
         const id = getUUid();
-        setSessions(sessions => {
-            // console.log("createNewSession", id);
-            const data = [...sessions];
-            data.push({
-                label: title,
-                key: id,
-                sessionConfId: sessionConfId,
-                sessionConfPath: filePath,
-                isConnected: false,
-                encoding
-            });
-            return data;
-        });
+        setSessions(sessions => [...sessions, {
+            label: title,
+            key: id,
+            sessionConfId,
+            sessionConfPath: filePath,
+            isConnected: false,
+            encoding
+        }]);
 
         sessionIdMapFileName[id] = filePath.substr(filePath.lastIndexOf(path.sep) + 1);
         // console.log(sessionIdMapFileName)
@@ -273,16 +263,8 @@ const SessionList: React.FC = (props) => {
                 });
                 return;
             }
-            setSessions(sessions => {
-                const data = [...sessions];
-                for (let i = 0; i < data.length; i++) {
-                    if (data[i].key == res.id) {
-                        data[i].isConnected = true;
-                        break;
-                    }
-                }
-                return data;
-            });
+            setSessions(sessions => sessions.map(session => session.key === res.id
+                ? {...session, isConnected: true} : session));
             callback && callback(res.id);
         })
     }

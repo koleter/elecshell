@@ -1,10 +1,11 @@
-import React, {useContext, useEffect, useState} from "react";
+import React, {useContext} from "react";
 import {AppContext} from "@/pages/context/AppContextProvider";
 import SessionTransfer from "@/pages/Session/fileTransfer/sessionTransfer/SessionTransfer";
 import {MENU_FILETRANSFER} from "@/const";
 import "./FileTransfer.less"
+import type {TerminalSession} from "../components/SessionWorkspace/layout";
 
-const FileTransfer: React.FC = (props) => {
+const FileTransfer: React.FC<{sessions: TerminalSession[]}> = (props) => {
     const {sessions} = props;
     const {activeKey, selectedMenuKey} = useContext(AppContext);
 

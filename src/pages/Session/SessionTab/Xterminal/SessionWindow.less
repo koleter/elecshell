@@ -3,6 +3,18 @@
   color: black;
 }
 
+// 只隐藏终端滚动条的外观，保留 xterm 的滚轮滚动和历史缓冲区访问。
+.session-terminal .xterm-viewport {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+    }
+}
+
 div.ant-tabs-nav{
   margin: 0;
 }
@@ -11,19 +23,24 @@ div.ant-tabs-nav{
     display: inline-block;
 }
 
-.searchOptionsTooltip{
-    color: black;
+// 搜索栏参与终端的纵向布局；分屏变窄时允许输入区和按钮换行，不挤出容器。
+.session-search-panel {
+    flex: 0 0 auto;
+    align-items: flex-start;
+    min-width: 0;
+    background: white;
 }
 
-.closeContain{
+.session-search-fields {
     display: flex;
-    justify-content: center; /* 水平居中 */
-    align-items: center; /* 垂直居中 */
-    position: absolute;
-    height: 100%;
-    right: 15px;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: center;
+    min-width: 0;
 }
 
-.closeIcon{
-
+.session-search-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
 }

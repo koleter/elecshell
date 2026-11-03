@@ -1,0 +1,125 @@
+.session-workspace {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    // 无会话时直接露出工作区底色，不显示终端的黑色背景。
+    background: #fff;
+}
+
+.session-workspace--dragging { user-select: none; }
+
+.session-group {
+    position: absolute;
+    z-index: 2;
+    overflow: hidden;
+    // 布局壳不拦截下层终端输入，仅标签栏恢复鼠标交互。
+    pointer-events: none;
+
+    .session-group-tabs {
+        height: 40px;
+        background: #f0f2f5;
+        pointer-events: auto;
+
+        > .ant-tabs-nav {
+            height: 40px;
+            margin: 0;
+        }
+        > .ant-tabs-content-holder { display: none; }
+        .ant-tabs-tab { cursor: grab; }
+        .ant-tabs-extra-content { padding: 0 4px; }
+        .ant-tabs-tab-btn { min-width: 0; }
+    }
+}
+
+.session-group--empty {
+    background: #fff;
+    pointer-events: auto;
+}
+
+.session-terminal-instances {
+    // 终端统一放在固定层中，通过坐标对齐分屏，避免布局树改变时重新挂载。
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.session-terminal-viewport {
+    position: absolute;
+    overflow: hidden;
+    background: #000;
+    pointer-events: auto;
+}
+
+.session-splitter {
+    position: absolute;
+    z-index: 3;
+    background: #404040;
+    touch-action: none;
+
+    &:hover, &:focus { background: #1890ff; }
+}
+.session-splitter--x { cursor: col-resize; }
+.session-splitter--y { cursor: row-resize; }
+
+.session-drop-preview {
+    position: absolute;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    border: 2px solid #40a9ff;
+    background: rgba(24, 144, 255, 0.25);
+    // 预览覆盖终端但不参与命中判断，落点始终由实际鼠标坐标决定。
+    pointer-events: none;
+
+    span {
+        padding: 4px 8px;
+        color: #fff;
+        background: #096dd9;
+        border-radius: 3px;
+    }
+}
+
+.session-drop-preview--blocked {
+    border-color: #ff7875;
+    background: rgba(255, 77, 79, 0.18);
+    span { background: #a8071a; }
+}
+
+.session-tab-status {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-left: 8px;
+    border-radius: 50%;
+    background: #ff4d4f;
+}
+.session-tab-status--connected { background: #52c41a; }
+
+.session-workspace-drag-label {
+    display: flex;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid #1890ff;
+    border-radius: 4px;
+    color: #222;
+    background: #fff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+    pointer-events: none;
+    .session-tab-status { flex-shrink: 0; margin: 0; }
+}
+
+.session-workspace-drag-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

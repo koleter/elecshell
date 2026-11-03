@@ -1,10 +1,8 @@
 import {createContext, useEffect, useState, useRef} from 'react';
 import util from "@/util";
 import {message} from "antd";
-import {sessionConfInfo} from "@/pages/Session/SessionList/SessionList";
+import {sessionConfInfo} from "@/pages/Session/sessionRuntime";
 import {NENU_SESSIONS} from "@/const";
-import {setLocale} from "@@/plugin-locale/localeExports";
-import {promptModalCancel} from "@/pages/Session/main/Main";
 
 //根据定义创建Context
 export const AppContext = createContext(null);

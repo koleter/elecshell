@@ -1,10 +1,6 @@
 import React, {useEffect, useState} from "react";
 import SessionMain from "@/pages/Session/main/Main";
-import {AppContextProvider} from "@/pages/context/AppContextProvider";
-import Header from "@/pages/Session/frame/header";
-import SettingModal from "@/pages/Session/components/settingModal/SettingModal";
-import ProjectConfigModal from "@/pages/Session/components/projectConfig/ProjectConfigModal";
-import {HEADER_HEIGHT} from "@/const";
+import SessionFrame from './SessionFrame';
 
 function getQueryParams() {
     const search = window.location.search;
@@ -25,11 +21,11 @@ const DetachedSession: React.FC = () => {
     const logPath = params.get('logPath') || '';
     const sessionConfId = params.get('sessionConfId') || '';
     const sessionConfPath = params.get('sessionConfPath') || '';
+    const tempPath = params.get('tempPath');
 
     const [initialContent, setInitialContent] = useState('');
 
     useEffect(() => {
-        const tempPath = params.get('tempPath');
         if (tempPath) {
             try {
                 const content = window.electronAPI.FS_readFileSync(tempPath, 'utf-8');
@@ -45,7 +41,7 @@ const DetachedSession: React.FC = () => {
             }
         }
         window.electronAPI.ipcRenderer.send('update-title', label);
-    }, [sessionId, label]);
+    }, [tempPath, sessionId, label]);
 
     const session = {
         key: sessionId,
@@ -58,20 +54,9 @@ const DetachedSession: React.FC = () => {
     };
 
     return (
-        <AppContextProvider>
-            <SettingModal/>
-            <ProjectConfigModal/>
-            <div style={{height: '100vh'}}>
-                {window.electronAPI.platform == "darwin" && <Header/>}
-                <div style={{position: 'relative', height: window.electronAPI.platform === 'darwin' ? `calc(100vh - ${HEADER_HEIGHT}px)` : '100vh'}}>
-                    <SessionMain
-                        initialSession={session}
-                        initialContent={initialContent}
-                        detached={true}
-                    />
-                </div>
-            </div>
-        </AppContextProvider>
+        <SessionFrame>
+            <SessionMain initialSession={session} initialContent={initialContent}/>
+        </SessionFrame>
     );
 };
 

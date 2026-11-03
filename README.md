@@ -16,6 +16,16 @@ In previous work, I have come into contact with many ssh client tools such as fi
 
 elecshell supports the above functions
 
+## Split terminals
+
+Drag a tab into the outer third of a terminal's left, right, top or bottom area to preview and create a split, without reaching the edge. Any pane can be split again, subject to minimum usable dimensions. Drop in another pane's center to merge tabs, or on its tab bar to move and reorder them. Moving tabs preserves the terminal, SSH connection and script context.
+
+Drag dividers to resize; double-click a divider to balance it. Use the pane's maximize button to maximize/restore, and click a terminal to focus its pane. Empty panes collapse automatically; tab context-menu close actions apply to their own group. Dropping outside the terminal workspace, including on the sidebar, still opens a detached window. Escape does not cancel a tab drag.
+
+Split layouts stay in the current window's memory and are never written to local storage. Restarting or opening a new window starts with a single pane. Create splits by dragging tabs; new sessions then join the focused pane. Closing all sessions resets the workspace to a single pane.
+
+Run `npm run test:workspace` for layout tests and `npm run test:workspace:browser` for real-xterm integration tests with a mock WebSocket server (Node.js 18+). Browser tests use Chrome on macOS; set `CHROME_PATH` on other platforms or install Playwright Chromium.
+
 
 # Preview
 

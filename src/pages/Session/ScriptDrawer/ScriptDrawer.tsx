@@ -1,12 +1,11 @@
-import React, {useContext, useEffect, useState} from "react";
-import {Button, Drawer, Form, Input, message, Modal, Popconfirm, Radio, Select} from "antd";
+import React, {useContext, useState} from "react";
+import {Button, Drawer, Form, Input, message, Modal, Popconfirm, Radio} from "antd";
 import { PythonOutlined, FileTextOutlined } from '@ant-design/icons';
 
 import {ProList} from "@ant-design/pro-components";
 import {FormattedMessage, useIntl} from "@@/plugin-locale/localeExports";
-import {request} from "@@/plugin-request/request";
 import util, {showMessage} from "@/util";
-import {sessionIdMapFileName, sessionIdRef} from "@/pages/Session/main/Main";
+import {sessionIdMapFileName, sessionIdRef} from "@/pages/Session/sessionRuntime";
 import ScriptOwner from "@/pages/Session/ScriptDrawer/ScriptOwner";
 import UploadInFormItem from "../components/upload/Upload";
 import {AppContext} from "@/pages/context/AppContextProvider";
@@ -15,8 +14,13 @@ import {capitalizeFirstLetter} from "@/pages/util/string";
 const TYPE_RUN_PYTHON_SCRIPT = 1;
 const TYPE_SEND_STRING = 2;
 
-const ScriptDrawer: React.FC = (props) => {
-    // @ts-ignore
+interface ScriptDrawerProps {
+    activeKey: string;
+    drawerOpen: boolean;
+    setDrawerOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+const ScriptDrawer: React.FC<ScriptDrawerProps> = (props) => {
     const {activeKey, drawerOpen, setDrawerOpen} = props;
     const [editScriptForm] = Form.useForm();
 
@@ -30,7 +34,7 @@ const ScriptDrawer: React.FC = (props) => {
     const intl = useIntl();
 
     const {
-        scriptData, setScriptData, refreshScriptData, setRefreshScriptData
+        scriptData, setRefreshScriptData
     } = useContext(AppContext);
 
     function genScriptFormProperties() {
