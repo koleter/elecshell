@@ -26,6 +26,12 @@ Split layouts stay in the current window's memory and are never written to local
 
 Run `npm run test:workspace` for layout tests and `npm run test:workspace:browser` for real-xterm integration tests with a mock WebSocket server (Node.js 18+). Browser tests use Chrome on macOS; set `CHROME_PATH` on other platforms or install Playwright Chromium.
 
+## Frontend architecture
+
+Features under `src/features` own their state, UI and services. Transfer updates subscribe by session, the workspace derives the active session, and terminal rendering is separate from connection management. HTTP and Electron integrations live in `src/platform`.
+
+See [frontend architecture](docs/frontend-architecture.md) for module boundaries and lifecycle details. Run `npm run test:frontend` for layout, service, terminal interaction and built-app integration checks.
+
 
 # Preview
 

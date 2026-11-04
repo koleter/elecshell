@@ -1,5 +1,6 @@
-import React, {useEffect, useState} from "react";
-import SessionMain from "@/pages/Session/main/Main";
+import { desktop } from '@/platform/electronBridge';
+import React, { useEffect, useState } from 'react';
+import SessionMain from '@/pages/Session/main/Main';
 import SessionFrame from './SessionFrame';
 
 function getQueryParams() {
@@ -28,19 +29,19 @@ const DetachedSession: React.FC = () => {
     useEffect(() => {
         if (tempPath) {
             try {
-                const content = window.electronAPI.FS_readFileSync(tempPath, 'utf-8');
+                const content = desktop.readFile(tempPath);
                 setInitialContent(content);
             } catch (e) {
                 console.error('read detached initial content failed', e);
             } finally {
                 try {
-                    window.electronAPI.FS_unlinkSync(tempPath);
+                    desktop.removeFile(tempPath);
                 } catch (e) {
                     // ignore
                 }
             }
         }
-        window.electronAPI.ipcRenderer.send('update-title', label);
+        desktop.setTitle(label);
     }, [tempPath, sessionId, label]);
 
     const session = {
@@ -55,7 +56,7 @@ const DetachedSession: React.FC = () => {
 
     return (
         <SessionFrame>
-            <SessionMain initialSession={session} initialContent={initialContent}/>
+            <SessionMain initialSession={session} initialContent={initialContent} />
         </SessionFrame>
     );
 };

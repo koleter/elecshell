@@ -1,0 +1,12 @@
+{
+    "extends": "./tsconfig.json",
+    "include": [
+        "src/features/**/*",
+        "src/platform/**/*",
+        "src/shared/**/*",
+        "src/pages/Session/**/*",
+        "src/util.ts",
+        "src/const.ts",
+    "src/**/*.d.ts"
+    ]
+}

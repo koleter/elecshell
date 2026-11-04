@@ -71,8 +71,12 @@
         "test": "umi test",
         "test:component": "umi test ./src/components",
         "test:e2e": "node ./tests/run-tests.js",
+        "test:app:browser": "npm run build && node --test tests/session-app.browser.cjs",
+        "test:session": "node --test tests/session-architecture.test.cjs",
+        "test:frontend": "npm run tsc:frontend && npm run test:workspace && npm run test:session && npm run test:workspace:browser && npm run test:app:browser",
         "test:workspace": "node --test tests/session-workspace.test.cjs",
         "test:workspace:browser": "node --test tests/session-workspace.browser.cjs",
+        "tsc:frontend": "tsc --noEmit -p tsconfig.frontend.json",
         "tsc": "tsc --noEmit"
     },
     "lint-staged": {

@@ -24,6 +24,12 @@ elecshell支持上述功能
 
 开发验证：`npm run test:workspace` 检查布局状态；`npm run test:workspace:browser` 使用真实 xterm 和模拟 WebSocket 检查拖拽、连接复用及脚本回调。浏览器验证默认使用 macOS 上的 Chrome；其他环境可通过 `CHROME_PATH` 指定浏览器，或使用 Playwright 已安装的 Chromium。测试命令需要 Node.js 18 或更高版本。
 
+## 前端架构
+
+前端按工作区、终端、会话、配置目录、传输、脚本和设置组织在 `src/features` 中。状态按功能划分，传输数据按会话订阅；页面通过服务执行会话和配置操作，HTTP 与 Electron 接口集中在 `src/platform`。
+
+模块边界、连接生命周期和验证方式见[前端架构说明](docs/frontend-architecture.md)。运行 `npm run test:frontend` 可执行布局、服务、真实终端交互及完整页面回归。
+
 # 预览
 
 ![elecshell.jpg](./preview/zn/elecshell.jpg)

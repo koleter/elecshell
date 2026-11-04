@@ -6,7 +6,7 @@ const Module = require('node:module');
 const ts = require('typescript');
 
 // 直接加载纯布局模型，不启动 Umi、Electron 或 SSH，便于快速验证状态变换。
-const filename = path.resolve(__dirname, '../src/pages/Session/components/SessionWorkspace/layout.ts');
+const filename = path.resolve(__dirname, '../src/features/workspace/model/layout.ts');
 const compiled = ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
     compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020},
 });
