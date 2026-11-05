@@ -19,10 +19,17 @@ python2_start_server_str = '''"""
 # -*- coding: utf-8 -*-
 from SocketServer import ThreadingMixIn, TCPServer
 import SimpleHTTPServer
+import errno
 import os
+import socket
+import sys
 import urlparse
 import json
 import urllib
+
+def is_client_disconnect(error):
+    return isinstance(error, socket.error) and error.errno in (
+        errno.EPIPE, errno.ECONNRESET, errno.ECONNABORTED)
 
 def list_directory_contents(path):
     def _list_contents(path, indent=0):
@@ -93,7 +100,9 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                 else:
                     file_size = os.path.getsize(file_path)
                 self.wfile.write(str(file_size))
-            except Exception:
+            except Exception as e:
+                if is_client_disconnect(e):
+                    raise
                 self.send_response(500)
                 self.wfile.write('0')
         else:
@@ -108,6 +117,8 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                     with open(file_path, 'rb') as file:
                         self.wfile.write(file.read())
                 except IOError as e:
+                    if is_client_disconnect(e):
+                        raise
                     self.send_error(500, 'Internal Server Error')
                     print 'Error opening file:', e
             elif os.path.isdir(file_path):
@@ -124,7 +135,11 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
                 self.send_error(404)
 
 class ThreadedHTTPServer(ThreadingMixIn, TCPServer):
-    pass
+    def handle_error(self, request, client_address):
+        # 包括 Python 2.7 在 finish/close 再次 flush 时的断连异常。
+        if is_client_disconnect(sys.exc_info()[1]):
+            return
+        TCPServer.handle_error(self, request, client_address)
 # 创建一个简单的 HTTP 服务器
 httpd = ThreadedHTTPServer(('0.0.0.0', {port}), MyHTTPRequestHandler)
 print 'Start server success'
@@ -135,9 +150,16 @@ python3_start_server_str = '''"""
 # -*- coding: utf-8 -*-
 import http.server
 from socketserver import ThreadingMixIn, TCPServer
+import errno
 import os
+import socket
+import sys
 import json
 from urllib.parse import unquote
+
+def is_client_disconnect(error):
+    return isinstance(error, socket.error) and error.errno in (
+        errno.EPIPE, errno.ECONNRESET, errno.ECONNABORTED)
 
 def list_directory_contents(path):
     def _list_contents(path, indent=0):
@@ -240,7 +262,10 @@ class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 # 如果文件不存在，则返回404错误
                 self.send_error(404, 'File Not Found')
 class ThreadedHTTPServer(ThreadingMixIn, TCPServer):
-    pass
+    def handle_error(self, request, client_address):
+        if is_client_disconnect(sys.exc_info()[1]):
+            return
+        TCPServer.handle_error(self, request, client_address)
 # 创建一个简单的 HTTP 服务器
 httpd = ThreadedHTTPServer(('0.0.0.0', {port}), MyHTTPRequestHandler)
 print('Start server success')
