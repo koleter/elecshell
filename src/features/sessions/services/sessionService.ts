@@ -129,23 +129,19 @@ export const sessionService = {
             xshConfId: runtime.sessionConfId,
         });
     },
-    readWorkingDirectory(id: string): Promise<string> {
+    async readWorkingDirectory(id: string): Promise<string> {
+        const runtime = sessionRegistry.get(id);
+        if (!runtime) throw new Error('session is closed');
+        const output = await runtime.requestOutput('pwd');
         return new Promise((resolve, reject) => {
-            const runtime = sessionRegistry.get(id);
-            if (!runtime) {
-                reject(new Error('session is closed'));
-                return;
-            }
-            runtime.requestOutput('pwd', (output) =>
-                runtime.parseOutput(output, (raw) => {
-                    const directory = raw
-                        .split('\n')
-                        .slice(1)
-                        .find((line) => line.startsWith('/'));
-                    if (directory) resolve(directory.trimEnd());
-                    else reject(new Error('can not get pwd, error is ' + output));
-                }),
-            );
+            runtime.parseOutput(output, (raw) => {
+                const directory = raw
+                    .split('\n')
+                    .slice(1)
+                    .find((line) => line.startsWith('/'));
+                if (directory) resolve(directory.trimEnd());
+                else reject(new Error('can not get pwd, error is ' + output));
+            });
         });
     },
 };

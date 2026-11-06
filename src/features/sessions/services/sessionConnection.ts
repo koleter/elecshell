@@ -30,7 +30,7 @@ export interface ConnectionOptions {
     serialize: () => string;
 }
 
-/** 一个连接拥有自己的订阅、回调表和取消信号，关闭时统一释放。 */
+/** 一个连接拥有自己的订阅、请求表和取消信号，关闭时统一释放。 */
 class SessionConnection implements SessionRuntime {
     readonly id: string;
     readonly sessionConfId?: string;
@@ -39,7 +39,10 @@ class SessionConnection implements SessionRuntime {
     private readonly options: ConnectionOptions;
     private readonly socket: WebSocket;
     private readonly decoder: TerminalDecoder;
-    private readonly callbacks = new Map<string, (result: string) => void>();
+    private readonly requests = new Map<
+        string,
+        { resolve: (result: string) => void; reject: (reason: unknown) => void }
+    >();
     private readonly subscriptions: Disposable[] = [];
     private readonly cancelled = new AbortController();
     private disposed = false;
@@ -91,11 +94,30 @@ class SessionConnection implements SessionRuntime {
             this.socket.send(JSON.stringify(message));
     };
     sendCommand = (data: string) => this.send({ type: 'data', data });
-    requestOutput = (command: string, callback: (result: string) => void) => {
-        const requestId = createId();
-        this.callbacks.set(requestId, callback);
-        this.send({ type: 'sendRecv', data: command, requestId });
-    };
+    requestOutput = (command: string): Promise<string> =>
+        new Promise((resolve, reject) => {
+            if (this.disposed) {
+                reject(new Error('session is closed'));
+                return;
+            }
+            if (sessionRegistry.get(this.id) !== this) {
+                reject(new Error('session connection has been replaced'));
+                return;
+            }
+            if (this.socket.readyState !== WebSocket.OPEN) {
+                reject(new Error('session is not connected'));
+                return;
+            }
+            const requestId = createId();
+            this.requests.set(requestId, { resolve, reject });
+            try {
+                // 请求必须明确发送成功，不能使用会静默跳过未连接状态的 send。
+                this.socket.send(JSON.stringify({ type: 'sendRecv', data: command, requestId }));
+            } catch (error) {
+                this.requests.delete(requestId);
+                reject(error);
+            }
+        });
     parseOutput = (output: string, callback: (raw: string) => void) =>
         this.options.terminal.write(output, callback, false);
     serialize = () => this.options.serialize();
@@ -109,7 +131,8 @@ class SessionConnection implements SessionRuntime {
         this.disposed = true;
         this.status = 'closed';
         this.cancelled.abort();
-        this.callbacks.clear();
+        this.requests.forEach(({ reject }) => reject(new Error('session is closed')));
+        this.requests.clear();
         this.subscriptions.splice(0).forEach((subscription) => subscription.dispose());
         this.socket.onopen = null;
         this.socket.onmessage = null;
@@ -152,9 +175,14 @@ class SessionConnection implements SessionRuntime {
                 this.options.notify(message);
                 break;
             case 'response': {
-                const callback = this.callbacks.get(message.requestId);
-                this.callbacks.delete(message.requestId);
-                callback?.(this.decoder.decodeResponse(message.val));
+                const request = this.requests.get(message.requestId);
+                if (!request) break;
+                this.requests.delete(message.requestId);
+                try {
+                    request.resolve(this.decoder.decodeResponse(message.val));
+                } catch (error) {
+                    request.reject(error);
+                }
                 break;
             }
             case 'execSessionMethod': {
@@ -166,7 +194,23 @@ class SessionConnection implements SessionRuntime {
                     refreshRemoteFileList: this.refreshRemoteFileList.bind(this),
                     refreshFileProgressInfo: this.refreshFileProgressInfo.bind(this),
                     sendData: this.sendCommand,
-                    sendRecv: this.requestOutput,
+                    sendRecv: (args, callback) => {
+                        void this.requestOutput(args)
+                            .then(callback)
+                            .catch((error) => {
+                                if (this.disposed || sessionRegistry.get(this.id) !== this) return;
+                                try {
+                                    if (message.requestId)
+                                        this.send({
+                                            type: 'del_callback_map',
+                                            requestId: message.requestId,
+                                        });
+                                } catch {
+                                    // 连接发送失败时，清理后端回调也可能失败，仍需报告原错误。
+                                }
+                                this.options.notify({ status: 'error', content: String(error) });
+                            });
+                    },
                     send: this.send,
                 };
                 const method = methods[message.method];

@@ -363,9 +363,12 @@ test('session architecture: isolated stores and connection services', async (t) 
                 const settings = options('replacement');
                 const first = await start(settings);
                 const oldStop = stops[stops.length - 1];
+                const oldRuntime = sessionRegistry.get('replacement');
                 const second = await start(options('replacement', { commands: settings.commands }));
                 first.open();
                 second.open();
+                await assert.rejects(oldRuntime.requestOutput('pwd'), /has been replaced/);
+                assert.deepEqual(first.sent, []);
                 first.close();
                 oldStop();
                 assert.equal(settings.state.sessions[0].isConnected, true);
@@ -374,7 +377,7 @@ test('session architecture: isolated stores and connection services', async (t) 
             },
         );
         await scenario(
-            'callbacks belong to their socket and closing disposes terminal subscriptions',
+            'requests belong to their socket and closing rejects pending work and disposes subscriptions',
             async () => {
                 const a = options('callbacks-A'),
                     b = options('callbacks-B');
@@ -382,30 +385,111 @@ test('session architecture: isolated stores and connection services', async (t) 
                     socketB = await start(b);
                 socketA.open();
                 socketB.open();
-                const results = [];
                 const runtime = sessionRegistry.get('callbacks-A');
-                runtime.requestOutput('pwd', (value) => results.push(value));
+                let settled = false;
+                const result = runtime.requestOutput('pwd');
+                void result.then(() => { settled = true; });
                 const requestId = socketA.sent[socketA.sent.length - 1].requestId;
                 socketB.receive({
                     type: 'response',
                     requestId,
                     val: Buffer.from('wrong socket').toString('base64'),
                 });
-                assert.deepEqual(results, []);
+                await flush();
+                assert.equal(settled, false);
                 socketA.receive({
                     type: 'response',
                     requestId,
                     val: Buffer.from('correct socket').toString('base64'),
                 });
-                assert.deepEqual(results, ['correct socket']);
-                runtime.requestOutput('later', (value) => results.push(value));
+                assert.equal(await result, 'correct socket');
+                const pending = ['later', 'another'].map((command) =>
+                    assert.rejects(runtime.requestOutput(command), /session is closed/),
+                );
+                const lateMessage = socketA.onmessage;
                 runtime.close();
+                await Promise.all(pending);
+                lateMessage({ data: JSON.stringify({ type: 'response', requestId, val: '%' }) });
+                await assert.rejects(runtime.requestOutput('after close'), /session is closed/);
                 assert.equal(a.terminal.data.size, 0);
                 assert.equal(a.terminal.resize.size, 0);
                 assert.equal(socketA.onmessage, null);
-                assert.deepEqual(results, ['correct socket']);
             },
         );
+        await scenario('unavailable sockets reject requests without sending them', async () => {
+            const socket = await start(options('unavailable'));
+            const runtime = sessionRegistry.get('unavailable');
+            for (const readyState of [0, 2, 3]) {
+                socket.readyState = readyState;
+                await assert.rejects(runtime.requestOutput('pwd'), /session is not connected/);
+                assert.deepEqual(socket.sent, []);
+            }
+            socket.open();
+            const result = runtime.requestOutput('pwd');
+            socket.receive({
+                type: 'response',
+                requestId: socket.sent[0].requestId,
+                val: Buffer.from('/tmp').toString('base64'),
+            });
+            assert.equal(await result, '/tmp');
+        });
+        await scenario('send failures reject and discard the unsent request', async () => {
+            const socket = await start(options('send-failure'));
+            socket.open();
+            const runtime = sessionRegistry.get('send-failure');
+            const send = socket.send;
+            const error = new Error('socket send failed');
+            let failedId;
+            socket.send = (value) => {
+                failedId = JSON.parse(value).requestId;
+                throw error;
+            };
+            await assert.rejects(runtime.requestOutput('pwd'), (reason) => reason === error);
+            socket.send = send;
+            // 已经失败的请求不再解码迟到响应；非法 base64 也应被直接忽略。
+            assert.doesNotThrow(() => socket.receive({ type: 'response', requestId: failedId, val: '%' }));
+            const result = runtime.requestOutput('retry');
+            socket.receive({
+                type: 'response',
+                requestId: socket.sent[0].requestId,
+                val: Buffer.from('retried').toString('base64'),
+            });
+            assert.equal(await result, 'retried');
+        });
+        await scenario('pending requests allow terminal output and responses can arrive out of order', async () => {
+            const settings = options('pending-output');
+            const socket = await start(settings);
+            socket.open();
+            const runtime = sessionRegistry.get('pending-output');
+            const results = [];
+            const first = runtime.requestOutput('first').then((value) => results.push(value));
+            const second = runtime.requestOutput('second').then((value) => results.push(value));
+            const [firstId, secondId] = socket.sent.map((message) => message.requestId);
+            socket.receive({ type: 'data', val: Buffer.from('still displaying\r\n').toString('base64') });
+            await flush();
+            assert.deepEqual(results, []);
+            assert.equal(settings.terminal.writes.length, 1);
+            socket.receive({ type: 'response', requestId: secondId, val: Buffer.from('second result').toString('base64') });
+            await second;
+            assert.deepEqual(results, ['second result']);
+            assert.doesNotThrow(() => socket.receive({ type: 'response', requestId: secondId, val: '%' }));
+            socket.receive({ type: 'response', requestId: firstId, val: Buffer.from('first result').toString('base64') });
+            await first;
+            assert.deepEqual(results, ['second result', 'first result']);
+        });
+        await scenario('a malformed response rejects only its matching request', async () => {
+            const socket = await start(options('bad-response'));
+            socket.open();
+            const runtime = sessionRegistry.get('bad-response');
+            const rejected = assert.rejects(runtime.requestOutput('bad'));
+            const good = runtime.requestOutput('good');
+            const [badId, goodId] = socket.sent.map((message) => message.requestId);
+            assert.doesNotThrow(() => socket.receive({ type: 'response', requestId: badId, val: '%' }));
+            await rejected;
+            assert.doesNotThrow(() => socket.receive({ type: 'response', requestId: badId, val: '%' }));
+            socket.receive({ type: 'response', requestId: goodId, val: Buffer.from('ok').toString('base64') });
+            assert.equal(await good, 'ok');
+        });
         await scenario('UTF-8 data reaches the terminal as bytes and callbacks remain strings', async () => {
             const settings = options('utf8-data');
             settings.getSession().logPath = '/utf8.log';
@@ -436,13 +520,12 @@ test('session architecture: isolated stores and connection services', async (t) 
             });
             receive([0xd6], true);
             receive([0xce], false);
-            const results = [];
-            sessionRegistry.get('gbk-data').requestOutput('pwd', (value) => results.push(value));
+            const result = sessionRegistry.get('gbk-data').requestOutput('pwd');
             const requestId = socket.sent[socket.sent.length - 1].requestId;
             socket.receive({ type: 'response', requestId, val: Buffer.from([0xd6, 0xd0, 0xce, 0xc4]).toString('base64') });
             receive([0xd0, 13, 10], true);
             receive([0xc4, 13, 10], false);
-            assert.deepEqual(results, ['中文']);
+            assert.equal(await result, '中文');
             assert.deepEqual(settings.terminal.writes, [
                 { value: '', show: true },
                 { value: '', show: false },
@@ -456,13 +539,73 @@ test('session architecture: isolated stores and connection services', async (t) 
                 const settings = options('remote-close');
                 const socket = await start(settings);
                 socket.open();
+                const rejected = assert.rejects(
+                    sessionService.readWorkingDirectory('remote-close'),
+                    /session is closed/,
+                );
                 socket.close();
+                await rejected;
                 assert.equal(settings.state.sessions[0].isConnected, false);
                 assert.equal(sessionRegistry.get('remote-close'), undefined);
                 assert.equal(settings.terminal.data.size, 0);
                 assert.ok(settings.terminal.writes[0].value.includes('closed'));
             },
         );
+        await scenario('working directory requests propagate connection errors and parse successful output', async () => {
+            await assert.rejects(sessionService.readWorkingDirectory('missing'), /session is closed/);
+            const settings = options('working-directory');
+            const socket = await start(settings);
+            await assert.rejects(sessionService.readWorkingDirectory('working-directory'), /session is not connected/);
+            socket.open();
+            const result = sessionService.readWorkingDirectory('working-directory');
+            assert.equal(socket.sent[0].data, 'pwd');
+            socket.receive({
+                type: 'response',
+                requestId: socket.sent[0].requestId,
+                val: Buffer.from('pwd\r\n/tmp/中文\r\n$ ').toString('base64'),
+            });
+            assert.equal(await result, '/tmp/中文');
+            assert.equal(settings.terminal.writes[0].show, false);
+        });
+        await scenario('script sendRecv retains its callback protocol and handles request failures', async () => {
+            const notices = [];
+            const socket = await start(options('script-output', { notify: (notice) => notices.push(notice) }));
+            socket.open();
+            const invoke = (requestId) => socket.receive({
+                type: 'execSessionMethod', method: 'sendRecv', args: 'pwd', requestId,
+            });
+            invoke('script-success');
+            const requestId = socket.sent[0].requestId;
+            socket.receive({ type: 'response', requestId, val: Buffer.from('script output').toString('base64') });
+            await flush();
+            assert.deepEqual(socket.sent[1], {
+                type: 'callback', requestId: 'script-success', args: 'script output',
+            });
+            socket.receive({ type: 'response', requestId, val: '%' });
+            await flush();
+            assert.equal(socket.sent.length, 2);
+
+            const send = socket.send;
+            socket.send = function (value) {
+                if (JSON.parse(value).type === 'sendRecv') throw new Error('script send failed');
+                send.call(this, value);
+            };
+            invoke('script-failure');
+            await flush();
+            assert.deepEqual(socket.sent[2], { type: 'del_callback_map', requestId: 'script-failure' });
+            assert.deepEqual(notices, [{ status: 'error', content: 'Error: script send failed' }]);
+
+            socket.send = () => { throw new Error('all sends failed'); };
+            invoke('script-cleanup-failure');
+            await flush();
+            assert.equal(notices[1].content, 'Error: all sends failed');
+            socket.send = send;
+            invoke('script-closed');
+            socket.close();
+            await flush();
+            assert.equal(notices.length, 2);
+            assert.equal(socket.sent.filter((message) => message.type === 'callback').length, 1);
+        });
         await scenario(
             'script readiness supports completion, cancellation and timeout',
             async () => {

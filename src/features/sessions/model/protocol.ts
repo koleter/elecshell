@@ -44,7 +44,8 @@ export interface SessionRuntime {
     readonly debug: { term: TerminalPort; sock: WebSocket };
     send: (message: ClientMessage) => void;
     sendCommand: (command: string) => void;
-    requestOutput: (command: string, callback: (result: string) => void) => void;
+    /** 连接不可用、发送失败或断线时拒绝；正常连接下不设命令超时。 */
+    requestOutput: (command: string) => Promise<string>;
     parseOutput: (output: string, callback: (raw: string) => void) => void;
     serialize: () => string;
     close: () => void;
