@@ -6,6 +6,77 @@ const fs = require('node:fs');
 const ts = require('typescript');
 const esbuild = require('esbuild');
 
+test('terminal decoder keeps packet boundaries and logical streams separate', async (t) => {
+    const filename = path.resolve(__dirname, '../src/features/sessions/services/terminalDecoder.ts');
+    const compiled = ts.transpileModule(fs.readFileSync(filename, 'utf8'), {
+        compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+    });
+    const loaded = new Module(filename, module);
+    loaded._compile(compiled.outputText, filename);
+    const { TerminalDecoder } = loaded.exports;
+    const base64 = (bytes) => Buffer.from(bytes).toString('base64');
+    const gbk = Uint8Array.from([0xd6, 0xd0, 0xce, 0xc4]); // 中文
+
+    for (const encoding of [undefined, 'utf-8', 'utf8', 'UTF-8']) {
+        await t.test(`UTF-8 ${encoding} passes raw bytes to xterm`, () => {
+            const decoder = new TerminalDecoder(encoding);
+            const bytes = Uint8Array.from(Buffer.from('中文😀𠮷\r\n'));
+            for (const show of [true, false]) {
+                for (let split = 0; split <= bytes.length; split++) {
+                    assert.deepEqual(decoder.decodeData(base64(bytes.subarray(0, split)), show), bytes.subarray(0, split));
+                    assert.deepEqual(decoder.decodeData(base64(bytes.subarray(split)), show), bytes.subarray(split));
+                }
+            }
+        });
+    }
+    await t.test('GBK characters survive every byte boundary', () => {
+        for (let split = 0; split <= gbk.length; split++) {
+            const decoder = new TerminalDecoder('gbk');
+            const first = decoder.decodeData(base64(gbk.subarray(0, split)));
+            const second = decoder.decodeData(base64(gbk.subarray(split)));
+            assert.equal(first + second, '中文');
+        }
+        const decoder = new TerminalDecoder('gbk');
+        assert.equal(Array.from(gbk, (byte) => decoder.decodeData(base64([byte]))).join(''), '中文');
+    });
+    await t.test('visible and hidden GBK streams keep their own partial characters', () => {
+        const decoder = new TerminalDecoder('gbk');
+        assert.equal(decoder.decodeData(base64([0xd6])), '');
+        assert.equal(decoder.decodeData(base64([0xce]), false), '');
+        assert.equal(decoder.decodeData(base64([0xd0])), '中');
+        assert.equal(decoder.decodeData(base64([0xc4]), false), '文');
+    });
+    await t.test('responses neither consume nor reset terminal stream state', () => {
+        const decoder = new TerminalDecoder('gbk');
+        assert.equal(decoder.decodeData(base64([0xd6])), '');
+        assert.equal(decoder.decodeData(base64([0xce]), false), '');
+        assert.equal(decoder.decodeResponse(base64(gbk)), '中文');
+        assert.equal(decoder.decodeData(base64([0xd0])), '中');
+        assert.equal(decoder.decodeData(base64([0xc4]), false), '文');
+    });
+    await t.test('independent responses do not join partial characters', () => {
+        const decoder = new TerminalDecoder('gbk');
+        assert.equal(decoder.decodeResponse(base64([0xd6])), '�');
+        assert.equal(decoder.decodeResponse(base64([0xd0])), '�');
+        assert.equal(decoder.decodeResponse(base64(gbk)), '中文');
+    });
+    await t.test('each connection keeps its own decoder state', () => {
+        const first = new TerminalDecoder('gbk');
+        const second = new TerminalDecoder('gbk');
+        assert.equal(first.decodeData(base64([0xd6])), '');
+        assert.equal(second.decodeData(base64([0xce, 0xc4])), '文');
+        assert.equal(first.decodeData(base64([0xd0])), '中');
+    });
+    await t.test('UTF-8 responses remain strings', () => {
+        assert.equal(new TerminalDecoder('utf-8').decodeResponse(base64(Buffer.from('中文😀𠮷'))), '中文😀𠮷');
+    });
+    await t.test('legacy decoding preserves ANSI sequences for the terminal parser', () => {
+        const decoder = new TerminalDecoder('gbk');
+        const bytes = Buffer.concat([Buffer.from('\x1b[31m'), gbk, Buffer.from('\x1b[0m\r\n')]);
+        assert.equal(Array.from(bytes, (byte) => decoder.decodeData(base64([byte]))).join(''), '\x1b[31m中文\x1b[0m\r\n');
+    });
+});
+
 // 固定模块依赖方向，防止业务服务重新耦合页面和 React 组件。
 test('feature modules never import pages and services never import UI modules', () => {
     const featureRoot = path.resolve(__dirname, '../src/features');
@@ -160,13 +231,18 @@ test('session architecture: isolated stores and connection services', async (t) 
         function terminal() {
             const data = new Set(),
                 resize = new Set();
+            const visibleDecoder = new TextDecoder();
+            const hiddenDecoder = new TextDecoder();
             return {
                 data,
                 resize,
                 writes: [],
                 write(value, processed, show = true) {
                     this.writes.push({ value, show });
-                    processed?.(value);
+                    const text = typeof value === 'string'
+                        ? value
+                        : (show ? visibleDecoder : hiddenDecoder).decode(value, { stream: true });
+                    processed?.(text);
                 },
                 onData(listener) {
                     data.add(listener);
@@ -330,6 +406,50 @@ test('session architecture: isolated stores and connection services', async (t) 
                 assert.deepEqual(results, ['correct socket']);
             },
         );
+        await scenario('UTF-8 data reaches the terminal as bytes and callbacks remain strings', async () => {
+            const settings = options('utf8-data');
+            settings.getSession().logPath = '/utf8.log';
+            const socket = await start(settings);
+            socket.open();
+            const bytes = Buffer.from('中文😀\r\n');
+            const before = hostCalls.length;
+            socket.receive({ type: 'data', val: bytes.subarray(0, 2).toString('base64') });
+            socket.receive({
+                type: 'data',
+                val: bytes.subarray(2).toString('base64'),
+                requestId: 'utf8-data-result',
+            });
+            assert.deepEqual(settings.terminal.writes.map((write) => write.value), [
+                Uint8Array.from(bytes.subarray(0, 2)),
+                Uint8Array.from(bytes.subarray(2)),
+            ]);
+            assert.equal(hostCalls.slice(before).map((call) => call[2]).join(''), '中文😀\r\n');
+            assert.equal(socket.sent.find((message) => message.requestId === 'utf8-data-result').args, '中文😀\r\n');
+        });
+        await scenario('GBK visible, hidden and response messages keep separate decoder state', async () => {
+            const settings = options('gbk-data');
+            settings.getSession().encoding = 'gbk';
+            const socket = await start(settings);
+            socket.open();
+            const receive = (bytes, showOnTerm) => socket.receive({
+                type: 'data', val: Buffer.from(bytes).toString('base64'), showOnTerm,
+            });
+            receive([0xd6], true);
+            receive([0xce], false);
+            const results = [];
+            sessionRegistry.get('gbk-data').requestOutput('pwd', (value) => results.push(value));
+            const requestId = socket.sent[socket.sent.length - 1].requestId;
+            socket.receive({ type: 'response', requestId, val: Buffer.from([0xd6, 0xd0, 0xce, 0xc4]).toString('base64') });
+            receive([0xd0, 13, 10], true);
+            receive([0xc4, 13, 10], false);
+            assert.deepEqual(results, ['中文']);
+            assert.deepEqual(settings.terminal.writes, [
+                { value: '', show: true },
+                { value: '', show: false },
+                { value: '中\r\n', show: true },
+                { value: '文\r\n', show: false },
+            ]);
+        });
         await scenario(
             'remote close marks only its session disconnected and releases its runtime',
             async () => {

@@ -32,7 +32,7 @@ export interface Disposable {
     dispose: () => void;
 }
 export interface TerminalPort {
-    write: (data: string, processed?: (raw: string) => void, show?: boolean) => void;
+    write: (data: string | Uint8Array, processed?: (raw: string) => void, show?: boolean) => void;
     onData: (listener: (data: string) => void) => Disposable;
     onResize: (listener: (size: { cols: number; rows: number }) => void) => Disposable;
 }

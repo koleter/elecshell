@@ -17,6 +17,7 @@ import type {
 } from '../model/protocol';
 import type { Notice, ScriptSessionConfig, SessionCommands, TerminalSession } from '../model/types';
 import { sessionService } from './sessionService';
+import { TerminalDecoder } from './terminalDecoder';
 
 export interface ConnectionOptions {
     getSession: () => TerminalSession;
@@ -37,7 +38,7 @@ class SessionConnection implements SessionRuntime {
     status: SessionRuntime['status'] = 'connecting';
     private readonly options: ConnectionOptions;
     private readonly socket: WebSocket;
-    private readonly decoder: TextDecoder;
+    private readonly decoder: TerminalDecoder;
     private readonly callbacks = new Map<string, (result: string) => void>();
     private readonly subscriptions: Disposable[] = [];
     private readonly cancelled = new AbortController();
@@ -48,7 +49,7 @@ class SessionConnection implements SessionRuntime {
         const session = options.getSession();
         this.id = session.key;
         this.sessionConfId = session.sessionConfId;
-        this.decoder = new TextDecoder(session.encoding || 'utf-8');
+        this.decoder = new TerminalDecoder(session.encoding || 'utf-8');
         this.socket = new WebSocket(url);
         this.debug = { term: options.terminal, sock: this.socket };
         this.subscriptions.push(options.terminal.onData((data) => this.sendCommand(data)));
@@ -116,10 +117,6 @@ class SessionConnection implements SessionRuntime {
         this.socket.onerror = null;
         sessionRegistry.remove(this);
     }
-    private decode(value: string) {
-        const raw = atob(value);
-        return this.decoder.decode(Uint8Array.from(raw, (character) => character.charCodeAt(0)));
-    }
     private reply(requestId: string | undefined, args: unknown) {
         if (requestId) this.send({ type: 'callback', requestId, args });
     }
@@ -136,7 +133,7 @@ class SessionConnection implements SessionRuntime {
         switch (message.type) {
             case 'data':
                 this.options.terminal.write(
-                    this.decode(message.val),
+                    this.decoder.decodeData(message.val, message.showOnTerm),
                     (raw) => {
                         this.reply(message.requestId, raw);
                         const logPath = this.options.getSession().logPath;
@@ -157,7 +154,7 @@ class SessionConnection implements SessionRuntime {
             case 'response': {
                 const callback = this.callbacks.get(message.requestId);
                 this.callbacks.delete(message.requestId);
-                callback?.(this.decode(message.val));
+                callback?.(this.decoder.decodeResponse(message.val));
                 break;
             }
             case 'execSessionMethod': {
