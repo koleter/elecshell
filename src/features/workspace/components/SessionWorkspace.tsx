@@ -41,7 +41,7 @@ interface Props {
     renderLabel: (session: TerminalSession) => ReactNode;
     renderSession: (session: TerminalSession, visible: boolean, focused: boolean) => ReactNode;
     onClose: (sessionId: string) => void;
-    onDetach: (sessionId: string) => void;
+    onDetach: (sessionId: string, destinationToken?: string) => void;
     labels: WorkspaceLabels;
 }
 
@@ -169,6 +169,7 @@ export default function SessionWorkspace(props: Props) {
     const [size, setSize] = useState({ width: 0, height: 0 });
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [pointerOutside, setPointerOutside] = useState(false);
+    const [externalDragging, setExternalDragging] = useState(false);
     const [target, setTarget] = useState<DropTarget | null>(null);
     // 高频指针事件读取 ref 中的即时值，React state 只负责驱动预览显示。
     const dragRef = useRef<{ id: string; point: Point } | null>(null);
@@ -230,7 +231,7 @@ export default function SessionWorkspace(props: Props) {
                     const session = latest.current.props.state.sessions.find(
                         (item) => item.key === drag.id,
                     );
-                    await api.showDragOverlay({
+                    const shown = await api.showDragOverlay({
                         label: session?.label || drag.id,
                         connected: !!session?.isConnected,
                         outside: true,
@@ -241,6 +242,7 @@ export default function SessionWorkspace(props: Props) {
                     });
                     if (!nativeOverlayWanted.current || !dragRef.current)
                         await api.hideDragOverlay();
+                    else if (shown?.ok) setPointerOutside(true);
                 } else {
                     await api.hideDragOverlay();
                 }
@@ -301,16 +303,75 @@ export default function SessionWorkspace(props: Props) {
         }
         // 源组移空后目标可能扩展，预览大小和最小尺寸判断都使用收起空组后的矩形。
         const destination =
-            position !== 'tabs' && position !== 'center' && dragRef.current
-                ? splitDestination(latest.current.props.state, dragRef.current.id, pane.group.id, {
-                      x: 0,
-                      y: 0,
-                      width: bounds.width,
-                      height: bounds.height,
-                  }) || pane
+            position !== 'tabs' && position !== 'center'
+                ? splitDestination(
+                      latest.current.props.state,
+                      dragRef.current?.id || null,
+                      pane.group.id,
+                      {
+                          x: 0,
+                          y: 0,
+                          width: bounds.width,
+                          height: bounds.height,
+                      },
+                  ) || pane
                 : pane;
         return { pane: destination, position, index, allowed: canSplit(destination, position) };
     }, []);
+
+    useLayoutEffect(() => {
+        const stopHover = desktop.on('session-drag-hover', (_event, point) => {
+            if (dragRef.current) return;
+            setExternalDragging(!!point);
+            const next = point ? findTarget(point) : null;
+            setTarget((previous) => (sameTarget(previous, next) ? previous : next));
+        });
+        const stopProbe = desktop.on('session-drag-probe', (_event, request) => {
+            const drop = findTarget(request.point);
+            const accepted =
+                !dragRef.current &&
+                !!drop?.allowed &&
+                !latest.current.props.state.sessions.some((item) => item.key === request.sessionId);
+            desktop.send('session-drag-reply', request.requestId, accepted);
+        });
+        const stopReceive = desktop.on('session-drag-receive', (_event, request) => {
+            const drop = findTarget(request.point);
+            const { state: current, dispatch: receive } = latest.current.props;
+            const accepted =
+                !dragRef.current &&
+                !!drop?.allowed &&
+                !current.sessions.some((item) => item.key === request.sessionId);
+            if (accepted && drop) {
+                // 先加入会话，再复用同窗口的插入/分屏规则；已有终端保持挂载。
+                ReactDOM.unstable_batchedUpdates(() => {
+                    receive({
+                        type: 'sessions',
+                        update: (previous) => [
+                            ...previous,
+                            { ...request.session, initialContent: request.content },
+                        ],
+                    });
+                    receive({
+                        type: 'move',
+                        sessionId: request.sessionId,
+                        groupId: drop.pane.group.id,
+                        position: drop.position,
+                        index: drop.index,
+                    });
+                });
+            }
+            setExternalDragging(false);
+            setTarget(null);
+            desktop.send('session-drag-reply', request.requestId, accepted);
+        });
+        desktop.send('session-drag-register');
+        return () => {
+            desktop.send('session-drag-unregister');
+            stopHover();
+            stopProbe();
+            stopReceive();
+        };
+    }, [findTarget]);
 
     const updatePosition = useCallback(
         (position: Point) => {
@@ -325,7 +386,7 @@ export default function SessionWorkspace(props: Props) {
                 position.y < 0 ||
                 position.x >= window.innerWidth ||
                 position.y >= window.innerHeight;
-            setPointerOutside(outside);
+            if (!outside) setPointerOutside(false);
             syncNativeOverlay(outside);
         },
         [findTarget, syncNativeOverlay],
@@ -347,6 +408,7 @@ export default function SessionWorkspace(props: Props) {
         () => () => {
             dragRef.current = null;
             syncNativeOverlay(false);
+            void desktop.cancelSessionDrag().catch(() => undefined);
         },
         [syncNativeOverlay],
     );
@@ -355,15 +417,31 @@ export default function SessionWorkspace(props: Props) {
         const position = lastPointer.current;
         dragRef.current = { id: String(event.active.id), point: position };
         setDraggingId(String(event.active.id));
+        setExternalDragging(false);
+        void desktop.startSessionDrag(String(event.active.id)).catch(() => undefined);
         updatePosition(position);
     };
 
-    const onDragEnd = () => {
+    const onDragEnd = async () => {
         const drag = dragRef.current;
         if (!drag) return;
         // 以松手位置重新判断目标；拖动中只更新预览，直到这里才提交一次布局变更。
-        const drop = findTarget(drag.point);
+        let drop = findTarget(drag.point);
+        const destinationPromise = desktop
+            .finishSessionDrag()
+            .catch(() => ({ kind: 'blocked' as const }));
         clearDrag();
+        const destination = await destinationPromise;
+        if (destination?.kind === 'blocked') return;
+        if (destination?.kind === 'window') {
+            latest.current.props.onDetach(drag.id, destination.token);
+            return;
+        }
+        if (destination?.kind === 'outside') {
+            latest.current.props.onDetach(drag.id);
+            return;
+        }
+        if (destination?.kind === 'local') drop = findTarget(destination.point);
         if (drop) {
             if (drop.allowed)
                 dispatch({
@@ -395,7 +473,10 @@ export default function SessionWorkspace(props: Props) {
             accessibility={{ restoreFocus: false }}
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
-            onDragCancel={clearDrag}
+            onDragCancel={() => {
+                clearDrag();
+                void desktop.cancelSessionDrag().catch(() => undefined);
+            }}
         >
             <div
                 ref={rootRef}
@@ -484,7 +565,7 @@ export default function SessionWorkspace(props: Props) {
                             label={labels.resize}
                         />
                     ))}
-                {draggingId && target && (
+                {(draggingId || externalDragging) && target && (
                     <div
                         className={`session-drop-preview${
                             target.allowed ? '' : ' session-drop-preview--blocked'

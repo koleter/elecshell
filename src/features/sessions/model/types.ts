@@ -7,6 +7,7 @@ export interface TerminalSession {
     logPath?: string;
     sessionConfId?: string;
     sessionConfPath?: string;
+    initialContent?: string;
 }
 
 export interface SessionCommands {

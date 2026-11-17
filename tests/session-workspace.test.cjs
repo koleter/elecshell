@@ -247,4 +247,7 @@ test('split minima use the expanded destination after removing an empty source, 
     const actual = splitDestination({...state, maximizedGroupId: target.id}, 'C', target.id, bounds);
     assert.equal(actual.width, current.width);
     assert.equal(canSplit(actual, 'left'), false);
+    const incoming = splitDestination({...state, maximizedGroupId: target.id}, null, target.id, bounds);
+    assert.equal(incoming.width, current.width);
+    assert.equal(canSplit(incoming, 'left'), false);
 });

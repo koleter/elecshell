@@ -91,11 +91,11 @@ const SessionMainContent: React.FC<{
     }, [setSessions]);
 
     const closeSessions = (keys: string[]) => sessionService.close(keys, commands);
-    const handleDetach = async (sessionKey: string) => {
+    const handleDetach = async (sessionKey: string, destinationToken?: string) => {
         const session = sessions.find((item) => item.key === sessionKey);
         if (!session) return;
         try {
-            await sessionService.detach(session, commands);
+            await sessionService.detach(session, commands, destinationToken);
         } catch (error) {
             showMessage({ status: 'error', content: String(error) });
         }

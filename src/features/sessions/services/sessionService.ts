@@ -95,14 +95,26 @@ export const sessionService = {
         const removed = new Set(ids);
         commands.setSessions((previous) => previous.filter((session) => !removed.has(session.key)));
     },
-    async detach(session: TerminalSession, commands: SessionCommands) {
+    async detach(session: TerminalSession, commands: SessionCommands, destinationToken?: string) {
         const runtime = sessionRegistry.get(session.key);
         if (!session.isConnected || !runtime) return;
         const content = runtime.serialize();
-        runtime.send({ type: 'detach' });
-        runtime.close();
+        await runtime.detach();
         commands.setSessions((previous) => previous.filter((item) => item.key !== session.key));
-        await desktop.openDetached(session, content);
+        try {
+            if (destinationToken)
+                await desktop.commitSessionDrop(destinationToken, session, content);
+            else await desktop.openDetached(session, content);
+        } catch (error) {
+            // 宿主或目标窗口拒绝接收时恢复原标签，重新接管仍存活的后端会话。
+            commands.setSessions((previous) =>
+                previous.some((item) => item.key === session.key)
+                    ? previous
+                    : [...previous, { ...session, initialContent: content }],
+            );
+            commands.activateSession(session.key);
+            throw error;
+        }
     },
     isConnected: (id: string) => sessionRegistry.get(id)?.status === 'connected',
     configurationName: (id: string) => sessionRegistry.name(id),

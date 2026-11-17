@@ -92,7 +92,7 @@ class WsockHandler(BaseHandler, tornado.websocket.WebSocketHandler):
                     method(*msg.get("args"))
             elif type == 'detach':
                 self.detached = True
-                if worker:
+                if worker and worker.handler is self:
                     worker.handler = None
                     try:
                         self.loop.remove_handler(worker.fd)
@@ -179,6 +179,9 @@ class WsockHandler(BaseHandler, tornado.websocket.WebSocketHandler):
             logging.info('close_reason is {}'.format(self.close_reason))
         worker = self.worker_ref if self.worker_ref else None
         if worker:
+            # 新窗口可能已接管同一 worker，旧连接关闭时不能清理新 handler。
+            if worker.handler is not None and worker.handler is not self:
+                return
             if self.detached:
                 logging.info('Worker {} detached, keep alive'.format(worker.id))
                 worker.handler = None

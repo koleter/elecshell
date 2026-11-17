@@ -86,10 +86,11 @@ interface TerminalViewProps {
 // 组件仅负责 xterm 的创建、插件、搜索、尺寸与焦点；连接和协议由会话服务管理。
 const TerminalView: React.FC<TerminalViewProps> = ({
     session,
-    initialContent,
+    initialContent: providedInitialContent,
     visible,
     focused,
 }) => {
+    const initialContent = session.initialContent ?? providedInitialContent;
     const terminalRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<TextAreaRef>(null);
     const commands = useWorkspaceCommands();

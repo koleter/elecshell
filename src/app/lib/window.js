@@ -3,8 +3,10 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const {switchFileInExploer} = require("./fileDialog");
+require('./sessionDrag');
 
 let dragOverlayWin = null;
+let dragOverlayReady = null;
 let dragMoveTimer = null;
 
 function getDragOverlayWindow() {
@@ -40,10 +42,15 @@ function getDragOverlayWindow() {
     dragOverlayWin.setIgnoreMouseEvents(true, { forward: true });
     dragOverlayWin.on('closed', () => {
         dragOverlayWin = null;
+        dragOverlayReady = null;
         stopDragMovePolling();
     });
-    const overlayHtmlPath = path.join(__dirname, '..', 'drag-overlay.html');
-    dragOverlayWin.loadFile(overlayHtmlPath).catch(e => console.error('load drag-overlay failed', e));
+    const overlayHtmlPath = process.env.NODE_ENV === 'production'
+        ? path.join(__dirname, 'drag-overlay.html')
+        : path.join(__dirname, '..', 'drag-overlay.html');
+    dragOverlayReady = dragOverlayWin.loadFile(overlayHtmlPath);
+    // 保留拒绝状态供 show 请求处理，同时避免创建浮层时产生未处理的 rejection。
+    dragOverlayReady.catch(e => console.error('load drag-overlay failed', e));
     return dragOverlayWin;
 }
 
@@ -55,13 +62,9 @@ function startDragMovePolling(offsetX = -40, offsetY = -14) {
             return;
         }
         const cursor = screen.getCursorScreenPoint();
-        const display = screen.getDisplayNearestPoint(cursor);
-        const workArea = display.workArea;
-        const [winW, winH] = dragOverlayWin.getSize();
-        let x = cursor.x + offsetX;
-        let y = cursor.y + offsetY;
-        x = Math.max(workArea.x, Math.min(workArea.x + workArea.width - Math.min(winW, workArea.width), x));
-        y = Math.max(workArea.y, Math.min(workArea.y + workArea.height - Math.min(winH, workArea.height), y));
+        // 浮层允许跨越屏幕边界，限制在单个工作区会改变鼠标与标签的相对位置。
+        const x = cursor.x + offsetX;
+        const y = cursor.y + offsetY;
         const [curX, curY] = dragOverlayWin.getPosition();
         if (curX !== x || curY !== y) {
             dragOverlayWin.setBounds({ x, y }, false);
@@ -88,43 +91,18 @@ ipcMain.handle('show-drag-overlay', async (event, payload) => {
         snapshot,
     } = payload || {};
     const win = getDragOverlayWindow();
-    if (!win.webContents.isLoading()) {
-        // already loaded, no-op
-    } else {
-        await new Promise((r) => {
-            const done = () => {
-                clearTimeout(t);
-                r(null);
-            };
-            const t = setTimeout(done, 500);
-            win.webContents.once('did-finish-load', done);
-        });
-    }
+    await dragOverlayReady;
+    if (win.isDestroyed()) return { ok: false };
     const snap = snapshot || {};
     const winW = Math.min(800, Math.max(200, snap.width || 400));
     const winH = Math.min(400, Math.max(96, snap.height || 200));
-    let sx, sy;
     const cursor = screen.getCursorScreenPoint();
-    sx = cursor.x;
-    sy = cursor.y;
-
-    // 给定一个屏幕坐标点，返回离它最近的显示器对象
-    const display = screen.getDisplayNearestPoint({ x: sx, y: sy });
-    const workArea = display.workArea;
-    let x = sx + offsetX;
-    let y = sy + offsetY;
-    x = Math.max(
-        workArea.x,
-        Math.min(workArea.x + workArea.width - Math.min(winW, workArea.width), x),
-    );
-    y = Math.max(
-        workArea.y,
-        Math.min(workArea.y + workArea.height - Math.min(winH, workArea.height), y),
-    );
+    const x = cursor.x + offsetX;
+    const y = cursor.y + offsetY;
     win.setBounds({ x, y, width: winW, height: winH }, false);
     win.webContents.send(
         'drag-overlay-data',
-        Object.assign({ label: label || '', connected, outside }, snap ? { snapshot: snap } : {}),
+        Object.assign({ label: label || '', connected, outside }, snapshot ? { snapshot } : {}),
     );
     win.showInactive();
     startDragMovePolling(offsetX, offsetY);
@@ -166,6 +144,7 @@ function cleanupDragOverlay() {
         console.error('cleanup drag overlay failed', e);
     }
     dragOverlayWin = null;
+    dragOverlayReady = null;
 }
 
 module.exports.cleanupDragOverlay = cleanupDragOverlay;

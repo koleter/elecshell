@@ -76,19 +76,7 @@
 
   ipcRenderer.on('drag-overlay-data', (ev, data) => {
     if (!data) return;
-    if (data.snapshot && applySnapshot(data.snapshot)) return;
-    // legacy fallback
-    if (typeof data.label === 'string') labelEl.textContent = data.label;
-    if (typeof data.connected === 'boolean') {
-      statusEl.style.display = 'inline-block';
-      statusEl.style.backgroundColor = data.connected ? 'green' : 'red';
-      card.style.padding = '8px 0 8px 16px';
-    } else {
-      statusEl.style.display = 'none';
-      card.style.padding = '8px 16px';
-    }
-    // card.style.background = data.outside ? '#fff1f0' : '#fff';
-    // card.style.border = data.outside ? '2px solid #ff4d4f' : '2px solid #1890ff';
+    applySnapshot({ ...data, ...data.snapshot });
   });
 </script>
 </body>

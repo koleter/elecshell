@@ -372,13 +372,13 @@ export function measureLayout(
 
 export function splitDestination(
     state: WorkspaceState,
-    sessionId: string,
+    sessionId: string | null,
     groupId: string,
     bounds: Rect,
 ): PaneRect | null {
     // 源组清空后目标区域可能扩大，先测量这一中间布局再判断能否继续切分。
     // 最大化时也使用原布局的实际尺寸，避免退出最大化后分屏过小。
-    const remaining = removeTabs(state.root, new Set([sessionId]));
+    const remaining = sessionId ? removeTabs(state.root, new Set([sessionId])) : state.root;
     return remaining
         ? measureLayout(remaining, bounds).panes.find((pane) => pane.group.id === groupId) || null
         : null;

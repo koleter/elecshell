@@ -3,6 +3,7 @@ process.env.BABEL_ENV = 'main'
 const path = require('path')
 const webpack = require('webpack')
 const ESLintPlugin = require('eslint-webpack-plugin')
+const CopyWebpackPlugin = require('copy-webpack-plugin')
 
 const {dependencies} = require('../package.json')
 
@@ -49,6 +50,9 @@ const mainConfig = {
         path: path.join(__dirname, '../out/electron')
     },
     plugins: [
+        new CopyWebpackPlugin({
+            patterns: [{ from: path.join(__dirname, '../src/app/drag-overlay.html'), to: 'drag-overlay.html' }]
+        }),
         new ESLintPlugin({
             extensions: ['js'],
             files: [

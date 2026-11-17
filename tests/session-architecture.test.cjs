@@ -663,6 +663,39 @@ test('session architecture: isolated stores and connection services', async (t) 
                 assert.equal(hostCalls[hostCalls.length - 1][2], 'terminal snapshot');
             },
         );
+        await scenario('cross-window handoff waits for socket close and preserves session metadata', async () => {
+            const settings = options('window-transfer');
+            settings.getSession().encoding = 'gbk';
+            settings.getSession().logPath = '/transfer.log';
+            const socket = await start(settings);
+            socket.open();
+            let closed;
+            socket.close = () => { socket.readyState = 2; closed = socket.onclose; };
+            let received;
+            fixture.desktop.commitSessionDrop = async (...args) => { received = args; };
+            const transfer = sessionService.detach(settings.getSession(), settings.commands, 'drop-token');
+            await flush();
+            assert.equal(received, undefined);
+            assert.equal(settings.state.sessions.length, 1);
+            socket.readyState = 3;
+            closed();
+            await transfer;
+            assert.deepEqual(received, ['drop-token', settings.getSession(), 'terminal snapshot']);
+            assert.deepEqual(settings.state.sessions, []);
+            assert.ok(socket.sent.some(message => message.type === 'detach'));
+        });
+        await scenario('a failed window handoff restores the source tab and its terminal snapshot', async () => {
+            const settings = options('failed-transfer');
+            const socket = await start(settings);
+            socket.open();
+            fixture.desktop.commitSessionDrop = async () => { throw new Error('destination closed'); };
+            await assert.rejects(
+                sessionService.detach(settings.getSession(), settings.commands, 'expired-token'),
+                /destination closed/,
+            );
+            assert.deepEqual(settings.state.sessions, [{ ...settings.getSession(), initialContent: 'terminal snapshot' }]);
+            assert.equal(settings.state.activeKey, 'failed-transfer');
+        });
     } finally {
         stops.splice(0).forEach((stop) => stop());
         global.WebSocket = previousWebSocket;

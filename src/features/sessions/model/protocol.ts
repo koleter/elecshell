@@ -48,5 +48,6 @@ export interface SessionRuntime {
     requestOutput: (command: string) => Promise<string>;
     parseOutput: (output: string, callback: (raw: string) => void) => void;
     serialize: () => string;
+    detach: () => Promise<void>;
     close: () => void;
 }

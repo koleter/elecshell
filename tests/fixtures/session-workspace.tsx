@@ -18,6 +18,7 @@ import { sessionService } from '../../src/features/sessions/services/sessionServ
 import 'antd/dist/antd.css';
 
 const host = window as any;
+const initialContent = new URLSearchParams(location.search).get('initialContent') || undefined;
 configurationIndex.replace({
     A: '/configs/A',
     B: '/configs/B',
@@ -27,14 +28,32 @@ configurationIndex.replace({
     F: '/configs/F',
 });
 host.detaches = [];
+host.detachErrors = [];
 host.nativeCalls = [];
+host.ipcCalls = [];
+const ipcListeners = new Map<string, Set<(...args: any[]) => void>>();
+host.deliverIpc = (channel: string, ...args: any[]) =>
+    ipcListeners.get(channel)?.forEach((listener) => listener({}, ...args));
 host.renderCounts = { workspace: 0, 'progress-A': 0, 'progress-B': 0, 'files-A': 0 };
-host.electronAPI = {
+host.electronAPI = host.electronAPI || {
     platform: 'linux',
     FS_appendFileSync: () => undefined,
-    ipcRenderer: { invoke: async () => undefined },
+    ipcRenderer: {
+        invoke: async (channel: string, ...args: any[]) => {
+            host.ipcCalls.push([channel, ...args]);
+            return host.invokeIpc?.(channel, ...args);
+        },
+        send: (channel: string, ...args: any[]) => host.ipcCalls.push([channel, ...args]),
+        on: (channel: string, listener: (...args: any[]) => void) => {
+            if (!ipcListeners.has(channel)) ipcListeners.set(channel, new Set());
+            ipcListeners.get(channel)!.add(listener);
+        },
+        removeListener: (channel: string, listener: (...args: any[]) => void) =>
+            ipcListeners.get(channel)?.delete(listener),
+    },
     showDragOverlay: async (payload: unknown) => {
         host.nativeCalls.push(['show', payload]);
+        return { ok: true };
     },
     hideDragOverlay: async () => {
         host.nativeCalls.push(['hide']);
@@ -58,7 +77,12 @@ function Fixture() {
     const { state, dispatch, setSessions } = commands;
     useEffect(() => {
         setSessions(
-            ['A', 'B', 'C', 'D', 'E', 'F'].map((key) => ({
+            (
+                new URLSearchParams(location.search)
+                    .get('sessions')
+                    ?.split(',')
+                    .filter(Boolean) || ['A', 'B', 'C', 'D', 'E', 'F']
+            ).map((key) => ({
                 key,
                 label: key,
                 isConnected: true,
@@ -110,10 +134,13 @@ function Fixture() {
                         </span>
                     )}
                     onClose={(key) => sessionService.close([key], commands)}
-                    onDetach={(key) => {
+                    onDetach={(key, destinationToken) => {
                         host.detaches.push(key);
                         const session = state.sessions.find((item) => item.key === key);
-                        if (session) void sessionService.detach(session, commands);
+                        if (session)
+                            void sessionService
+                                .detach(session, commands, destinationToken)
+                                .catch((error) => host.detachErrors.push(String(error)));
                     }}
                     labels={{
                         maximize: 'Maximize',
@@ -130,7 +157,12 @@ function Fixture() {
                         },
                     }}
                     renderSession={(session, visible, focused) => (
-                        <TerminalView session={session} visible={visible} focused={focused} />
+                        <TerminalView
+                            session={session}
+                            visible={visible}
+                            focused={focused}
+                            initialContent={session.key === 'A' ? initialContent : undefined}
+                        />
                     )}
                 />
             </div>

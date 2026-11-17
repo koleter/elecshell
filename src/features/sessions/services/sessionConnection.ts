@@ -121,6 +121,20 @@ class SessionConnection implements SessionRuntime {
     parseOutput = (output: string, callback: (raw: string) => void) =>
         this.options.terminal.write(output, callback, false);
     serialize = () => this.options.serialize();
+    detach = (): Promise<void> => {
+        if (this.disposed || this.socket.readyState !== WebSocket.OPEN)
+            return Promise.reject(new Error('session is not connected'));
+        this.send({ type: 'detach' });
+        this.release();
+        // 等待旧 socket 完成关闭握手，再让目标窗口连接，避免 worker 尚未释放旧 handler。
+        return new Promise((resolve) => {
+            this.socket.onclose = () => {
+                this.socket.onclose = null;
+                resolve();
+            };
+            this.socket.close();
+        });
+    };
     close = () => {
         this.release();
         this.socket.close();

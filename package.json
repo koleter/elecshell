@@ -76,6 +76,7 @@
         "test:frontend": "npm run tsc:frontend && npm run test:workspace && npm run test:session && npm run test:workspace:browser && npm run test:app:browser",
         "test:workspace": "node --test tests/session-workspace.test.cjs",
         "test:workspace:browser": "node --test tests/session-workspace.browser.cjs",
+        "test:window:electron": "node --test tests/session-window-drag.electron.cjs",
         "tsc:frontend": "tsc --noEmit -p tsconfig.frontend.json",
         "tsc": "tsc --noEmit"
     },
