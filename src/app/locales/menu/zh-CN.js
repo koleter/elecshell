@@ -1,6 +1,7 @@
 const {app, BrowserWindow, Menu, dialog} = require('electron');
 // const { BrowserWindow } = require('electron').remote;
 const {createWindow} = require("../../lib/window");
+const {openServerLogsWindow} = require('../../lib/serverLogs');
 
 exports.ZN_template = [
     {
@@ -63,6 +64,13 @@ exports.ZN_template = [
     {
         label: '查看',
         submenu: [
+            {
+                label: '服务端日志',
+                click() {
+                    openServerLogsWindow('zh-CN');
+                }
+            },
+            { type: 'separator' },
             {
                 label: '重载',
                 accelerator: 'CmdOrCtrl+R',

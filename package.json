@@ -77,6 +77,7 @@
         "test:workspace": "node --test tests/session-workspace.test.cjs",
         "test:workspace:browser": "node --test tests/session-workspace.browser.cjs",
         "test:window:electron": "node --test tests/session-window-drag.electron.cjs",
+        "test:logs:electron": "node --test tests/server-logs.electron.cjs",
         "tsc:frontend": "tsc --noEmit -p tsconfig.frontend.json",
         "tsc": "tsc --noEmit"
     },

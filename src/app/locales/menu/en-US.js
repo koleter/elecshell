@@ -1,6 +1,7 @@
 const {app, BrowserWindow, Menu, dialog} = require('electron');
 // const { BrowserWindow } = require('electron').remote;
 const {createWindow} = require("../../lib/window");
+const {openServerLogsWindow} = require('../../lib/serverLogs');
 
 
 exports.EN_template = [
@@ -64,6 +65,13 @@ exports.EN_template = [
     {
         label: 'View',
         submenu: [
+            {
+                label: 'Server Logs',
+                click() {
+                    openServerLogsWindow('en-US');
+                }
+            },
+            { type: 'separator' },
             {
                 label: 'Reload',
                 accelerator: 'CmdOrCtrl+R',

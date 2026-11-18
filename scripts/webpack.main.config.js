@@ -18,7 +18,8 @@ const mainConfig = {
     },
     entry: {
         main: path.join(__dirname, '../src/app/index.js'),
-        preload: path.join(__dirname, '../src/app/lib/preload.js')
+        preload: path.join(__dirname, '../src/app/lib/preload.js'),
+        serverLogsPreload: path.join(__dirname, '../src/app/lib/serverLogsPreload.js')
     },
     externals: [
         ...Object.keys(dependencies || {})
@@ -51,7 +52,11 @@ const mainConfig = {
     },
     plugins: [
         new CopyWebpackPlugin({
-            patterns: [{ from: path.join(__dirname, '../src/app/drag-overlay.html'), to: 'drag-overlay.html' }]
+            patterns: [
+                { from: path.join(__dirname, '../src/app/drag-overlay.html'), to: 'drag-overlay.html' },
+                { from: path.join(__dirname, '../src/app/server-logs.html'), to: 'server-logs.html' },
+                { from: path.join(__dirname, '../src/app/server-logs.js'), to: 'server-logs.js' }
+            ]
         }),
         new ESLintPlugin({
             extensions: ['js'],
